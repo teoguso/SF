@@ -296,9 +296,10 @@ def find_eqp_resigma(en,resigma):
 	"""
 	This function is supposed to deal with the plasmaron problem 
 	and calculate the quasiparticle energy once it is fed with 
-	\omega - \epsilon_H - \Re\Sigma. 
-	It expects an array of increasing values and it will return 
-	the last 0 detected. 
+	resigma = \omega - \epsilon_H - \Re\Sigma. 
+	It expects an array of increasing values on the x axis 
+	and it will return 
+	the x value of the last resigma=0 detected. 
 	It should return the value of eqp. 
 	"""
 	import numpy as np
@@ -331,12 +332,16 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims):
 			eqp[ik,ib] = find_eqp_resigma(en,temparray)
 			imeqp[ik,ib] = interpims(eqp[ik,ib])
 			## Warning if imaginary part of sigma < 0 (Convergence problems?)
-			if imeqp[ik,ib] <= 0 : print " WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib]
+			if imeqp[ik,ib] <= 0 : 
+				print " WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib]
 #	plt.show() # DEBUG
 #	sys.exit(1) # DEBUG
 	return eqp, imeqp
 
 def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
+	"""
+	This function calculates the exponential spectral function. 
+	"""
 	ftot = np.zeros((np.size(enexp)))
 	tmpf1=np.zeros((nenexp))
 	tmpf2=np.zeros((nenexp))
