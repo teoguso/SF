@@ -1,0 +1,93 @@
+\documentclass[a4paper,12pt]{article}
+%%% Written by Matteo Guzzo
+%%%
+%%%
+%\usepackage[T1]{fontenc}
+ \usepackage{palatino}
+ \linespread{1.05}
+% \usepackage{hypen}`
+ \usepackage{graphicx,amsmath,amssymb}
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\dd{\mbox{d}}
+
+\renewcommand{\Re}{\,\mathrm{Re}}
+\renewcommand{\Im}{\,\mathrm{Im}}
+
+\title{Notes on the multipole model}
+\author{Matteo Guzzo}
+\date{\today}
+
+%\pagestyle{empty}
+
+\hyphenation{SPEC-TRO-SCO-PY}
+\hyphenation{EN-ER-GY}
+
+\begin{document}
+
+\maketitle
+
+\section{The multipole model}
+Following Josh's prescription and notes, I resume here the main points of the 
+multipole model and multipole curve fitting approach. 
+Say we want to represent a function $ f ( \omega ) $ as a sum of delta functions, 
+\emph{aka} poles. 
+The original expression for the sum (correctly reported in Josh's paper 
+[Kas J.J.\@ \emph{et al.}, PRB 76, 195116 (2007)]) reads
+\be
+ f(\omega) = \pi \sum_i^{N} g_i \omega_i^2 \delta( \omega^2 - \omega_i^2 ), 
+ \label{eq:mpole2}
+\ee
+where we momentarily dispose of the $q$-dependence of the poles. 
+This expression becomes exact for $ N \rightarrow \infty $, 
+i.e. in practice the number of poles has to be converged. 
+This expression can be rewritten (and has to be, when we want to calculate how to find 
+the parameters $ g_i $ and $\omega_i $) in terms of simpler poles 
+$ \delta( \omega - \omega_i ) $. 
+In particular, it can be proved that, for $ \omega \geq 0 $, the following expression 
+holds: 
+\be
+ f(\omega) = \frac{\pi}{2} \sum_i^{N} g_i \omega_i \delta( \omega - \omega_i ), 
+ \label{eq:mpole1}
+\ee
+where  $ g_i $ and $\omega_i $ are the exact same parameters than in the previous case. 
+The proof of this is shown below. 
+This means that they can be calculated as before using the formula
+\be
+ \int_{\Delta_i} d \omega \; \omega^n f( \omega ) = \frac{\pi}{2} g_i \omega_i^{n+1} , 
+ \label{eq:mpolemoments}
+\ee
+provided that the $ \Delta_i $ intervals are obtained correctly. 
+In particular one can choose the intervals under the constrain to have the same area 
+under the original curve $ f ( \omega ) $ within each interval. 
+Then one shall use the relation above (Eq.\@ \eqref{eq:mpolemoments}) 
+for first and first inverse moment ($ n = \pm 1 $) to calculate 
+the parameters. 
+This proposed here is just one possible way to do it. 
+One could think of different choices which might be equally effective.
+
+\subsection{The pedantic but necessary calculation} 
+One starts from Eq.\@ \eqref{eq:mpole2} and uses the following relation: 
+\be
+ \delta[ g(x) ] = \sum_i \frac { \delta ( x - x_i ) }{ | g' ( x_i ) | }
+\ee
+which states that the delta function of a given function of $ x $ is equal to the sum 
+of delta functions of $ x $ centered on the roots $ x_i $ of the $ g(x) $ function, 
+divided by the absolute value of the first derivative of $ g $ evaluated at 
+the poles. 
+The easiest example for $ g(x) $ one can think of 
+is a polinomial (like $  x^2 - x_i^2 $, where the roots are $ \pm x_i $). 
+Applying this relation  to Eq.\@ \eqref{eq:mpole2} gives 
+\be
+ f(\omega) = \pi \sum_i^{N} g_i \omega_i^2 \delta( \omega^2 - \omega_i^2 ) 
+ =  \frac{\pi}{2} \sum_i^{N} g_i \omega_i [ \delta( \omega - \omega_i ) + \delta( \omega + \omega_i ) ] , 
+% \label{eq:mpole2}
+\ee
+which, for $ \omega \geq 0 $, gives Eq.\@ \eqref{eq:mpole1}. q.e.d. 
+
+
+
+\end{document}

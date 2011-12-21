@@ -1,0 +1,6 @@
+### Spectral Function package
+### Written by Matteo Guzzo
+### A.D. 2011
+### NO WARRANTY WHATSOEVER!!!
+### Written for python 2.7
+### Requires scitools, numpy, f2py
