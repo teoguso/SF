@@ -402,6 +402,7 @@ if isfile("invar.in"):
 	flag_calc_exp=   int(invar['calc_exp']);
 	a_extinf     = float(invar['a_extinf']);
 	extinf       =   int(invar['extinf']);
+	efermi       = float(invar['efermi']);
 else : 
 	print "Invar file not found (invar.in). Impossible to continue."
 	sys.exit(1)
@@ -495,17 +496,21 @@ if flag_calc_exp == 1:
 			# so as to have it defined on the positive x axis
 			# and so that the positive direction is in the 
 			# increasing direction of the array index
-			en3 = en[en<=eqp[ik,ib]]
+			#en3 = en[en<=eqp[ik,ib]]
+			en3 = en[en<=efermi]
 			im3 = interpims(en3)/np.pi # This is what should be fitted
-			en3 = en3 - eqp[ik,ib]
+			#en3 = en3 - eqp[ik,ib]
+			en3 = en3 - efermi
 			en3 = -en3[::-1] 
 			im3 = im3[::-1]
 			omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
-			omegampole[ik,ib] = omegai
-			ampole[ik,ib] = gi/(omegai**2) # The weights should not be affected by the shift
+			omegampole[ik,ib] = omegai + eqp[ik,ib] - efermi
+			ampole[ik,ib] = gi/(omegampole[ik,ib]) # The weights should not be affected by the shift
 			print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j."
 			print " 1/pi*\int\Sigma   =", np.trapz(im3,en3)
-			print " \sum_j^N\lambda_j =", np.sum(gi)
+			print " \sum_j^N\lambda_j =", np.pi/2*np.sum(gi*omegai)
+			#plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
+			#plt.show(); sys.exit(1)
 			#e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
 	dxexp=0.05
 	enexp=np.arange(enmin,enmax,dxexp)

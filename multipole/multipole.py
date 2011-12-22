@@ -54,10 +54,10 @@ def resize_en(preen, nbin) :
 	TODO: think of a smarter grid analyser.
 	"""
 	import numpy as np
-	if np.size(preen) < float( 2 * nbin ) :
+	if np.size(preen) < float( 1 * nbin ) :
 		print " X-axis grid is too coarse for so many poles."
 		print " Refining grid..."
-		nx = 2*nbin+1
+		nx = 4*nbin+1
 		print " Old dx = %g, new dx = %g." % (abs(preen[-1]-preen[0])/(np.size(preen)-1),abs(preen[-1]-preen[0])/nx)
 		en = np.linspace(preen[0], preen[-1], nx)
 	else :
