@@ -64,7 +64,7 @@ def resize_en(preen, nbin) :
 		en = preen
 	return en
 
-def fit_multipole(preen,predata,nbin,ifilewrite):
+def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 	"""
 	This function fits a curve given by some dataset (preen,predata) 
 	with a given number of poles (nbin).
@@ -95,18 +95,9 @@ def fit_multipole(preen,predata,nbin,ifilewrite):
 	# First inverse moment
 	fxonx = first_inverse_moment(preen,predata)
 	interpfxonx = interp1d(preen, fxonx[:], kind = 'linear', axis =  2)
-	# Test plot
-	#plt.plot(preen,interpdata(preen),label="data")
-	#plt.plot(preen,interpxfx(preen),'-x',label="f(x)*x")
-	#plt.plot(preen,(predata*preen),label="f(x)*x")
-	#plt.plot(preen,interpfxonx(preen),label="f(x)/x")
-	#plt.plot(preen,(predata/preen),'-x',label="f(x)/x")
-	### =========================================== ###
 	# Here we calculate the bins' bounds
 	# First we want the x-axis grid to be finer than the density of poles
 	en = resize_en(preen, nbin)
-	#print " ### ========================= ###"
-	#print " ###   Calculating Delta_i     ###"
 	bounds = []
 	ibound = 0
 	gi = []
