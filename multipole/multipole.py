@@ -212,6 +212,21 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 		outfile.close()
 	return omegai, gi, deltai
 
+def fit_multipole2(preen,predata,nbin,ifilewrite=0,binmode=0):
+	"""
+	Another version with constant bin separation.
+	"""
+	import numpy as np
+	import sys
+	from scipy.interpolate import interp1d
+	from scipy.integrate import fixed_quad
+	nbin = int(nbin)
+	eta = 0.005 # This is the Lorentzian broadening that would be used???
+	totalint = np.trapz(predata,preen)
+	totdeltax = abs( preen[-1] - preen[0] )
+	print " Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
+	return omegai, gi, deltai
+
 def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
 	"""
 	An attempt to rewrite the original function given the set of poles and weights

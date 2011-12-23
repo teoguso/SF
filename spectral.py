@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
 Written by Matteo Guzzo.
-Last revision date: 12/12/2011
 This version of the script includes extrinsic and interference effects
 which are taken from the file (a_wp.dat) given by Josh. 
 An external fortran module is used to calculate the 
@@ -10,11 +9,12 @@ It has not been tested a lot but it seems to work.
 List of files needed:
 - invar.in with input variables.
 - _SIG for the self-energy.
-- s.dat, p_even.dat, p_odd.dat, d_even.dat, etc. for the orbital character.
+- s.dat, p_even.dat, p_odd.dat, d_even.dat, etc. 
+for the orbital character and symmetries.
 - cs*.dat for the photon cross sections.
 - hartree.dat or elda.dat and vxc.dat for the hartree energies.
 - wtk.dat for the k-points weights.
-- a_wp.dat for the extrinsic/interference effects and additional lifetime
+- a_wp.dat for the extrinsic/interference effects and additional lifetime.
 """
 import numpy as np;
 import matplotlib.pylab as plt;
