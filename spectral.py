@@ -439,7 +439,7 @@ print " # ------------------------------------------------ # ";
 newdirname = "Spfunctions"
 origdir = getcwd() # remember where we are
 newdir = join(origdir, newdirname) # Complete path of the new directory
-print " Moving into spectral functions directory:\n ", newdir
+print " Moving into output directory:\n ", newdir
 if not isdir(newdir) :
 	mkdir(newdir)
 chdir(newdir)
