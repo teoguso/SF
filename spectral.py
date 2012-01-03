@@ -450,7 +450,7 @@ if flag_calc_gw == 1:
 	newen, spftot = calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims)
 		### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
 	print " ### Writing out A(\omega)_GW...  "
-	outname = "spftot_gw"+"_sfac"+str(sfac)+"_pfac"+str(pfac)+"_pen"+str(penergy)+".dat"
+	outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
 	outfile = open(outname,'w')
 	for i in xrange(np.size(newen)):
 		outfile.write("%7.4f   %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
@@ -676,5 +676,5 @@ print " Moving back to parent directory:\n", origdir
 chdir(newdir)
 #title = 'Spectral function '+ 'A (' + r'$\omega $ ' + ') - '+r'$ h\nu = $'+str(penergy)+' eV'
 #plt.title(title)
-#plt.legend(loc=2);
+plt.legend(loc=2);
 plt.show();
