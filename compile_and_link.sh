@@ -4,6 +4,6 @@
 # Tested with gfortran (Sorry!)
 ln -s multipole/multipole.py multipole.py
 cd f2py_modules
-f2py --f90flags="-ffree-form"  extmod_spf_mpole.pyf -c spf_mpole.f90
+f2py --fcompiler="gfortran" --f90flags="-ffree-form"  extmod_spf_mpole.pyf -c spf_mpole.f90
 cd ..
 ln -s f2py_modules/extmod_spf_mpole.so extmod_spf_mpole.so
