@@ -522,9 +522,11 @@ if flag_calc_exp == 1:
 	# Extrinsic and interference contribution
 	if extinf == 1:
 		extinfname = "a_wp.dat"
-		print " Reading ixtrinsic and interference contribution from file "+str(extinfname)+"..."
+		print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
 		# Here we add the extrinsic contribution. 
 		# N.B.: It has to be renormalized to the number of poles!!!
+		# The data are interpolated linearly with a numerical function. 
+		# The fit curve passes by the origin. 
 		from multipole import getdata_file #, write_f_as_sum_of_poles
 		en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
 		newen_ei = []
