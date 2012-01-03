@@ -338,6 +338,60 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims):
 #	sys.exit(1) # DEBUG
 	return eqp, imeqp
 
+def calc_extinf_corrections(extinfname,ampole,omegampole):
+		#extinfname = "a_wp.dat"
+		print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
+		# Here we add the extrinsic contribution. 
+		# N.B.: It has to be renormalized to the number of poles!!!
+		# The data are interpolated linearly with a numerical function. 
+		# The fit curve passes by the origin. 
+		from multipole import getdata_file #, write_f_as_sum_of_poles
+		en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
+		newen_ei = []
+		newen_ei.append(0.0)
+		for x in en_ei.tolist():
+			newen_ei.append(x)
+		newen_ei = np.array(newen_ei)
+		newa_ei = []
+		newa_ei.append(0.0)
+		for x in aextinf.tolist():
+			newa_ei.append(x)
+		newa_ei = np.array(newa_ei)
+		# a_int from the model is in the third column
+		en_ei, aint = getdata_file(origdir+"/"+str(extinfname),3)
+		newa_int = []
+		a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
+		newa_int.append(a_int_zero)
+		for x in aint.tolist():
+			newa_int.append(x)
+		newa_int = np.array(newa_int)
+		# broadening from the model is in the fourth column
+		en_ei, width = getdata_file(origdir+"/"+str(extinfname),4)
+		newwmod = []
+		w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
+		newwmod.append(w_zero)
+		for x in width.tolist():
+			newwmod.append(x)
+		newwmod = np.array(newwmod)
+		interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis =  2)
+		w_extinf = ampole.copy()
+		print "omega_p, a_extinf, a_int:"
+		print newen_ei
+		print newa_ei
+		print newa_ei/newa_int
+		#print en_ei, newenexin
+		#print aextinf, newaexin
+		interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
+		amp_exinf = ampole.copy()
+		#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
+		for ik in xrange(nkpt):
+			for ib in xrange(nband):
+				#tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
+				w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
+				tmpextinf = interpextinf(omegampole[ik,ib]) # 
+				amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
+		return amp_exinf, w_extinf
+
 def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
 	"""
 	This function calculates the exponential spectral function. 
@@ -512,69 +566,28 @@ if flag_calc_exp == 1:
 			#plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
 			#plt.show(); sys.exit(1)
 			#e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
-	dxexp=0.05
-	enexp=np.arange(enmin,enmax,dxexp)
-	nenexp=np.size(enexp)
-	ftot=np.zeros((nenexp))
-	f=np.zeros((nkpt,nband,nenexp))
-	print " Calculating multipole exponential A..."
-	ftot=np.zeros((np.size(enexp)),order='Fortran')
+	# Writing out a_j e omega_j
+	print " ### Writing out a_j and omega_j..."
+	outname = "a_j_mp"+str(npoles)+".dat"
+	outfile = open(outname,'w')
+	outname = "omega_j_mp"+str(npoles)+".dat"
+	outfile2 = open(outname,'w')
+	for ipole in xrange(npoles):
+		for ik in xrange(nkpt):
+			for ib in xrange(nband):
+				outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+				outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+			outfile.write("\n")
+			outfile2.write("\n")
+		outfile.write("\n")
+		outfile2.write("\n")
+	outfile.close()
+	outfile2.close()
 	# Extrinsic and interference contribution
 	if extinf == 1:
 		extinfname = "a_wp.dat"
-		print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
-		# Here we add the extrinsic contribution. 
-		# N.B.: It has to be renormalized to the number of poles!!!
-		# The data are interpolated linearly with a numerical function. 
-		# The fit curve passes by the origin. 
-		from multipole import getdata_file #, write_f_as_sum_of_poles
-		en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
-		newen_ei = []
-		newen_ei.append(0.0)
-		for x in en_ei.tolist():
-			newen_ei.append(x)
-		newen_ei = np.array(newen_ei)
-		newa_ei = []
-		newa_ei.append(0.0)
-		for x in aextinf.tolist():
-			newa_ei.append(x)
-		newa_ei = np.array(newa_ei)
-		# a_int from the model is in the third column
-		en_ei, aint = getdata_file(origdir+"/"+str(extinfname),3)
-		newa_int = []
-		a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
-		newa_int.append(a_int_zero)
-		for x in aint.tolist():
-			newa_int.append(x)
-		newa_int = np.array(newa_int)
-		# broadening from the model is in the fourth column
-		en_ei, width = getdata_file(origdir+"/"+str(extinfname),4)
-		newwmod = []
-		w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
-		newwmod.append(w_zero)
-		for x in width.tolist():
-			newwmod.append(x)
-		newwmod = np.array(newwmod)
-		interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis =  2)
-		w_extinf = ampole.copy()
-		print "omega_p, a_extinf, a_int:"
-		print newen_ei
-		print newa_ei
-		print newa_ei/newa_int
-		#print en_ei, newenexin
-		#print aextinf, newaexin
-		interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
-		amp_exinf = ampole.copy()
-		#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
-		for ik in xrange(nkpt):
-			for ib in xrange(nband):
-				#tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
-				w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
-				tmpextinf = interpextinf(omegampole[ik,ib]) # 
-				amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
-		# Writing out a_j_extinf
-		#print np.shape(w_extinf), np.shape(omegampole)
-		#sys.exit(1)
+		amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
+		print " ### Writing out a_j_extinf..."
 		outname = "a_j_mp"+str(npoles)+"_extinf.dat"
 		outfile = open(outname,'w')
 		for ipole in xrange(npoles):
@@ -584,8 +597,6 @@ if flag_calc_exp == 1:
 				outfile.write("\n")
 			outfile.write("\n")
 		outfile.close()
-		print amp_exinf[0,0] - ampole[0,0]
-	#sys.exit(1)
 	# Time section
 	import time
 	e0=time.time()
@@ -593,6 +604,13 @@ if flag_calc_exp == 1:
 	elaps1=time.time() - e0
 	cpu1=time.clock() - c0
 	print " Starting time (elaps, cpu):", elaps1, cpu1
+	dxexp=0.05
+	enexp=np.arange(enmin,enmax,dxexp)
+	nenexp=np.size(enexp)
+	ftot=np.zeros((nenexp))
+	f=np.zeros((nkpt,nband,nenexp))
+	print " Calculating multipole exponential A..."
+	ftot=np.zeros((np.size(enexp)),order='Fortran')
 	nen = np.size(enexp)
 	tmpf = np.zeros((nen), order='Fortran')
 	# EXTRINSIC EFFECTS
@@ -621,7 +639,7 @@ if flag_calc_exp == 1:
 		for ik in xrange(nkpt):
 			for ib in xrange(nband):
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(ampole[ik,ib,:])) * wtk[ik] * pdos[ib] / np.pi * abs( imeqp[ik,ib] )
+				prefac=np.exp(-np.sum(ampole[ik,ib])) * wtk[ik] * pdos[ib] / np.pi * abs( imeqp[ik,ib] )
 				akb=ampole[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				eqpkb=eqp[ik,ib]
@@ -641,23 +659,6 @@ if flag_calc_exp == 1:
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
 	print " Used time (elaps, cpu):", elaps2, cpu2
-	# Writing out a_j e omega_j
-	print " ### Writing out a_j and omega_j..."
-	outname = "a_j_mp"+str(npoles)+".dat"
-	outfile = open(outname,'w')
-	outname = "omega_j_mp"+str(npoles)+".dat"
-	outfile2 = open(outname,'w')
-	for ipole in xrange(npoles):
-		for ik in xrange(nkpt):
-			for ib in xrange(nband):
-				outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-				outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
-			outfile.write("\n")
-			outfile2.write("\n")
-		outfile.write("\n")
-		outfile2.write("\n")
-	outfile.close()
-	outfile2.close()
 	print " ### Writing out A(\omega)_exp...  "
 	if extinf == 1:
 		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_mp"+str(npoles)+"_extinf.dat"
