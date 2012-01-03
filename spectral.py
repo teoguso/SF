@@ -90,7 +90,104 @@ def read_wtk():
 	wtk = np.array(wtk);
 	return wtk
 
-def read_sigfile(nkpt,nband,sigfilename):
+def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
+	"""
+	This function reads the real and imaginary parts of the self energy
+	$\Sigma(\omega)$ from the file _SIG for the given bands and k points.
+	It returns numpy arrays containing the energies, the real and the 
+	imaginary part of the self energy.
+	"""
+	if isfile(sigfilename):
+		insigfile = open(sigfilename);
+	else:
+		print "File "+sigfilename+" not found."
+		insigfile = open(raw_input("Self-energy file name (_SIG): "))
+	# We put the content of the file (lines) in this array
+	filelines = insigfile.readlines();
+	en=[];
+	# loop to prepare  the energy array
+	print " Reading array of energies from first k-point in _SIG file... ",
+	for line in filelines:
+		if line[0:3]=='# k':
+			continue
+		elif line[0:3]=='# b':
+			continue
+		else : 
+			data=line.split()
+			if float(data[0]) <= enmax :
+				en.append(float(data[0]))
+			else: break
+	print "Done."
+	print " Length of the energy array detected from _SIG file, first k point: "+str(len(en))
+	print " len(en): "+str(len(en))
+	en = np.array(en)
+	print " size(en): "+str(np.size(en))
+	dx = (en[-1]-en[0])/np.size(en)
+	print " dx:",dx
+	print " ### ===== Reading _SIG file ... ===== #### "
+	# Preparation of arrays
+	nkpt = maxkpt-minkpt+1
+	nband = maxband-minband+1
+	res=np.zeros((nkpt,nband,np.size(en)));
+	ims=np.zeros((nkpt,nband,np.size(en)));
+	print " np.shape(res), np.shape(ims):", np.shape(res), np.shape(ims)
+	# Indexes initialization
+	ikpt = 0;
+	ib = 0;
+	io = 0 # row/energy counter
+	# Cycle over the lines of the file
+	for line in filelines:
+		icol = 0;
+		ib = 0;
+		if line[0:3]=='# k' :
+			#print line,
+			# Detect, in commented lines, the k point declaration
+			if ikpt<minkpt-1 :
+				#print " --- k point:  %02i ---" % (ikpt);
+				ikpt = ikpt + 1;
+				continue
+			elif ikpt==maxkpt :
+				print " End of the reading loop: ikpt == maxkpt. ikpt, maxkpt: ", ikpt, maxkpt; 
+				print " #### ================================================ #### ";
+				break;
+			else:
+				ikpt = ikpt + 1;
+		# Detect, in commented lines, the bands declaration
+		elif line[0:3]=='# b':
+			io = 0;
+			continue
+		# TODO: This if test is incorrect: this way it always starts from ib = 0
+		#elif io < np.size(en) and ib < maxband and ikpt >=minkpt-1:
+		elif io < np.size(en) and ikpt >=minkpt-1:
+			data=map(float,line.split());
+			for col in data:
+				# First element (energy) goes into en
+				if icol == 0 : 
+					icol = icol + 1;
+					io = io + 1;
+				elif (icol+2)%3 == 0 and ib>=minband-1:
+					res[ikpt-minkpt,ib-minband,io-1] = col;
+					icol = icol + 1;
+					continue;
+				elif (icol+2)%3 == 0 :
+					icol = icol + 1;
+					continue;
+				elif (icol+1)%3 == 0 and ib>=minband-1:
+					ims[ikpt-minkpt,ib-minband,io-1] = col;
+					icol = icol + 1;
+					continue;
+				elif (icol+1)%3 == 0 :
+					icol = icol + 1;
+					continue;
+				else : 
+					if ib == maxband-1 : break # number of bands reached
+					ib = ib + 1;
+					icol = icol + 1;
+					continue;
+		else: continue
+	return en, res, ims
+
+def read_sigfile_old(nkpt,nband,sigfilename):
 	if isfile(sigfilename):
 		insigfile = open(sigfilename);
 	else:
@@ -126,9 +223,9 @@ def read_sigfile(nkpt,nband,sigfilename):
 	res=np.zeros((nkpt,nband,np.size(en)));
 	ims=np.zeros((nkpt,nband,np.size(en)));
 	print " np.shape(res), np.shape(ims):", np.shape(res), np.shape(ims)
-	print " ### ================================= #### "
+	#print " ### ================================= #### "
 	print " ### ===== Reading _SIG file ... ===== #### "
-	print " ### ================================= #### "
+	#print " ### ================================= #### "
 	# Cycle over the lines of the file
 	io = 0 # row/energy counter
 	for line in filelines:
@@ -198,7 +295,7 @@ def read_cross_sections(penergy):
 	#print "cs:",np.transpose(cs),cs.shape
 	return cs
 
-def read_band_type_sym(sfac,pfac):
+def read_band_type_sym(sfac,pfac,nband):
 	"""
 	This function reads the s,p (TODO and d,f)
 	composition of bands, descerning between 
@@ -229,7 +326,7 @@ def read_band_type_sym(sfac,pfac):
 	print " Reading p bands file... ",
 	if isfile("p_even.dat") and isfile("p_odd.dat"):
 		# This file should contain the summed contribution of all even p orbitals
-		pevenfile =  open("p_even.dat",'r')
+		pevenfile = open("p_even.dat",'r')
 		# This file should contain the summed contribution of all odd p orbitals
 		poddfile =  open("p_odd.dat",'r')
 		peven = map(float,pevenfile.read().split())
@@ -266,8 +363,12 @@ def calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims):
 	spf (GW spectral function) is returned.
 	"""
 	newdx = 0.01
-	if enmin < en[0] :  
+	if enmin < en[0] and enmax > en[-1]:  
+		newen = np.arange(en[0],en[-1],newdx)
+	elif enmin < en[0]:  
 		newen = np.arange(en[0],enmax,newdx)
+	elif enmax > en[-1] :  
+		newen = np.arange(enmin,en[-1],newdx)
 	else :  
 		newen = np.arange(enmin,enmax,newdx)
 	print " ### Interpolation and calculation of A(\omega)_GW...  "
@@ -478,13 +579,14 @@ print " P prefactor:", pfac
 # ======== READING WTK ======= #
 wtk = read_wtk()
 # ======== READING _SIG FILE ======= #
-en, res, ims = read_sigfile(nkpt,nband,sigfilename)
+#en, res, ims = read_sigfile(nkpt,nband,sigfilename)
+en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
 print " ### nkpt, nband:", nkpt, nband
 print " # ------------------------------------------------ # ";
 # ======== CROSS SECTIONS ======= #
 cs = read_cross_sections(penergy)
 # ====== BAND TYPE AND SYMMETRY ==== #
-sp = read_band_type_sym(sfac,pfac)
+sp = read_band_type_sym(sfac,pfac,nband)
 # ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
 pdos = 10000.*np.dot(cs,sp)
 print " 10000*pdos:", pdos
