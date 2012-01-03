@@ -445,6 +445,8 @@ if isfile("invar.in"):
 	sigfilename  =       invar['sigmafile'];
 	minband      =   int(invar['minband']);
 	maxband      =   int(invar['maxband']);
+	minkpt       =   int(invar['minkpt']);
+	maxkpt       =   int(invar['maxkpt']);
 	nkpt         =   int(invar['nkpt']);
 	enmin        = float(invar['enmin']);
 	enmax        = float(invar['enmax']);
@@ -454,8 +456,6 @@ if isfile("invar.in"):
 	npoles       =   int(invar['npoles']);
 	flag_calc_gw =   int(invar['calc_gw']);
 	flag_calc_exp=   int(invar['calc_exp']);
-	a_extinf     = float(invar['a_extinf']);
-	extinf       =   int(invar['extinf']);
 	efermi       = float(invar['efermi']);
 else : 
 	print "Invar file not found (invar.in). Impossible to continue."
@@ -465,6 +465,8 @@ nband = 1 + maxband - minband;
 print " minband =", minband;
 print " maxband =", maxband;
 print " nband =", nband;
+print " minkpt =", minkpt;
+print " maxkpt =", maxkpt;
 print " nkpt =", nkpt;
 print " enmin =", enmin;
 print " enmax =", enmax;
@@ -613,7 +615,7 @@ if flag_calc_exp == 1:
 	ftot=np.zeros((np.size(enexp)),order='Fortran')
 	nen = np.size(enexp)
 	tmpf = np.zeros((nen), order='Fortran')
-	# EXTRINSIC EFFECTS
+	# With extrinsic effects
 	if extinf == 1:
 		from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
 		for ik in xrange(nkpt):
@@ -653,8 +655,6 @@ if flag_calc_exp == 1:
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
 				ftot = ftot + tmpf
-				#plt.plot(enexp,ftot,label="ftot");
-				#plt.plot(enexp,tmpf1,label="ftot");
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
