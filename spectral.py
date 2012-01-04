@@ -702,13 +702,13 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib] # + w_extinf[ik,ib]/2 # extinf width added
 				#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
 				#ftot += tmpf
-				tmpf = occ[ikeff,ibeff]*f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
+				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
 				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
-				ftot = ftot + tmpf
+				ftot = ftot + occ[ikeff,ibeff]*tmpf
 	else: # extinf == 0
 		from extmod_spf_mpole import f2py_calc_spf_mpole
 		for ik in xrange(nkpt):
@@ -723,13 +723,13 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib]
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
-				tmpf = occ[ikeff,ibeff]*f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+				tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
-				ftot = ftot + tmpf
+				ftot = ftot + occ[ikeff,ibeff]*tmpf
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
