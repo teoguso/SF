@@ -57,10 +57,10 @@ def resize_en(preen, nbin) :
 	"""
 	import numpy as np
 	nbin = int(nbin)
-	if np.size(preen) < float( 2 * nbin ) :
+	if np.size(preen) < float( 6 * nbin ) :
 		print " X-axis grid is too coarse for so many poles."
 		print " Refining grid..."
-		nx = 4*nbin+1
+		nx = 6*nbin+1
 		print " Old dx = %g, new dx = %g." % (abs(preen[-1]-preen[0])/(np.size(preen)-1),abs(preen[-1]-preen[0])/nx)
 		en = np.linspace(preen[0], preen[-1], nx)
 	else :
@@ -183,7 +183,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 		print " gi, omegai:", tmpgi, tmpomegai 
 		ibound += 1
 	else :
-		print " ibound has a not-compliant value. Cannot continue. ibound:", ibound
+		print " ibound has a non-compliant value. Cannot continue. ibound:", ibound
 		sys.exit(1)
 	omegai = np.array(omegai)
 	gi = np.array(gi)
