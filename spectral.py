@@ -66,9 +66,7 @@ def read_hartree():
 		print " Auxiliary file not found (hartree/E_lda/Vxc). Impossible to continue."
 		sys.exit(1)
 	return hartree
-hartree = read_hartree()
-# End read_hartree()
-#
+
 def read_wtk():
 	"""
 	This function takes the file 'wtk.dat'
@@ -90,8 +88,30 @@ def read_wtk():
 	wtk = np.array(wtk);
 	return wtk
 
-def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
+def read_occ(nkpt,nband):
 	"""
+	This function takes the file 'occ.dat'
+	and creates an array containing the 
+	occupation number for each state. 
+	This array is returned.
+	All input files are supposed to be ordered in a 
+	'nkpt x nband' fashion.
+	"""
+	if isfile("occ.dat"):
+		occfile = open("occ.dat");
+		occ = [];
+		for line in occfile.readlines():
+			occ.append(map(float,line.split()));
+		occfile.close()
+		occ = np.array(occ)
+	else : 
+		print " Auxiliary file not found (occ.dat). "
+		print " Setting all occupations to 2.0."
+		occ = 2.0*np.ones((nkpt,nband))
+	return occ                             	
+                                               	
+def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
+	"""                                    	
 	This function reads the real and imaginary parts of the self energy
 	$\Sigma(\omega)$ from the file _SIG for the given bands and k points.
 	It returns numpy arrays containing the energies, the real and the 
@@ -500,8 +520,12 @@ print " P prefactor:", pfac
 # Max energy in spectrum
 # TODO: write a function to read this parameter from a file (Fermi energy?)
 #enmax = 15. # eV
+# ====== READING HARTREE ===== #
+hartree = read_hartree()
 # ======== READING WTK ======= #
 wtk = read_wtk()
+# ======== READING OCC ======= #
+occ = read_occ(nkpt,nband)
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
