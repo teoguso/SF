@@ -562,12 +562,13 @@ else :
 	print "Invar file not found (invar.in). Impossible to continue."
 	sys.exit(1)
 print "Done."
-nband = 1 + maxband - minband;
 print " minband =", minband;
 print " maxband =", maxband;
+nband = 1 + maxband - minband;
 print " nband =", nband;
 print " minkpt =", minkpt;
 print " maxkpt =", maxkpt;
+nkpt = 1 + maxkpt - minkpt;
 print " nkpt =", nkpt;
 print " enmin =", enmin;
 print " enmax =", enmax;
@@ -649,7 +650,7 @@ if flag_calc_exp == 1:
 	for ik in xrange(nkpt):
 		for ib in xrange(nband):
 			print " ik, ib", ik, ib
-			interpims = interp1d(en, ims[ik,ib,:], kind = 'linear', axis =  2)
+			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			# Here we take the curve starting from eqp and then we invert it
 			# so as to have it defined on the positive x axis
 			# and so that the positive direction is in the 
