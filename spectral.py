@@ -36,6 +36,7 @@ def read_hartree():
 	"""
 # Reading Hartree energies
 # TODO: write a function to read the parameters from not ad-hoc files
+	import numpy as np;
 	if isfile("hartree.dat"):
 		print " Reading file hartree.dat... ",
 		hartreefile = open("hartree.dat");
@@ -76,6 +77,7 @@ def read_wtk():
 	The input file is supposed to be a single column of
 	nkpt elements. 
 	"""
+	import numpy as np;
 	if isfile("wtk.dat"):
 		wtkfile = open("wtk.dat");
 	else : 
@@ -97,6 +99,7 @@ def read_occ(maxkpt,maxband):
 	All input files are supposed to be ordered in a 
 	'nkpt x nband' fashion.
 	"""
+	import numpy as np;
 	if isfile("occ.dat"):
 		occfile = open("occ.dat");
 		occ = [];
@@ -117,6 +120,7 @@ def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
 	It returns numpy arrays containing the energies, the real and the 
 	imaginary part of the self energy.
 	"""
+	import numpy as np;
 	if isfile(sigfilename):
 		insigfile = open(sigfilename);
 	else:
@@ -218,6 +222,7 @@ def read_cross_sections(penergy):
 	using the cs array would have to be changed accordingly. 
 	cs array is returned. 
 	"""
+	import numpy as np;
 	print " ### Reading cross sections...  "
 	csfilename = "cs"+str(penergy)+".dat"
 	if isfile(csfilename):
@@ -253,6 +258,7 @@ def read_band_type_sym(sfac,pfac,nband):
 	number of band types that are considered (s and p for now). 
 	sp numpy array is returned.
 	"""
+	import numpy as np;
 	print " Reading s bands file... ",
 	if isfile("s.dat"):
 		sfile =  open("s.dat",'r')
@@ -303,6 +309,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree):
 	and just return spfkb as an output variable. 
 	spf (GW spectral function) is returned.
 	"""
+	import numpy as np;
 	nkpt = maxkpt-minkpt+1
 	nband = maxband-minband+1
 	newdx = 0.01
@@ -365,6 +372,7 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims):
 	The function find_eqp_resigma() is used here.
 	eqp and imeqp are returned. 
 	"""
+	import numpy as np;
 	eqp = np.zeros((nkpt,nband))
 	imeqp = np.zeros((nkpt,nband))
 	for ik in xrange(nkpt):
@@ -383,63 +391,67 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims):
 	return eqp, imeqp
 
 def calc_extinf_corrections(extinfname,ampole,omegampole):
-		#extinfname = "a_wp.dat"
-		print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
-		# Here we add the extrinsic contribution. 
-		# N.B.: It has to be renormalized to the number of poles!!!
-		# The data are interpolated linearly with a numerical function. 
-		# The fit curve passes by the origin. 
-		from multipole import getdata_file #, write_f_as_sum_of_poles
-		en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
-		newen_ei = []
-		newen_ei.append(0.0)
-		for x in en_ei.tolist():
-			newen_ei.append(x)
-		newen_ei = np.array(newen_ei)
-		newa_ei = []
-		newa_ei.append(0.0)
-		for x in aextinf.tolist():
-			newa_ei.append(x)
-		newa_ei = np.array(newa_ei)
-		# a_int from the model is in the third column
-		en_ei, aint = getdata_file(origdir+"/"+str(extinfname),3)
-		newa_int = []
-		a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
-		newa_int.append(a_int_zero)
-		for x in aint.tolist():
-			newa_int.append(x)
-		newa_int = np.array(newa_int)
-		# broadening from the model is in the fourth column
-		en_ei, width = getdata_file(origdir+"/"+str(extinfname),4)
-		newwmod = []
-		w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
-		newwmod.append(w_zero)
-		for x in width.tolist():
-			newwmod.append(x)
-		newwmod = np.array(newwmod)
-		interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis =  2)
-		w_extinf = ampole.copy()
-		print "omega_p, a_extinf, a_int:"
-		print newen_ei
-		print newa_ei
-		print newa_ei/newa_int
-		#print en_ei, newenexin
-		#print aextinf, newaexin
-		interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
-		amp_exinf = ampole.copy()
-		#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
-		for ik in xrange(nkpt):
-			for ib in xrange(nband):
-				#tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
-				w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
-				tmpextinf = interpextinf(omegampole[ik,ib]) # 
-				amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
-		return amp_exinf, w_extinf
+	"""
+	# Here we add the extrinsic contribution. 
+	# N.B.: It has to be renormalized to the number of poles!!!
+	# The data are interpolated linearly with a numerical function. 
+	# The fit curve passes by the origin. 
+	"""
+	import numpy as np;
+	from multipole import getdata_file #, write_f_as_sum_of_poles
+	#extinfname = "a_wp.dat"
+	print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
+	en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
+	newen_ei = []
+	newen_ei.append(0.0)
+	for x in en_ei.tolist():
+		newen_ei.append(x)
+	newen_ei = np.array(newen_ei)
+	newa_ei = []
+	newa_ei.append(0.0)
+	for x in aextinf.tolist():
+		newa_ei.append(x)
+	newa_ei = np.array(newa_ei)
+	# a_int from the model is in the third column
+	en_ei, aint = getdata_file(origdir+"/"+str(extinfname),3)
+	newa_int = []
+	a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
+	newa_int.append(a_int_zero)
+	for x in aint.tolist():
+		newa_int.append(x)
+	newa_int = np.array(newa_int)
+	# broadening from the model is in the fourth column
+	en_ei, width = getdata_file(origdir+"/"+str(extinfname),4)
+	newwmod = []
+	w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
+	newwmod.append(w_zero)
+	for x in width.tolist():
+		newwmod.append(x)
+	newwmod = np.array(newwmod)
+	interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis =  2)
+	w_extinf = ampole.copy()
+	print "omega_p, a_extinf, a_int:"
+	print newen_ei
+	print newa_ei
+	print newa_ei/newa_int
+	#print en_ei, newenexin
+	#print aextinf, newaexin
+	interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
+	amp_exinf = ampole.copy()
+	#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
+	for ik in xrange(nkpt):
+		for ib in xrange(nband):
+			#tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
+			w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
+			tmpextinf = interpextinf(omegampole[ik,ib]) # 
+			amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
+	return amp_exinf, w_extinf
 
 def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
 	"""
 	This function calculates the exponential spectral function. 
 	"""
+	import numpy as np;
 	ftot = np.zeros((np.size(enexp)))
 	tmpf1=np.zeros((nenexp))
 	tmpf2=np.zeros((nenexp))
