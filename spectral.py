@@ -88,7 +88,7 @@ def read_wtk():
 	wtk = np.array(wtk);
 	return wtk
 
-def read_occ(nkpt,nband):
+def read_occ(maxkpt,maxband):
 	"""
 	This function takes the file 'occ.dat'
 	and creates an array containing the 
@@ -107,9 +107,9 @@ def read_occ(nkpt,nband):
 	else : 
 		print " Auxiliary file not found (occ.dat). "
 		print " Setting all occupations to 2.0."
-		occ = 2.0*np.ones((nkpt,nband))
+		occ = 2.0*np.ones((maxkpt,maxband))
 	return occ                             	
-                                               	
+
 def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
 	"""                                    	
 	This function reads the real and imaginary parts of the self energy
@@ -294,7 +294,7 @@ def read_band_type_sym(sfac,pfac,nband):
 	#print "sp:",sp
 	return sp
 
-def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
+def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree):
 	"""
 	Macro-function calling instructions necessary to calculate 
 	the GW spectral function. 
@@ -319,15 +319,15 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 	# Here we interpolate re and im sigma
 	# for each band and k point
 	for ik in xrange(nkpt):
-		print " k point = %02d " % (minkpt+ik+1)
+		ikeff = minkpt+ik-1
+		print " k point = %02d " % (ikeff+1)
 		for ib in xrange(nband):
-			#print " Outfile: ",outnamekb
-			# Parti reali e immaginarie interpolate
+			ibeff = minband+ib-1
 			interpres = interp1d(en, res[ik,ib], kind = 'linear', axis =  2)
 			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			redenom = newen - hartree[ik,ib] - interpres(newen)
 	                tmpim = interpims(newen)
-	                spfkb = wtk[ik] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+	                spfkb = wtk[ikeff] * pdos[ibeff] * occ[ikeff,ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
 			outnamekb = "spf_gw-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+".dat"
 			outfilekb = open(outnamekb,'w')
@@ -500,6 +500,7 @@ if isfile("invar.in"):
 	npoles       =   int(invar['npoles']);
 	flag_calc_gw =   int(invar['calc_gw']);
 	flag_calc_exp=   int(invar['calc_exp']);
+	extinf       = float(invar['extinf']);
 	efermi       = float(invar['efermi']);
 else : 
 	print "Invar file not found (invar.in). Impossible to continue."
@@ -525,7 +526,7 @@ hartree = read_hartree()
 # ======== READING WTK ======= #
 wtk = read_wtk()
 # ======== READING OCC ======= #
-occ = read_occ(nkpt,nband)
+occ = read_occ(maxkpt,maxband)
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
@@ -553,7 +554,7 @@ chdir(newdir)
 ### ===== GW SPECTRAL FUNCTION ====== ###
 # GW spectral function part
 if flag_calc_gw == 1:
-	newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree)
+	newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree)
 	#calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims)
 		### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
 	print " ### Writing out A(\omega)_GW...  "
@@ -589,67 +590,74 @@ if flag_calc_exp == 1:
 		outfile3.write("\n")
 	outfile2.close()
 	outfile3.close()
-	from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
-	print " ### ================== ###"
-	print " ###    Multipole fit   ###"
-	print " Number of poles:", npoles
-	omegampole =  np.zeros((nkpt,nband,npoles))
-	ampole =  np.zeros((nkpt,nband,npoles))
-	for ik in xrange(nkpt):
-		for ib in xrange(nband):
-			print " ik, ib", ik, ib
-			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
-			# Here we take the curve starting from eqp and then we invert it
-			# so as to have it defined on the positive x axis
-			# and so that the positive direction is in the 
-			# increasing direction of the array index
-			#en3 = en[en<=eqp[ik,ib]]
-			en3 = en[en<=efermi]
-			im3 = interpims(en3)/np.pi # This is what should be fitted
-			#en3 = en3 - eqp[ik,ib]
-			en3 = en3 - efermi
-			en3 = -en3[::-1] 
-			im3 = im3[::-1]
-			omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
-			omegampole[ik,ib] = omegai + eqp[ik,ib] - efermi
-			ampole[ik,ib] = gi/(omegampole[ik,ib]) # The weights should not be affected by the shift
-			print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j."
-			print " 1/pi*\int\Sigma   =", np.trapz(im3,en3)
-			print " \sum_j^N\lambda_j =", np.pi/2*np.sum(gi*omegai)
-			#plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
-			#plt.show(); sys.exit(1)
-			#e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
-	# Writing out a_j e omega_j
-	print " ### Writing out a_j and omega_j..."
-	outname = "a_j_mp"+str(npoles)+".dat"
-	outfile = open(outname,'w')
-	outname = "omega_j_mp"+str(npoles)+".dat"
-	outfile2 = open(outname,'w')
-	for ipole in xrange(npoles):
+	if npoles != 0:
+		from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
+		print " ### ================== ###"
+		print " ###    Multipole fit   ###"
+		print " Number of poles:", npoles
+		omegampole =  np.zeros((nkpt,nband,npoles))
+		ampole =  np.zeros((nkpt,nband,npoles))
 		for ik in xrange(nkpt):
+			ikeff=minkpt+ik-1
 			for ib in xrange(nband):
-				outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-				outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
-			outfile.write("\n")
-			outfile2.write("\n")
-		outfile.write("\n")
-		outfile2.write("\n")
-	outfile.close()
-	outfile2.close()
-	# Extrinsic and interference contribution
-	if extinf == 1:
-		extinfname = "a_wp.dat"
-		amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
-		print " ### Writing out a_j_extinf..."
-		outname = "a_j_mp"+str(npoles)+"_extinf.dat"
+				ibeff=minband+ib-1
+				print " ik, ib", ik, ib
+				interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+				# Here we take the curve starting from eqp and then we invert it
+				# so as to have it defined on the positive x axis
+				# and so that the positive direction is in the 
+				# increasing direction of the array index
+				#en3 = en[en<=eqp[ik,ib]]
+				en3 = en[en<=efermi]
+				im3 = interpims(en3)/np.pi # This is what should be fitted
+				#en3 = en3 - eqp[ik,ib]
+				en3 = en3 - efermi
+				en3 = -en3[::-1] 
+				im3 = im3[::-1]
+				omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
+				omegampole[ik,ib] = omegai + eqp[ik,ib] - efermi
+				ampole[ik,ib] = gi/(omegampole[ik,ib])**2 # The weights should not be affected by the shift
+				print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j."
+				print " 1/pi*\int\Sigma   =", np.trapz(im3,en3)
+				print " \sum_j^N\lambda_j =", np.sum(gi)
+				#plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
+				#plt.show(); sys.exit(1)
+				#e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
+		# Writing out a_j e omega_j
+		print " ### Writing out a_j and omega_j..."
+		outname = "a_j_mp"+str(npoles)+".dat"
 		outfile = open(outname,'w')
+		outname = "omega_j_mp"+str(npoles)+".dat"
+		outfile2 = open(outname,'w')
 		for ipole in xrange(npoles):
 			for ik in xrange(nkpt):
 				for ib in xrange(nband):
-					outfile.write("%10.5f"  % (amp_exinf[ik,ib,ipole]))
+					outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+					outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
 				outfile.write("\n")
+				outfile2.write("\n")
 			outfile.write("\n")
+			outfile2.write("\n")
 		outfile.close()
+		outfile2.close()
+		# Extrinsic and interference contribution
+		if extinf == 1:
+			extinfname = "a_wp.dat"
+			amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
+			print " ### Writing out a_j_extinf..."
+			outname = "a_j_mp"+str(npoles)+"_extinf.dat"
+			outfile = open(outname,'w')
+			for ipole in xrange(npoles):
+				for ik in xrange(nkpt):
+					for ib in xrange(nband):
+						outfile.write("%10.5f"  % (amp_exinf[ik,ib,ipole]))
+					outfile.write("\n")
+				outfile.write("\n")
+			outfile.close()
+	else:
+		omegampole =  np.zeros((nkpt,nband))
+		ampole =  np.zeros((nkpt,nband))
+
 	# Time section
 	import time
 	e0=time.time()
@@ -670,9 +678,11 @@ if flag_calc_exp == 1:
 	if extinf == 1:
 		from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
 		for ik in xrange(nkpt):
+			ikeff=minkpt+ik-1
 			for ib in xrange(nband):
+				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(amp_exinf[ik,ib,:])) * wtk[ik] * pdos[ib] / np.pi * abs( imeqp[ik,ib] )
+				prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*occ[ikeff,ibeff]*abs(imeqp[ik,ib])
 				akb=amp_exinf[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -680,7 +690,7 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib] # + w_extinf[ik,ib]/2 # extinf width added
 				#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
 				#ftot += tmpf
-				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
+				tmpf = occ[ikeff,ibeff]*f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
 				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
@@ -690,16 +700,18 @@ if flag_calc_exp == 1:
 	else: # extinf == 0
 		from extmod_spf_mpole import f2py_calc_spf_mpole
 		for ik in xrange(nkpt):
+			ikeff=minkpt+ik-1
 			for ib in xrange(nband):
+				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(ampole[ik,ib])) * wtk[ik] * pdos[ib] / np.pi * abs( imeqp[ik,ib] )
+				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*occ[ikeff,ibeff]*abs(imeqp[ik,ib])
 				akb=ampole[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				eqpkb=eqp[ik,ib]
 				imkb=imeqp[ik,ib]
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
-				tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+				tmpf = occ[ikeff,ibeff]*f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
