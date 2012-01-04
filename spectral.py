@@ -353,7 +353,7 @@ def read_band_type_sym(sfac,pfac,nband):
 	#print "sp:",sp
 	return sp
 
-def calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims):
+def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 	"""
 	Macro-function calling instructions necessary to calculate 
 	the GW spectral function. 
@@ -362,6 +362,8 @@ def calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims):
 	and just return spfkb as an output variable. 
 	spf (GW spectral function) is returned.
 	"""
+	nkpt = maxkpt-minkpt+1
+	nband = maxband-minband+1
 	newdx = 0.01
 	if enmin < en[0] and enmax > en[-1]:  
 		newen = np.arange(en[0],en[-1],newdx)
@@ -375,18 +377,18 @@ def calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims):
 	spftot = np.zeros((np.size(newen)));
 	# Here we interpolate re and im sigma
 	# for each band and k point
-	for ik in xrange(np.size(ims[:,0,0])):
-		print " k point = %02d " % (ik+1)
-		for ib in xrange(np.size(ims[0,:,0])):
+	for ik in xrange(nkpt):
+		print " k point = %02d " % (minkpt+ik+1)
+		for ib in xrange(nband):
 			#print " Outfile: ",outnamekb
 			# Parti reali e immaginarie interpolate
-			interpres = interp1d(en, res[ik,ib,:], kind = 'linear', axis =  2)
-			interpims = interp1d(en, ims[ik,ib,:], kind = 'linear', axis =  2)
+			interpres = interp1d(en, res[ik,ib], kind = 'linear', axis =  2)
+			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			redenom = newen - hartree[ik,ib] - interpres(newen)
 	                tmpim = interpims(newen)
 	                spfkb = wtk[ik] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
-			outnamekb = "spf_gw-k"+str("%02d"%(ik+1))+"-b"+str("%02d"%(ib+1))+".dat"
+			outnamekb = "spf_gw-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+".dat"
 			outfilekb = open(outnamekb,'w')
 			for ien in xrange(np.size(newen)) :
 				outfilekb.write("%8.4f %12.8f %12.8f %12.8f\n" % (newen[ien], spfkb[ien], redenom[ien], tmpim[ien]))
@@ -606,13 +608,14 @@ chdir(newdir)
 ### ===== GW SPECTRAL FUNCTION ====== ###
 # GW spectral function part
 if flag_calc_gw == 1:
-	newen, spftot = calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims)
+	newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree)
+	#calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims)
 		### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
 	print " ### Writing out A(\omega)_GW...  "
 	outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
 	outfile = open(outname,'w')
 	for i in xrange(np.size(newen)):
-		outfile.write("%7.4f   %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
+		outfile.write("%7.4f %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
 	outfile.close()
 	print " A(\omega)_GW written in", outname
 	plt.plot(newen,spftot,label="ftot_gw");
@@ -709,12 +712,12 @@ if flag_calc_exp == 1:
 	elaps1=time.time() - e0
 	cpu1=time.clock() - c0
 	print " Starting time (elaps, cpu):", elaps1, cpu1
+	print " Calculating multipole exponential A..."
 	dxexp=0.05
 	enexp=np.arange(enmin,enmax,dxexp)
 	nenexp=np.size(enexp)
 	ftot=np.zeros((nenexp))
 	f=np.zeros((nkpt,nband,nenexp))
-	print " Calculating multipole exponential A..."
 	ftot=np.zeros((np.size(enexp)),order='Fortran')
 	nen = np.size(enexp)
 	tmpf = np.zeros((nen), order='Fortran')
@@ -733,7 +736,7 @@ if flag_calc_exp == 1:
 				#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
 				#ftot += tmpf
 				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
-				outnamekb = "spf_exp-k"+str("%02d"%(ik+1))+"-b"+str("%02d"%(ib+1))+"_mpole"+str(npoles)+"_extinf.dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
@@ -752,7 +755,7 @@ if flag_calc_exp == 1:
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
 				tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
-				outnamekb = "spf_exp-k"+str("%02d"%(ik+1))+"-b"+str("%02d"%(ib+1))+"_mpole"+str(npoles)+".dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
