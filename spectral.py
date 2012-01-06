@@ -34,7 +34,6 @@ def read_hartree():
 	All input files are supposed to be ordered in a 
 	'nkpt x nband' fashion.
 	"""
-# Reading Hartree energies
 # TODO: write a function to read the parameters from not ad-hoc files
 	import numpy as np;
 	if isfile("hartree.dat"):
@@ -300,7 +299,7 @@ def read_band_type_sym(sfac,pfac,nband):
 	#print "sp:",sp
 	return sp
 
-def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree):
+def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 	"""
 	Macro-function calling instructions necessary to calculate 
 	the GW spectral function. 
@@ -334,7 +333,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree):
 			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			redenom = newen - hartree[ik,ib] - interpres(newen)
 	                tmpim = interpims(newen)
-	                spfkb = wtk[ikeff] * pdos[ibeff] * occ[ikeff,ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+	                spfkb = wtk[ikeff] * pdos[ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
 			outnamekb = "spf_gw-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+".dat"
 			outfilekb = open(outnamekb,'w')
@@ -535,6 +534,7 @@ print " P prefactor:", pfac
 #enmax = 15. # eV
 # ====== READING HARTREE ===== #
 hartree = read_hartree()
+hartree = hartree - efermi
 # ======== READING WTK ======= #
 wtk = read_wtk()
 # ======== READING OCC ======= #
@@ -542,6 +542,8 @@ occ = read_occ(maxkpt,maxband)
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
+# Reset wrt efermi
+en = en - efermi
 print " ### nkpt, nband:", nkpt, nband
 print " # ------------------------------------------------ # ";
 # ======== CROSS SECTIONS ======= #
@@ -566,7 +568,7 @@ chdir(newdir)
 ### ===== GW SPECTRAL FUNCTION ====== ###
 # GW spectral function part
 if flag_calc_gw == 1:
-	newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,occ,en,res,ims,hartree)
+	newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree)
 	#calc_spf_gw(nkpt,nband,wtk,pdos,en,res,ims)
 		### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
 	print " ### Writing out A(\omega)_GW...  "
@@ -723,13 +725,17 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib]
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
-				tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+				tmpf = 0.0*tmpf
+				if eqpkb <= 0.0:
+					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+				else:
+					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
 				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
-				ftot = ftot + occ[ikeff,ibeff]*tmpf
+				ftot = ftot + occ[ikeff,ibeff]/2*tmpf
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2

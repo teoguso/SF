@@ -57,10 +57,10 @@ def resize_en(preen, nbin) :
 	"""
 	import numpy as np
 	nbin = int(nbin)
-	if np.size(preen) < float( 6 * nbin ) :
-		print " X-axis grid is too coarse for so many poles."
+	if np.size(preen) < float( 2 * nbin ) :
+		#print " X-axis grid is too coarse for so many poles."
 		print " Refining grid..."
-		nx = 6*nbin+1
+		nx = 2*nbin+1
 		print " Old dx = %g, new dx = %g." % (abs(preen[-1]-preen[0])/(np.size(preen)-1),abs(preen[-1]-preen[0])/nx)
 		en = np.linspace(preen[0], preen[-1], nx)
 	else :
@@ -112,79 +112,88 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 	# Here we calculate the bins' bounds
 	# First we want the x-axis grid to be finer than the density of poles
 	en = resize_en(preen, nbin)
-	#print " ### ========================= ###"
-	#print " ###   Calculating Delta_i     ###"
-	bounds = []
-	ibound = 0
-	gi = []
-	omegai = []
-	istart = 0
-	funcint = 0
-	bounds.append(en[istart])
-	x0 = en[istart]
-	x1 = x0
-	# Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
-	ngaussint = 20
-	print " Getting poles...",
-	for i in xrange(1,np.size(en)) : 
-		x2 = en[i]
-		x3 = ( x1 + x2 ) / 2
-		(tmpint,dummy) = fixed_quad(interpdata, x0, x2,(), ngaussint)
-		if tmpint > partint :
-			(tmpint,dummy) = fixed_quad(interpdata, x0, x3,(), ngaussint)
-			while abs( ( tmpint - partint ) / partint ) > 1E-06 :
-				if tmpint < partint :
-					x1 = x3
-					x3 = ( x3 + x2 ) / 2
-				else :
-					x2 = x3
-					x3 = ( x1 + x3 ) / 2
+	bdensity = 1
+	iboundcheck = 1
+	while iboundcheck == 1:
+		#print " ### ========================= ###"
+		#print " ###   Calculating Delta_i     ###"
+		bounds = []
+		ibound = 0
+		gi = []
+		omegai = []
+		istart = 0
+		funcint = 0
+		bounds.append(en[istart])
+		x0 = en[istart]
+		x1 = x0
+		# Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
+		ngaussint = 20
+		print " Getting poles...",
+		for i in xrange(1,np.size(en)) : 
+			x2 = en[i]
+			x3 = ( x1 + x2 ) / 2
+			(tmpint,dummy) = fixed_quad(interpdata, x0, x2,(), ngaussint)
+			if tmpint > partint :
 				(tmpint,dummy) = fixed_quad(interpdata, x0, x3,(), ngaussint)
-			#print " Bound found. ibound, en, tmpint:", ibound, x3, tmpint
-			bounds.append( x3 )
+				while abs( ( tmpint - partint ) / partint ) > 1E-06 :
+					if tmpint < partint :
+						x1 = x3
+						x3 = ( x3 + x2 ) / 2
+					else :
+						x2 = x3
+						x3 = ( x1 + x3 ) / 2
+					(tmpint,dummy) = fixed_quad(interpdata, x0, x3,(), ngaussint)
+				#print " Bound found. ibound, en, tmpint:", ibound, x3, tmpint
+				bounds.append( x3 )
+				# Formula to calculate g_i
+				tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
+				#gi.append(float( 2. / np.pi * tmpint2))
+				tmpgi = 2. / np.pi * tmpint2 
+				gi.append( tmpgi )
+				# Formula to calculate omega_i
+				tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
+				tmpomegai = np.sqrt( 2/np.pi * tmpint / tmpgi ) 
+				omegai.append( tmpomegai )
+				#print " gi, omegai:", tmpgi, tmpomegai # Test print
+				# Reset variables
+				x0 = x3
+				istart = i
+				ibound += 1
+		print "Done."
+		# Add last value as the upper bound
+		print " ibound       = %4i (should be %g) " % (ibound, nbin)
+		print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+		print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+		if ibound == nbin : # i.e. if it is as it is supposed to be
+			print " ibound == nbin, Fixing last value"
+			bounds[-1] = en[-1]
+			bounds = np.array(bounds)
+			iboundcheck = 0
+		# Prevent approximate integration to miss g_i and omega_i for last interval
+		elif ibound == nbin - 1 :  # i.e. supposedly there is one bound missing ( ibound == nbin -1 )
+			print " ibound == nbin - 1. Calculating parameters for last bin..."
+			bounds.append(en[-1])
+			bounds = np.array(bounds)
+			x0 = bounds[-2]
+			x3 = bounds[-1]
 			# Formula to calculate g_i
 			tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
-			#gi.append(float( 2. / np.pi * tmpint2))
 			tmpgi = 2. / np.pi * tmpint2 
 			gi.append( tmpgi )
 			# Formula to calculate omega_i
 			tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
-			tmpomegai = np.sqrt( 2/np.pi * tmpint / tmpgi ) 
+			tmpomegai = np.sqrt( tmpint / tmpint2 ) 
 			omegai.append( tmpomegai )
-			#print " gi, omegai:", tmpgi, tmpomegai # Test print
-			# Reset variables
-			x0 = x3
-			istart = i
+			print " gi, omegai:", tmpgi, tmpomegai 
 			ibound += 1
-	print "Done."
-	# Add last value as the upper bound
-	print " ibound       = %4i (should be %g) " % (ibound, nbin)
-	print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-	print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
-	if ibound == nbin : # i.e. if it is as it is supposed to be
-		print " ibound == nbin, Fixing last value"
-		bounds[-1] = en[-1]
-		bounds = np.array(bounds)
-	# Prevent approximate integration to miss g_i and omega_i for last interval
-	elif ibound == nbin - 1 :  # i.e. supposedly there is one bound missing ( ibound == nbin -1 )
-		print " ibound == nbin - 1. Calculating parameters for last bin..."
-		bounds.append(en[-1])
-		bounds = np.array(bounds)
-		x0 = bounds[-2]
-		x3 = bounds[-1]
-		# Formula to calculate g_i
-		tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
-		tmpgi = 2. / np.pi * tmpint2 
-		gi.append( tmpgi )
-		# Formula to calculate omega_i
-		tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
-		tmpomegai = np.sqrt( tmpint / tmpint2 ) 
-		omegai.append( tmpomegai )
-		print " gi, omegai:", tmpgi, tmpomegai 
-		ibound += 1
-	else :
-		print " ibound has a non-compliant value. Cannot continue. ibound:", ibound
-		sys.exit(1)
+			iboundcheck = 0
+		else :
+			print " ibound has a non-compliant value. ibound:", ibound
+			iboundcheck = 1
+			bdensity*=2
+			print " Will retry with a higher bdensity:", bdensity
+			en = resize_en(preen, bdensity*nbin)
+			#sys.exit(1)
 	omegai = np.array(omegai)
 	gi = np.array(gi)
 	# Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
