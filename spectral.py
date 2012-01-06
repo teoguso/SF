@@ -335,7 +335,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 	                tmpim = interpims(newen)
 	                spfkb = wtk[ikeff] * pdos[ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
-			outnamekb = "spf_gw-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+".dat"
+			outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
 			outfilekb = open(outnamekb,'w')
 			for ien in xrange(np.size(newen)) :
 				outfilekb.write("%8.4f %12.8f %12.8f %12.8f\n" % (newen[ien], spfkb[ien], redenom[ien], tmpim[ien]))
@@ -708,7 +708,7 @@ if flag_calc_exp == 1:
 				#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
 				#ftot += tmpf
 				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
-				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+"_extinf.dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
@@ -733,7 +733,7 @@ if flag_calc_exp == 1:
 					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 				else:
 					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
-				outnamekb = "spf_exp-k"+str("%02d"%(minkpt+ik+1))+"-b"+str("%02d"%(minband+ib+1))+"_mpole"+str(npoles)+".dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
