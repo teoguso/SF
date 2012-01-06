@@ -585,6 +585,13 @@ if flag_calc_gw == 1:
 ### ===================================== ###
 ### ===== EXPONENTIAL SPECTRAL FUNCTION ====== ###
 if flag_calc_exp == 1:
+	# Time section
+	import time
+	e0=time.time()
+	c0=time.clock()
+	elaps1=time.time() - e0
+	cpu1=time.clock() - c0
+	print str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
 	print " ### Calculation of exponential A...  "
 	### ==== Finding zero in res --> Eqp ===== ###
 	print " Finding zeros in real parts..."
@@ -671,14 +678,10 @@ if flag_calc_exp == 1:
 	else:
 		omegampole =  np.zeros((nkpt,nband))
 		ampole =  np.zeros((nkpt,nband))
-
-	# Time section
-	import time
-	e0=time.time()
-	c0=time.clock()
-	elaps1=time.time() - e0
-	cpu1=time.clock() - c0
-	print " Starting time (elaps, cpu):", elaps1, cpu1
+	elaps2 = time.time() - elaps1 - e0
+	cpu2 = time.clock() - cpu1 - c0
+	#print elaps2, cpu2
+	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " Calculating multipole exponential A..."
 	dxexp=0.05
 	enexp=np.arange(enmin,enmax,dxexp)
@@ -739,7 +742,7 @@ if flag_calc_exp == 1:
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
-	print " Used time (elaps, cpu):", elaps2, cpu2
+	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " ### Writing out A(\omega)_exp...  "
 	if extinf == 1:
 		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_mp"+str(npoles)+"_extinf.dat"
