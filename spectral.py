@@ -534,7 +534,7 @@ print " P prefactor:", pfac
 #enmax = 15. # eV
 # ====== READING HARTREE ===== #
 hartree = read_hartree()
-hartree = hartree - efermi
+hartree = hartree # - efermi
 # ======== READING WTK ======= #
 wtk = read_wtk()
 # ======== READING OCC ======= #
@@ -543,7 +543,7 @@ occ = read_occ(maxkpt,maxband)
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
 # Reset wrt efermi
-en = en - efermi
+en = en # - efermi
 print " ### nkpt, nband:", nkpt, nband
 print " # ------------------------------------------------ # ";
 # ======== CROSS SECTIONS ======= #
@@ -690,7 +690,6 @@ if flag_calc_exp == 1:
 	f=np.zeros((nkpt,nband,nenexp))
 	ftot=np.zeros((np.size(enexp)),order='Fortran')
 	nen = np.size(enexp)
-	tmpf = np.zeros((nen), order='Fortran')
 	# With extrinsic effects
 	if extinf == 1:
 		from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
@@ -707,6 +706,7 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib] # + w_extinf[ik,ib]/2 # extinf width added
 				#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
 				#ftot += tmpf
+				tmpf = np.zeros((nen), order='Fortran')
 				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
 				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
@@ -728,9 +728,11 @@ if flag_calc_exp == 1:
 				imkb=imeqp[ik,ib]
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
-				tmpf = 0.0*tmpf
+				#tmpf = 0.0*tmpf
 				if eqpkb <= 0.0:
-					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+					#tmpf = np.zeros((nen), order='Fortran')
+					#tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+					tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				else:
 					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
 				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+".dat"
