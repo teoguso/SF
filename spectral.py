@@ -537,8 +537,6 @@ hartree = read_hartree()
 hartree = hartree # - efermi
 # ======== READING WTK ======= #
 wtk = read_wtk()
-# ======== READING OCC ======= #
-occ = read_occ(maxkpt,maxband)
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
@@ -698,7 +696,7 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*occ[ikeff,ibeff]*abs(imeqp[ik,ib])
+				prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*abs(imeqp[ik,ib])
 				akb=amp_exinf[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -713,7 +711,7 @@ if flag_calc_exp == 1:
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
-				ftot = ftot + occ[ikeff,ibeff]*tmpf
+				ftot = ftot + tmpf
 	else: # extinf == 0
 		from extmod_spf_mpole import f2py_calc_spf_mpole
 		for ik in xrange(nkpt):
@@ -721,7 +719,7 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*occ[ikeff,ibeff]*abs(imeqp[ik,ib])
+				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*abs(imeqp[ik,ib])
 				akb=ampole[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				eqpkb=eqp[ik,ib]
@@ -740,7 +738,7 @@ if flag_calc_exp == 1:
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
-				ftot = ftot + occ[ikeff,ibeff]/2*tmpf
+				ftot = ftot + tmpf
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
