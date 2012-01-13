@@ -112,6 +112,92 @@ def read_occ(maxkpt,maxband):
 		occ = 2.0*np.ones((maxkpt,maxband))
 	return occ                             	
 
+def read_sigfile2(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
+	"""                                    	
+	This function reads the real and imaginary parts of the self energy
+	$\Sigma(\omega)$ from the file _SIG for the given bands and k points.
+	It returns numpy arrays containing the energies, the real and the 
+	imaginary part of the self energy.
+	"""
+	import numpy as np;
+	if isfile(sigfilename):
+		insigfile = open(sigfilename);
+	else:
+		print "File "+sigfilename+" not found."
+		insigfile = open(raw_input("Self-energy file name (_SIG): "))
+	# We put the content of the file (lines) in this array
+	filelines = insigfile.readlines();
+	en=[];
+	# loop to prepare  the energy array
+	print " Reading array of energies from first k-point in _SIG file... ",
+	for line in filelines:
+		if line[0:3]=='# k':
+			continue
+		elif line[0:3]=='# b':
+			continue
+		else : 
+			data=map(float,line.split())
+			if data[0] <= enmax :
+				en.append(data[0])
+			else: break
+	print "Done."
+	print " Length of the energy array detected from _SIG file, first k point: "+str(len(en))
+	print " len(en): "+str(len(en))
+	en = np.array(en)
+	print " size(en): "+str(np.size(en))
+	dx = (en[-1]-en[0])/np.size(en)
+	print " dx:",dx
+	res = []
+	ims = []
+	ik=-1
+	for line in filelines:
+		if line[0:3] == "# k": 
+			nline=0
+			ik=ik+1
+			print " kpt # %02d" % (ik+1)
+			print line,
+			res.append([])
+			ims.append([])
+			continue
+		elif line[0:3] == "# b": print line,; continue
+		elif float(line.split()[0])>enmax: continue
+		else: 
+			tmplist = map(float,line.split())
+			del tmplist[0]
+			ib = 0
+			for i in xrange(len(tmplist)):
+				if i%3==0 and nline==0: 
+					res[ik].append([])
+					res[ik][ib].append(tmplist[i])
+				elif  i%3==0:
+					res[ik][ib].append(tmplist[i])
+				elif (i-1)%3==0 and nline==0 : 
+					ims[ik].append([])
+					ims[ik][ib].append(tmplist[i])
+				elif (i-1)%3==0 : 
+					ims[ik][ib].append(tmplist[i])
+				elif (i-2)%3==0: 
+					ib = ib+1
+					continue
+			nline+=1
+	res = np.array(res)
+	ims = np.array(ims)
+	ik2=0
+	ib2=0
+	dum1 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
+	dum2 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
+	for ik in xrange(minkpt-1,maxkpt):
+		ib2=0
+		for ib in xrange(minband-1,maxband):
+				#print "ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband
+				dum1[ik2,ib2]=res[ik,ib]
+				dum2[ik2,ib2]=ims[ik,ib]
+				ib2+=1
+		ik2+=1
+	res = dum1
+	ims = dum2
+	return en, res, ims
+
 def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
 	"""                                    	
 	This function reads the real and imaginary parts of the self energy
@@ -208,6 +294,7 @@ def read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
 					icol = icol + 1;
 					continue;
 		else: continue
+	#plt.plot(en,res[0,0]); plt.plot(en,ims[0,0]);plt.show();sys.exit(1)
 	return en, res, ims
 
 def read_cross_sections(penergy):
@@ -327,18 +414,20 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 	for ik in xrange(nkpt):
 		ikeff = minkpt+ik-1
 		print " k point = %02d " % (ikeff+1)
-		for ib in xrange(nband):
+		for ib in xrange(0,nband):
 			ibeff = minband+ib-1
 			interpres = interp1d(en, res[ik,ib], kind = 'linear', axis =  2)
 			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+	                tmpres = interpres(newen)
 			redenom = newen - hartree[ik,ib] - interpres(newen)
+			#print "ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib]
 	                tmpim = interpims(newen)
 	                spfkb = wtk[ikeff] * pdos[ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
 			outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
 			outfilekb = open(outnamekb,'w')
 			for ien in xrange(np.size(newen)) :
-				outfilekb.write("%8.4f %12.8f %12.8f %12.8f\n" % (newen[ien], spfkb[ien], redenom[ien], tmpim[ien]))
+				outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ien], redenom[ien], tmpres[ien], tmpim[ien]))
 			outfilekb.close()
 	return newen, spftot
 
@@ -539,7 +628,7 @@ hartree = hartree # - efermi
 wtk = read_wtk()
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
-en, res, ims = read_sigfile(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
+en, res, ims = read_sigfile2(sigfilename,enmax,minkpt,maxkpt,minband,maxband)
 # Reset wrt efermi
 en = en # - efermi
 print " ### nkpt, nband:", nkpt, nband
