@@ -796,7 +796,7 @@ if flag_calc_exp == 1:
 				#ftot += tmpf
 				tmpf = np.zeros((nen), order='Fortran')
 				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
-				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+"_extinf.dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf.dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
@@ -817,13 +817,13 @@ if flag_calc_exp == 1:
 				#tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				#print nen, np.size(enexp)
 				#tmpf = 0.0*tmpf
-				if eqpkb <= 0.0:
+				if eqpkb <= efermi:
 					tmpf = np.zeros((nen), order='Fortran')
 					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				else:
 					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
-				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_mpole"+str(npoles)+".dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+".dat"
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
@@ -835,13 +835,13 @@ if flag_calc_exp == 1:
 	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " ### Writing out A(\omega)_exp...  "
 	if extinf == 1:
-		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_mp"+str(npoles)+"_extinf.dat"
+		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
 		outfile = open(outname,'w')
 		for i in xrange(nenexp):
 			outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
 		outfile.close()
 	else: # extinf == 0
-		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_mp"+str(npoles)+".dat"
+		outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
 		outfile = open(outname,'w')
 		for i in xrange(nenexp):
 			outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
