@@ -734,7 +734,7 @@ if flag_calc_exp == 1:
 				#e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
 		# Writing out a_j e omega_j
 		print " ### Writing out a_j and omega_j..."
-		outname = "a_j_mp"+str(npoles)+".dat"
+		outname = "a_j_np"+str(npoles)+".dat"
 		outfile = open(outname,'w')
 		outname = "omega_j_mp"+str(npoles)+".dat"
 		outfile2 = open(outname,'w')
@@ -754,7 +754,7 @@ if flag_calc_exp == 1:
 			extinfname = "a_wp.dat"
 			amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
 			print " ### Writing out a_j_extinf..."
-			outname = "a_j_mp"+str(npoles)+"_extinf.dat"
+			outname = "a_j_np"+str(npoles)+"_extinf.dat"
 			outfile = open(outname,'w')
 			for ipole in xrange(npoles):
 				for ik in xrange(nkpt):
