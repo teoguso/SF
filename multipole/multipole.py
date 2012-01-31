@@ -4,7 +4,7 @@ Multipole fit module. It is callable as a stand-alone script.
 """
 
 
-def getdata_file(infilename,wantedcol=2):
+def getdata_file(infilename,wantedcol=1):
 	"""
 	This function opens a file with a given filename
 	and puts (as default) the first two 
@@ -17,7 +17,7 @@ def getdata_file(infilename,wantedcol=2):
 	infile = open(infilename)
 	preen = []
 	predata = []
-	ncol = wantedcol - 1
+	ncol = wantedcol 
 	for lines in infile : 
 		#print lines[0]
 		if lines[0] != "#" :

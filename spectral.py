@@ -422,7 +422,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,res,ims,hartree):
 			redenom = newen - hartree[ik,ib] - interpres(newen)
 			#print "ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib]
 	                tmpim = interpims(newen)
-	                spfkb = wtk[ikeff] * pdos[ibeff] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+	                spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
 			spftot += spfkb 
 			outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
 			outfilekb = open(outnamekb,'w')
@@ -483,13 +483,17 @@ def calc_extinf_corrections(extinfname,ampole,omegampole):
 	# Here we add the extrinsic contribution. 
 	# N.B.: It has to be renormalized to the number of poles!!!
 	# The data are interpolated linearly with a numerical function. 
-	# The fit curve passes by the origin. 
+	# The fit curve of ext+inf passes by the origin. 
+	The file structure is expected to be:
+	#  wp, aext, ainf, aint, width
 	"""
 	import numpy as np;
 	from multipole import getdata_file #, write_f_as_sum_of_poles
 	#extinfname = "a_wp.dat"
 	print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
-	en_ei, aextinf = getdata_file(origdir+"/"+str(extinfname))
+	en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
+	en_ei, ainf = getdata_file(origdir+"/"+str(extinfname),2)
+	aextinf = aext+ainf
 	newen_ei = []
 	newen_ei.append(0.0)
 	for x in en_ei.tolist():
@@ -736,7 +740,7 @@ if flag_calc_exp == 1:
 		print " ### Writing out a_j and omega_j..."
 		outname = "a_j_np"+str(npoles)+".dat"
 		outfile = open(outname,'w')
-		outname = "omega_j_mp"+str(npoles)+".dat"
+		outname = "omega_j_np"+str(npoles)+".dat"
 		outfile2 = open(outname,'w')
 		for ipole in xrange(npoles):
 			for ik in xrange(nkpt):
@@ -751,10 +755,10 @@ if flag_calc_exp == 1:
 		outfile2.close()
 		# Extrinsic and interference contribution
 		if extinf == 1:
-			extinfname = "a_wp.dat"
+			extinfname = "a_wp."+str(penergy)
 			amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
 			print " ### Writing out a_j_extinf..."
-			outname = "a_j_np"+str(npoles)+"_extinf.dat"
+			outname = "a_j_np"+str(npoles)+"_extinf."+str(penergy)
 			outfile = open(outname,'w')
 			for ipole in xrange(npoles):
 				for ik in xrange(nkpt):
@@ -786,7 +790,7 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*abs(imeqp[ik,ib])
+				prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
 				akb=amp_exinf[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -796,7 +800,7 @@ if flag_calc_exp == 1:
 				#ftot += tmpf
 				tmpf = np.zeros((nen), order='Fortran')
 				tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
-				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf.dat"
+				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf."+str(penergy)
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
@@ -809,7 +813,7 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ibeff]*abs(imeqp[ik,ib])
+				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
 				akb=ampole[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
 				eqpkb=eqp[ik,ib]
