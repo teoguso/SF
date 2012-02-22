@@ -531,12 +531,16 @@ def calc_extinf_corrections(extinfname,ampole,omegampole):
 	interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
 	amp_exinf = ampole.copy()
 	#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
+	# Mod following discussion with Josh
+	amp_mean = np.mean(ampole)
 	for ik in xrange(nkpt):
 		for ib in xrange(nband):
 			#tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
 			w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
 			tmpextinf = interpextinf(omegampole[ik,ib]) # 
-			amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
+			# Mod following discussion with Josh
+			#amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
+			amp_exinf[ik,ib] += amp_mean * tmpextinf
 	return amp_exinf, w_extinf
 
 def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
