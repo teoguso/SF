@@ -314,3 +314,4 @@ if __name__ == '__main__':
 	preen, predata = getdata_file(infilename)
 	omegai, gi, deltai = fit_multipole(preen,predata,nbin,ifilewrite)
 	write_f_as_sum_of_poles(preen,omegai,gi,deltai,1)
+#
