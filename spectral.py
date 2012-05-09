@@ -183,9 +183,7 @@ if flag_calc_exp == 1:
 		omegampole = np.ones((nkpt,nband))*omega_p
 		ampole =  np.zeros((nkpt,nband))
 		for ik in xrange(nkpt):
-			ikeff=minkpt+ik-1
 			for ib in xrange(nband):
-				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
 				#interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 				tmpen = en[ims[ik,ib]>=0]
