@@ -59,9 +59,7 @@ if isfile("invar.in"):
 		nkpt         =   int(invar['nkpt']);
 		if nkpt != maxkpt-minkpt+1: 
 			print
-			print " nkpt not in accordance with minkpt and maxkpt. Please check!"
-			print " Now exit. Bye. "
-			sys.exit(1)
+			print " WARNING: nkpt not in accordance with minkpt and maxkpt. Please check!"
 	if 'omega_p' in invar: 
 		omega_p = float(invar['omega_p']);
 	else:
@@ -190,7 +188,7 @@ if flag_calc_exp == 1:
 				tmpim = ims[ik,ib,ims[ik,ib]>=0]
 				ampole[ik,ib] = np.trapz(tmpim,tmpen)/np.pi
 				print " 1/pi*\int\Sigma   =", ampole[ik,ib]
-				ampole = ampole/omega_p**2
+		ampole = ampole/omega_p**2
 				#ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
 	elif npoles != 0:
 		from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
