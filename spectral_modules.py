@@ -121,17 +121,26 @@ def read_sigfile2(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
 	trigger=0
 	for line in filelines:
 		if line[0:3]=='# k':
-			if trigger==1: break
+			if trigger==1: break # So as to read just the first k point
 			continue
 		elif line[0:3]=='# b':
+			firstband = int(line.split()[-2])
+			if firstband>minband: 
+				print "ERROR: first band available in _SIG file is higher than minband. Please check."
+				sys.exit(1)
+			lastband =  int(line.split()[-1])
+			if lastband<maxband: 
+				print "ERROR: last band available _SIG file is lower than maxband. Please check."
+				sys.exit(1)
 			trigger = 1
 			continue
 		else : 
 			data=map(float,line.split())
-			if data[0] >= enmin and data[0] < enmax :
-				en.append(data[0])
-			elif data[0] < enmin: continue
-			else: break
+			en.append(data[0])
+			#if data[0] >= enmin and data[0] < enmax :
+			#	en.append(data[0])
+			#elif data[0] < enmin: continue
+			#else: break
 	print "Done."
 	print " Length of the energy array detected from _SIG file, first k point: "+str(len(en))
 	print " len(en): "+str(len(en))
@@ -155,7 +164,8 @@ def read_sigfile2(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
 			ims.append([])
 			continue
 		elif line[0:3] == "# b": print line,; continue
-		elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
+		#elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
+		else:
 			tmplist = map(float,line.split())
 			del tmplist[0]
 			ib = 0
@@ -174,18 +184,18 @@ def read_sigfile2(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
 					ib = ib+1
 					continue
 			nline+=1
-		else:  continue
+		#else:  continue
 	res = np.array(res)
 	ims = np.array(ims)
 	ik2=0
 	ib2=0
 	dum1 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
 	dum2 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
-	nband = maxband-minband+1
+	nband = lastband-firstband+1
 	for ik in xrange(minkpt-1,maxkpt):
 		ib2=0
 #		for ib in xrange(minband-1,maxband):
-		for ib in xrange(nband):
+		for ib in xrange(minband-firstband,nband-(lastband-maxband)):
 				#print "ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband
 				dum1[ik2,ib2]=res[ik,ib]
 				dum2[ik2,ib2]=ims[ik,ib]
@@ -437,18 +447,24 @@ def find_eqp_resigma(en,resigma):
 	It expects an array of increasing values on the x axis 
 	and it will return 
 	the x value of the last resigma=0 detected. 
-	It should return the value of eqp. 
+	It should return the value of eqp and the number of zeros
+	found (useful in case there are plasmarons or for debugging). 
 	"""
 	import numpy as np
 	import matplotlib.pylab as plt
+	nzeros=0
 	tmpeqp = en[0]
 	for i in xrange(1,np.size(resigma)):
 		#print resigma[i]*resigma[i-1] # DEBUG
 		if  resigma[i] == 0: # Yes, it can happen
 			tmpeqp = en[i] 
+			nzeros+=1
 		elif (resigma[i]*resigma[i-1] < 0):
 			tmpeqp = en[i-1] - resigma[i-1]*(en[i] - en[i-1])/(resigma[i] - resigma[i-1]) # High school formula
-	return tmpeqp
+			nzeros+=1
+	if nzeros==0 : print " WARNING: No eqp found! "
+	elif nzeros>1 : print " WARNING: Plasmarons! "
+	return tmpeqp, nzeros
 
 def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree):
 	"""
@@ -467,7 +483,8 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree):
 			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			tempim = interpims(en)
 			# New method to overcome plasmaron problem
-			eqp[ik,ib] = find_eqp_resigma(en,temparray)
+			eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray)
+			if nzeros==0: print " ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!";sys.exit()
 			imeqp[ik,ib] = interpims(eqp[ik,ib])
 			## Warning if imaginary part of sigma < 0 (Convergence problems?)
 			if imeqp[ik,ib] <= 0 : 

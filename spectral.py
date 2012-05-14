@@ -188,7 +188,8 @@ if flag_calc_exp == 1:
 				tmpim = ims[ik,ib,ims[ik,ib]>=0]
 				ampole[ik,ib] = np.trapz(tmpim,tmpen)/np.pi
 				print " 1/pi*\int\Sigma   =", ampole[ik,ib]
-		ampole = ampole/omega_p**2
+				ampole[ik,ib] = ampole[ik,ib]/((tmpen[-1]-tmpen[0])/2)**2
+		#ampole = ampole/omega_p**2
 				#ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
 	elif npoles != 0:
 		from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
