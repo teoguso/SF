@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Written by Matteo Guzzo 2012.
-Function necessary to the main script for the calculation 
+Functions necessary to the main script for the calculation 
 of spectral functions. 
 """
 import numpy as np;
