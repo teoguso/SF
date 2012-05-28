@@ -147,6 +147,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 				bounds.append( x3 )
 				# Formula to calculate g_i
 				tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
+				#if np.isnan(tmpint2): sys.exit(1)
 				#gi.append(float( 2. / np.pi * tmpint2))
 				tmpgi = 2. / np.pi * tmpint2 
 				gi.append( tmpgi )
@@ -214,7 +215,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 		sumcheck += abs(bounds[i]-bounds[i-1])
 	deltai = np.array(deltai)
 	print " Check if sum of deltai gives the original length: ", sumcheck,
-	if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-03: 
+	if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-02: 
 		print
 		print en[-1] - en[0]
 		print "WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck)
@@ -222,6 +223,12 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 	#intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
 	intcheck = np.sum(gi)
 	print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
+	if abs((intcheck - totalint) / intcheck) > 1E-02: 
+		print
+		print "WARNING: the difference is", abs((intcheck - totalint) / intcheck)
+	else: print "(OK)"
+	#if np.isnan(intcheck): sys.exit(1)
+	#if np.isnan(omegai): sys.exit(1)
 	print " ibound       = %4i (should be %g) " % (ibound, nbin)
 	print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
 	print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)

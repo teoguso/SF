@@ -40,21 +40,66 @@ if isfile("invar.in"):
 		invar[word[-1]] = word[0];
 #		print "invar: ", invar
 	infile.close()
-	sigfilename  =       invar['sigmafile'];
-	minband      =   int(invar['minband']);
-	maxband      =   int(invar['maxband']);
-	minkpt       =   int(invar['minkpt']);
-	maxkpt       =   int(invar['maxkpt']);
-	enmin        = float(invar['enmin']);
-	enmax        = float(invar['enmax']);
-	sfac         = float(invar['sfactor']);
-	pfac         = float(invar['pfactor']);
-	penergy      =   int(invar['penergy']);
-	npoles       =   int(invar['npoles']);
-	flag_calc_gw =   int(invar['calc_gw']);
-	flag_calc_exp=   int(invar['calc_exp']);
-	extinf       = float(invar['extinf']);
-	efermi       = float(invar['efermi']);
+	if 'sigmafile' in invar: 
+		sigfilename  =       invar['sigmafile'];
+	else:
+		sigfilename  =       "default_SIG";
+	if 'minband' in invar:
+		minband      =   int(invar['minband']);
+	else:
+		minband      =   1
+	if 'maxband' in invar:
+		maxband      =   int(invar['maxband']);
+	else:
+		maxband      =   1
+	if 'minkpt' in invar:
+		minkpt       =   int(invar['minkpt']);
+	else:
+		minkpt = 1
+	if 'maxkpt' in invar:
+		maxkpt       =   int(invar['maxkpt']);
+	else:
+		maxkpt = 1
+	if 'enmin' in invar:
+		enmin        = float(invar['enmin']);
+	else:
+		enmin = -20.0
+	if 'enmax' in invar:
+		enmax        = float(invar['enmax']);
+	else:
+		enmax = 20.0
+	if 'sfactor' in invar:
+		sfac         = float(invar['sfactor']);
+	else:
+		sfac = 1.0
+	if 'pfactor' in invar:
+		pfac         = float(invar['pfactor']);
+	else:
+		pfac = 1.0
+	if 'penergy' in invar:
+		penergy      =   int(invar['penergy']);
+	else:
+		penergy = 0
+	if 'npoles' in invar:
+		npoles       =   int(invar['npoles']);
+	else:
+		npoles = 1
+	if 'calc_gw' in invar:
+		flag_calc_gw =   int(invar['calc_gw']);
+	else:
+		flag_calc_gw = 1
+	if 'calc_exp' in invar:
+		flag_calc_exp =   int(invar['calc_exp']);
+	else:
+		flag_calc_exp = 0
+	if 'extinf' in invar:
+		extinf       = float(invar['extinf']);
+	else:
+		extinf = 0
+	if 'efermi' in invar:
+		efermi       = float(invar['efermi']);
+	else:
+		efermi = 0.0
 	if 'nkpt' in invar: 
 		nkpt         =   int(invar['nkpt']);
 		if nkpt != maxkpt-minkpt+1: 
@@ -111,16 +156,19 @@ print "en[0], en[-1], enmin, enmax"
 print en[0], en[-1], enmin, enmax
 print " ### nkpt, nband:", nkpt, nband
 print " # ------------------------------------------------ # ";
-# ======== CROSS SECTIONS ======= #
-cs = read_cross_sections(penergy)
-# ====== BAND TYPE AND SYMMETRY ==== #
-sp = read_band_type_sym(sfac,pfac,nband)
-# ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
-pdos = 10000.*np.dot(cs,sp)
-print " 10000*pdos:", pdos
-print " Size(pdos):",np.size(pdos)
-### ===================================================== ###
-print " # ------------------------------------------------ # ";
+if penergy != 0:
+	# ======== CROSS SECTIONS ======= #
+	cs = read_cross_sections(penergy)
+	# ====== BAND TYPE AND SYMMETRY ==== #
+	sp = read_band_type_sym(sfac,pfac,nband)
+	# ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
+	pdos = 10000.*np.dot(cs,sp)
+	print " 10000*pdos:", pdos
+	print " Size(pdos):",np.size(pdos)
+	### ===================================================== ###
+	print " # ------------------------------------------------ # ";
+else:
+	pdos=np.ones((nband))
 # Here we move to a subdirectory to avoid flooding-up the current directory
 newdirname = "Spfunctions"
 origdir = getcwd() # remember where we are
@@ -208,14 +256,19 @@ if flag_calc_exp == 1:
 				# so as to have it defined on the positive x axis
 				# and so that the positive direction is in the 
 				# increasing direction of the array index
-				en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+				if eqp[ik,ib] <= efermi:
+					en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+				else:
+					en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
 				#en3 = en[en<=efermi]
-				im3 = interpims(en3)/np.pi # This is what should be fitted
+				im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
 				en3 = en3 - eqp[ik,ib]
 				#en3 = en3 - efermi
-				en3 = -en3[::-1] 
-				im3 = im3[::-1]
+				if eqp[ik,ib] <= efermi: 
+					en3 = -en3[::-1] 
+					im3 = im3[::-1]
 				omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
+				#if np.isnan(omegai): sys.exit(1)
 				#omegampole[ik,ib] = omegai + eqp[ik,ib] - efermi
 				omegampole[ik,ib] = omegai 
 				ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
@@ -311,19 +364,25 @@ if flag_calc_exp == 1:
 				#print nen, np.size(enexp)
 				#tmpf = 0.0*tmpf
 				if eqpkb < 0.0:
-					tmpf = np.zeros((nen), order='Fortran')
-					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
-					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+					#tmpf = np.zeros((nen), order='Fortran')
+					#tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+					tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				else:
 					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
-					tmpf = np.zeros((nen), order='Fortran')
-					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,-omegakb,eqpkb,imkb) #,nen,npoles)
+					print omegakb
+					omegakb=-omegakb
+					print omegakb
+					#tmpf = np.zeros((nen), order='Fortran')
+					#tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+					tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+				if not tmpf[0]>=0: print "ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles:",ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles; sys.exit(1)
 				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
 				ftot = ftot + tmpf
+				print ftot[0], tmpf[0]
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2
