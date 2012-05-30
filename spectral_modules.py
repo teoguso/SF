@@ -563,6 +563,7 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
 	This function calculates the exponential spectral function. 
 	"""
 	import numpy as np;
+	nenexp=np.size(enexp)
 	ftot = np.zeros((np.size(enexp)))
 	tmpf1=np.zeros((nenexp))
 	tmpf2=np.zeros((nenexp))
