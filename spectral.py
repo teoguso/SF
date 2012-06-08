@@ -209,7 +209,7 @@ if flag_calc_exp == 1:
 	print " ### Calculation of exponential A...  "
 	### ==== Finding zero in res --> Eqp ===== ###
 	print " Finding zeros in real parts..."
-	eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree)
+	eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi)
 	print " Test imeqp:", imeqp
 	# Writing out eqp
 	# Writing out imeqp

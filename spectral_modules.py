@@ -439,7 +439,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
 			outfilekb.close()
 	return newen, spftot
 
-def find_eqp_resigma(en,resigma):
+def find_eqp_resigma(en,resigma,efermi):
 	"""
 	This function is supposed to deal with the plasmaron problem 
 	and calculate the quasiparticle energy once it is fed with 
@@ -453,20 +453,24 @@ def find_eqp_resigma(en,resigma):
 	import numpy as np
 	import matplotlib.pylab as plt
 	nzeros=0
+	zeros = []
 	tmpeqp = en[0]
 	for i in xrange(1,np.size(resigma)):
 		#print resigma[i]*resigma[i-1] # DEBUG
 		if  resigma[i] == 0: # Yes, it can happen
 			tmpeqp = en[i] 
+			zeros.append(en[i])
 			nzeros+=1
 		elif (resigma[i]*resigma[i-1] < 0):
 			tmpeqp = en[i-1] - resigma[i-1]*(en[i] - en[i-1])/(resigma[i] - resigma[i-1]) # High school formula
+			zeros.append(tmpeqp)
 			nzeros+=1
+	if tmpeqp>efermi: tmpeqp=zeros[0]
 	if nzeros==0 : print " WARNING: No eqp found! "
 	elif nzeros>1 : print " WARNING: Plasmarons! "
 	return tmpeqp, nzeros
 
-def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree):
+def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
 	"""
 	This function calculates qp energies and corresponding
 	values of the imaginary part of sigma for a set of
@@ -483,7 +487,7 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree):
 			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
 			tempim = interpims(en)
 			# New method to overcome plasmaron problem
-			eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray)
+			eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
 			if nzeros==0: print " ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!";sys.exit()
 			imeqp[ik,ib] = interpims(eqp[ik,ib])
 			## Warning if imaginary part of sigma < 0 (Convergence problems?)
