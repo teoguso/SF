@@ -236,7 +236,16 @@ if flag_calc_exp == 1:
 				tmpim = ims[ik,ib,ims[ik,ib]>=0]
 				ampole[ik,ib] = np.trapz(tmpim,tmpen)/np.pi
 				print " 1/pi*\int\Sigma   =", ampole[ik,ib]
+				# Workaround correction for small energy plasmons
 				ampole[ik,ib] = ampole[ik,ib]/((tmpen[-1]-tmpen[0])/2)**2
+#				# Workaround for small energy plasmons
+#				if eqp[ik,ib]<=efermi:
+#					tmpim = tmpim[tmpen>=eqp[ik,ib]-2.5]
+#					tmpen = tmpen[tmpen>=eqp[ik,ib]-2.5]
+#				else:
+#					tmpim = tmpim[tmpen <eqp[ik,ib]+2.5]
+#					tmpen = tmpen[tmpen <eqp[ik,ib]+2.5]
+#				ampole[ik,ib] = np.trapz(tmpim,tmpen)/np.pi
 		#ampole = ampole/omega_p**2
 				#ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
 	elif npoles != 0:
@@ -317,7 +326,7 @@ if flag_calc_exp == 1:
 	#print elaps2, cpu2
 	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " Calculating multipole exponential A..."
-	dxexp=0.01
+	dxexp=0.005
 	enexp=np.arange(enmin,enmax,dxexp)
 	nenexp=np.size(enexp)
 	ftot=np.zeros((nenexp))
@@ -369,9 +378,9 @@ if flag_calc_exp == 1:
 					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				else:
 					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
-					print omegakb
+					print "omegakb", omegakb
 					omegakb=-omegakb
-					print omegakb
+					print "-omegakb", omegakb
 					tmpf = np.zeros((nen), order='Fortran')
 					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
