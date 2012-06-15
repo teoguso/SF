@@ -209,7 +209,7 @@ if flag_calc_exp == 1:
 	print " ### Calculation of exponential A...  "
 	### ==== Finding zero in res --> Eqp ===== ###
 	print " Finding zeros in real parts..."
-	eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi)
+	eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0)
 	print " Test imeqp:", imeqp
 	# Writing out eqp
 	# Writing out imeqp
@@ -232,12 +232,17 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				print " ik, ib", ik, ib
 				#interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
-				tmpen = en[ims[ik,ib]>=0]
-				tmpim = ims[ik,ib,ims[ik,ib]>=0]
-				ampole[ik,ib] = np.trapz(tmpim,tmpen)/np.pi
+				#if eqp[ik,ib]<=efermi:
+				if eqp[ik,ib]<=0:
+					tmpen = en[ims[ik,ib]>=0]
+					tmpim = ims[ik,ib,ims[ik,ib]>=0]
+				else:
+					tmpen = en[ims[ik,ib]<0]
+					tmpim = ims[ik,ib,ims[ik,ib]<0]
+				ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi
 				print " 1/pi*\int\Sigma   =", ampole[ik,ib]
 				# Workaround correction for small energy plasmons
-				ampole[ik,ib] = ampole[ik,ib]/((tmpen[-1]-tmpen[0])/2)**2
+				ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
 #				# Workaround for small energy plasmons
 #				if eqp[ik,ib]<=efermi:
 #					tmpim = tmpim[tmpen>=eqp[ik,ib]-2.5]
@@ -265,7 +270,8 @@ if flag_calc_exp == 1:
 				# so as to have it defined on the positive x axis
 				# and so that the positive direction is in the 
 				# increasing direction of the array index
-				if eqp[ik,ib] <= efermi:
+				#if eqp[ik,ib] <= efermi:
+				if eqp[ik,ib] <= 0:
 					en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
 				else:
 					en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
@@ -273,7 +279,8 @@ if flag_calc_exp == 1:
 				im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
 				en3 = en3 - eqp[ik,ib]
 				#en3 = en3 - efermi
-				if eqp[ik,ib] <= efermi: 
+				#if eqp[ik,ib] <= efermi: 
+				if eqp[ik,ib] <= 0:
 					en3 = -en3[::-1] 
 					im3 = im3[::-1]
 				omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
@@ -326,7 +333,7 @@ if flag_calc_exp == 1:
 	#print elaps2, cpu2
 	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " Calculating multipole exponential A..."
-	dxexp=0.005
+	dxexp=0.01 
 	enexp=np.arange(enmin,enmax,dxexp)
 	nenexp=np.size(enexp)
 	ftot=np.zeros((nenexp))
@@ -363,7 +370,7 @@ if flag_calc_exp == 1:
 			ikeff=minkpt+ik-1
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
-				print " ik, ib", ik, ib
+				print " ik, ib, ikeff, ibeff", ik, ib, ikeff+1, ibeff+1
 				prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
 				akb=ampole[ik,ib] # This is a numpy array (slice)
 				omegakb=omegampole[ik,ib] # This is a numpy array (slice)
@@ -377,21 +384,21 @@ if flag_calc_exp == 1:
 					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
 				else:
-					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff, ibeff
-					print "omegakb", omegakb
+					print " This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1
+					#print "omegakb", omegakb
 					omegakb=-omegakb
-					print "-omegakb", omegakb
+					#print "-omegakb", omegakb
 					tmpf = np.zeros((nen), order='Fortran')
 					tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
 					#tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-				if not tmpf[0]>=0: print "ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles:",ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles; sys.exit(1)
+				#if not tmpf[0]>=0: print "ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles:",ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles; sys.exit(1)
 				outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
 				outfilekb = open(outnamekb,'w')
 				for ien in xrange(nenexp):
 					outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
 				outfilekb.close()
 				ftot = ftot + tmpf
-				print ftot[0], tmpf[0]
+				#print ftot[0], tmpf[0]
 	elaps2 = time.time() - elaps1 - e0
 	cpu2 = time.clock() - cpu1 - c0
 	#print elaps2, cpu2

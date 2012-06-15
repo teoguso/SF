@@ -405,7 +405,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
 	import numpy as np;
 	nkpt = maxkpt-minkpt+1
 	nband = maxband-minband+1
-	newdx = 0.005
+	newdx = 0.01
 	if enmin < en[0] and enmax >= en[-1]:  
 		newen = np.arange(en[0],en[-1],newdx)
 	elif enmin < en[0]:  
