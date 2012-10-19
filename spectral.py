@@ -333,7 +333,7 @@ if flag_calc_exp == 1:
 	#print elaps2, cpu2
 	print str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
 	print " Calculating multipole exponential A..."
-	dxexp=0.01 
+	dxexp=0.005 
 	enexp=np.arange(enmin,enmax,dxexp)
 	nenexp=np.size(enexp)
 	ftot=np.zeros((nenexp))
