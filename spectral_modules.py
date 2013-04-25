@@ -497,7 +497,7 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
 #	sys.exit(1) # DEBUG
 	return eqp, imeqp
 
-def calc_extinf_corrections(extinfname,ampole,omegampole):
+def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
 	"""
 	# Here we add the extrinsic contribution. 
 	# N.B.: It has to be renormalized to the number of poles!!!

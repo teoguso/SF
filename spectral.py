@@ -314,7 +314,7 @@ if flag_calc_exp == 1:
 		# Extrinsic and interference contribution
 		if extinf == 1:
 			extinfname = "a_wp."+str(penergy)
-			amp_exinf, w_extinf = calc_extinf_corrections(extinfname,ampole,omegampole)
+			amp_exinf, w_extinf = calc_extinf_corrections(origdir,extinfname,ampole,omegampole)
 			print " ### Writing out a_j_extinf..."
 			outname = "a_j_np"+str(npoles)+"_extinf."+str(penergy)
 			outfile = open(outname,'w')
