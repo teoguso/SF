@@ -3,7 +3,12 @@
 ### A.D. MMXI (2011)
 ### NO WARRANTY WHATSOEVER!!!
 ### Written for python 2.7
-### Requires scitools, numpy, f2py, gfortran
+### Requires scitools, numpy, matplotlib, 
+### f2py, gfortran
+### Tested on Ubuntu 12.04
+#################################################
 # Before using the program, 
 # one should execute the 
 # bash script 'compile_and_link.sh'.
+# The script 'cleanup.sh' removes all secondary 
+# files created during compilation and linking.
