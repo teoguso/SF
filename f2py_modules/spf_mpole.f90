@@ -1,3 +1,5 @@
+!!! Written by Matteo Guzzo ###
+!!! A.D. MMXIV (2014)       ###
       subroutine f2py_calc_spf_mpole(spf,en,nen,prefac,akb,omegapkb,eqp,imeqp,npoles)
       implicit none
       !integer nen,npoles

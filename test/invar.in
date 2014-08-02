@@ -1,0 +1,20 @@
+0                 # calc_gw
+1                 # calc_exp
+total_DS12_SIG # sigmafile
+-20               # enmin
+10                # enmax
+9.674268          # efermi
+1                 # minkpt
+20                # maxkpt
+20                # nkpt   
+12 21                # minband
+23 31                # maxband
+3                 # nband
+1.0               # sfactor
+0.0               # pfactor
+800               # penergy
+0                 # plasmon2
+1 350 999               # npoles
+9.0              # omega_p
+0                 # extinf
+0.208             # a_extinf

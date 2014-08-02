@@ -1,6 +1,6 @@
 ### Spectral Function package
 ### Written by Matteo Guzzo
-### A.D. MMXI (2011)
+### A.D. MMXIV (2014)
 ### NO WARRANTY WHATSOEVER!!!
 ### Written for python 2.7
 ### Requires scitools, numpy, matplotlib, 
@@ -11,4 +11,6 @@
 # one should execute the 
 # bash script 'compile_and_link.sh'.
 # The script 'cleanup.sh' removes all secondary 
-# files created during compilation and linking.
+# files created during compilation, linking and 
+# testing, reverting to a clean source 
+# (a.k.a. poor's man 'make distclean').

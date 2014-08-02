@@ -1,4 +1,6 @@
 #!/bin/sh
+### Written by Matteo Guzzo ###
+### A.D. MMXIV (2014)       ###
 # Small script to compile and link the fortran module
 # and to do other small tasks.
 # Tested with gfortran (Sorry!)

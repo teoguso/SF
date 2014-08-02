@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """
+### Written by Matteo Guzzo ###
+### A.D. MMXIV (2014)       ###
 Multipole fit module. It is callable as a stand-alone script. 
 """
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Written by Matteo Guzzo 2012.
+### Written by Matteo Guzzo ###
+### A.D. MMXIV (2014)       ###
 Functions necessary to the main script for the calculation 
 of spectral functions. 
 """

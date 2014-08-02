@@ -1,0 +1,12 @@
+### Written by Matteo Guzzo
+### A.D. MMXIV (2014)
+#################################################
+# This folder contains a number of files that 
+# should allow a user to test the tool.
+# The only working and barely checked folder is 
+# 'bareminimum/', that should allow to calculate 
+# the spectral function of silicon. 
+# In the 'test/' folder one can also find a 
+# lonely 'inver.in' file. It will not work as it
+# is, but you can still use it to try and see 
+# what happens. 
