@@ -17,3 +17,4 @@
 # and the likes. 
 # NOTE: the csxxx.dat file is ignored if 
 # penergy = 0 in invar.in
+# Now just try this: $ ../../spectral.py
