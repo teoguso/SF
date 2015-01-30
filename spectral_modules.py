@@ -424,8 +424,8 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
 		print " k point = %02d " % (ikeff+1)
 		for ib in xrange(0,nband):
 			ibeff = minband+ib-1
-			interpres = interp1d(en, res[ik,ib], kind = 'linear', axis =  2)
-			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+			interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
+			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
 	                tmpres = interpres(newen)
 			#redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
 			redenom = newen - hartree[ik,ib] - interpres(newen)
@@ -485,7 +485,7 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
 	for ik in xrange(nkpt):
 		for ib in xrange(nband):
 			temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
-			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+			interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
 			tempim = interpims(en)
 			# New method to overcome plasmaron problem
 			eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
@@ -540,7 +540,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
 	for x in width.tolist():
 		newwmod.append(x)
 	newwmod = np.array(newwmod)
-	interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis =  2)
+	interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis = -1)
 	w_extinf = ampole.copy()
 	print "omega_p, a_extinf, a_int:"
 	print newen_ei
@@ -548,7 +548,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
 	print newa_ei/newa_int
 	#print en_ei, newenexin
 	#print aextinf, newaexin
-	interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis =  2)
+	interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis = -1)
 	amp_exinf = ampole.copy()
 	#print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
 	# Mod following discussion with Josh
