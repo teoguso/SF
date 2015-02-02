@@ -231,7 +231,7 @@ if flag_calc_exp == 1:
 		for ik in xrange(nkpt):
 			for ib in xrange(nband):
 				print " ik, ib", ik, ib
-				#interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+				#interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
 				#if eqp[ik,ib]<=efermi:
 				if eqp[ik,ib]<=0:
 					tmpen = en[ims[ik,ib]>=0]
@@ -265,7 +265,7 @@ if flag_calc_exp == 1:
 			for ib in xrange(nband):
 				ibeff=minband+ib-1
 				print " ik, ib", ik, ib
-				interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =  2)
+				interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
 				# Here we take the curve starting from eqp and then we invert it
 				# so as to have it defined on the positive x axis
 				# and so that the positive direction is in the 

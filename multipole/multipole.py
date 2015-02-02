@@ -96,14 +96,14 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
 	print " Total integral / nbin:", totalint / float(nbin)
 	# This is the supposed integral within a single interval
 	partint = totalint / float(nbin)
-	interpdata = interp1d(preen, predata[:], kind = 'linear', axis =  2)
+	interpdata = interp1d(preen, predata[:], kind = 'linear', axis = -1)
 	# First moment
 	xfx = np.zeros(np.size(preen))
 	xfx = predata * preen
-	interpxfx = interp1d(preen, xfx[:], kind = 'linear', axis =  2)
+	interpxfx = interp1d(preen, xfx[:], kind = 'linear', axis = -1)
 	# First inverse moment
 	fxonx = first_inverse_moment(preen,predata)
-	interpfxonx = interp1d(preen, fxonx[:], kind = 'linear', axis =  2)
+	interpfxonx = interp1d(preen, fxonx[:], kind = 'linear', axis = -1)
 	# Test plot
 	#plt.plot(preen,interpdata(preen),label="data")
 	#plt.plot(preen,interpxfx(preen),'-x',label="f(x)*x")
@@ -284,7 +284,7 @@ def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
 		return florentz
 	eta = 0.001
 	#for eni in preen
-	#interpdata = interp1d(preen, predata[:], kind = 'linear', axis =  2)
+	#interpdata = interp1d(preen, predata[:], kind = 'linear', axis = -1)
 	# Mh... Here I used a rule-of-thumb procedure.
 	# TODO: think of a consistent and robust way of defining the x grid.
 	eta = 0.05
