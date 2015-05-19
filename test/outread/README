@@ -1,0 +1,8 @@
+### Written by Matteo Guzzo
+### A.D. MMXV (2015)
+#################################################
+'''
+This folder contains a few files used to test the output wrapper.
+The first version was implemented for abinit, but hopefully 
+others will join (Exciting, ...). 
+'''
