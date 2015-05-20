@@ -145,6 +145,9 @@ class AbinitOutReader(object):
         self.qpen = []
         self.hartree = []
 # Call methods
+        print 52*"="
+        print " INITIALIZING QP CALCULATION OUTPUT PARSER... "
+        print 52*"="
         self.chk_name()
 	self.get_file_content()
         self.get_version()
@@ -157,6 +160,9 @@ class AbinitOutReader(object):
         for i in self.gw_dts: 
             self.get_gw_ks_ev(i)
             self.get_gw_qpen(i,self.nversion)
+        print 52*"-"
+        print " QP CALCULATION OUTPUT PROCESSED. "
+        print 52*"-"
 
     ### METHODS HERE BELOW ###
     def get_version(self):
@@ -571,8 +577,8 @@ class AbinitOutReader(object):
 
 
 
-out0 = AbinitOutReader("sp.out")
-out1 = AbinitOutReader("tgw2_4.out")
+#out0 = AbinitOutReader("sp.out")
+#out1 = AbinitOutReader("tgw2_4.out")
 #out0.get_gw_qpen()
 #out1.get_gw_qpen()
 
