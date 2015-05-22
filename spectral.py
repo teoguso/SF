@@ -163,12 +163,12 @@ if penergy != 0:
     sp = read_band_type_sym(sfac,pfac,nband)
     # ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
     pdos = 10000.*np.dot(cs,sp)
-    print " 10000*pdos:", pdos
-    print " Size(pdos):",np.size(pdos)
-    ### ===================================================== ###
-    print " # ------------------------------------------------ # ";
 else:
     pdos=np.ones((nband))
+print " pdos:", pdos
+print " Size(pdos):",np.size(pdos)
+### ===================================================== ###
+print " # ------------------------------------------------ # ";
 # Here we move to a subdirectory to avoid flooding-up the current directory
 newdirname = "Spfunctions"
 origdir = getcwd() # remember where we are

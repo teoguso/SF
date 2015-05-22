@@ -426,12 +426,12 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
             ibeff = minband+ib-1
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
-                    tmpres = interpres(newen)
+            tmpres = interpres(newen)
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
             #print "ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib]
-                    tmpim = interpims(newen)
-                    spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+            tmpim = interpims(newen)
+            spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             spftot += spfkb 
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
             outfilekb = open(outnamekb,'w')

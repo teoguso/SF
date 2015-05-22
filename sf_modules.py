@@ -13,6 +13,55 @@ import sys
 from os.path import isfile, join, isdir
 from os import getcwd, pardir, mkdir, chdir
 #
+def read_invar(infile='invar.in'):
+    """
+    A small function that produces a list of the input variables
+    using a dictionary.
+    Returns a dictionary with keys and variables.
+    """
+    var_defaults = { 
+            'sigmafile': None,
+            'minband': 1, 
+            'maxnband': 1,
+            'minkpt': 1,
+            'maxkpt': 1,
+            'nkpt': 1,
+            'enmin': -20.0,
+            'enmax': 20.0,
+            'sfactor': 1,
+            'pfactor': 1,
+            'penergy': 0.0, 
+            'npoles': 1,
+            'calc_gw': 1,
+            'calc_exp': 0,
+            'extinf': False,
+            'efermi': 0.0,
+            'omega_p':0.0,
+            'enhartree': False
+            'gwcode': 'abinit'
+            }
+#    varlist = list((
+#            'sigmafile','minband','maxnband','minkpt','maxkpt',
+#            'nkpt','enmin','enmax','sfactor','pfactor','penergy',
+#            'npoles','calc_gw','calc_exp','extinf','efermi',
+#            'omega_p','enhartree'
+#            ))
+    varlist = var_defaults.keys()
+    invar_dict = var_defaults.copy()
+    print "read_invar :: reading file:", infile
+    with open(infile,'r') as f:
+            lines = [line.strip('\n') for line in f]
+    #print varlist
+    for var in varlist:
+        for line in lines:
+            last =  line.split()[-1]
+            if var in last:
+                #print var, last
+                invar_dict[var] = line.split()[0]
+    return invar_dict
+    #if not isfile(infile):
+    #    sys.exit()
+
 def read_hartree():
     """
     This function takes the file 'hartree.dat'
@@ -426,12 +475,12 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
             ibeff = minband+ib-1
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
-                    tmpres = interpres(newen)
+            tmpres = interpres(newen)
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
             #print "ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib]
-                    tmpim = interpims(newen)
-                    spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+            tmpim = interpims(newen)
+            spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             spftot += spfkb 
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
             outfilekb = open(outnamekb,'w')

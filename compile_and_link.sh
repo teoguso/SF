@@ -4,6 +4,7 @@
 # Small script to compile and link the fortran module
 # and to do other small tasks.
 # Tested with gfortran (Sorry!)
+ln -s outread/outread.py outread.py
 ln -s multipole/multipole.py multipole.py
 cd f2py_modules
 f2py --fcompiler="gfortran" --f90flags="-ffree-form"  extmod_spf_mpole.pyf -c spf_mpole.f90
