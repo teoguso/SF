@@ -59,8 +59,11 @@ wtk = read_wtk()
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 #print " enmin, enmax"
 #print  enmin, enmax
-enmit = float(invar_dict['enmin']) + float(invar_dict['efermi'])
-enmat = float(invar_dict['enmax']) + float(invar_dict['efermi'])
+efermi =  float(invar_dict['efermi'])
+enmin = float(invar_dict['enmin'])
+enmax = float(invar_dict['enmax'])
+enmit = enmin + efermi
+enmat = enmax + efermi
 minkpt = int(invar_dict['minkpt']) 
 maxkpt = int(invar_dict['maxkpt']) 
 minband = int(invar_dict['minband']) 
@@ -68,6 +71,7 @@ maxband = int(invar_dict['maxband'])
 sigfilename = invar_dict['sigmafile']
 en, res, ims = read_sigfile2(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
 # Rescale energy if in hartree
+enhartree = invar_dict['enhartree']
 if enhartree is not None:
     print " ### Converting energies from Hartree to eV ###"
     print " ### 1 Hartree = 27.2116 eV ###"
@@ -77,8 +81,13 @@ en = en - efermi
 res[:,:] = res[:,:] - efermi
 print "en[0], en[-1], enmin, enmax"
 print en[0], en[-1], enmin, enmax
+nkpt =  int(invar_dict['nkpt']) 
+nband = maxband - minband +1
 print " ### nkpt, nband:", nkpt, nband
 print " # ------------------------------------------------ # ";
+penergy = invar_dict['penergy']
+sfac =  float(invar_dict['sfactor'])
+pfac =  float(invar_dict['pfactor'])
 if penergy != 0:
     # ======== CROSS SECTIONS ======= #
     cs = read_cross_sections(penergy)
