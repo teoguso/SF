@@ -42,17 +42,30 @@ print 52*"="
 print " SF :: END"
 print 52*"="
 
+gwout = CodeOutReader(invar_dict['gwcode'])
+
+print gwout.fname
+print gwout.hartree
+hartree = gwout.hartree
+#TODO implement a __str__ method for CodeOutReader 
+# that prints out a well-formatted set of info.
+
 # ====== READING HARTREE ===== #
-hartree = read_hartree()
+#hartree = read_hartree()
 #hartree = hartree # - efermi
 # ======== READING WTK ======= #
 wtk = read_wtk()
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
-print " enmin, enmax"
-print  enmin, enmax
-enmit = enmin+efermi
-enmat= enmax+efermi
+#print " enmin, enmax"
+#print  enmin, enmax
+enmit = float(invar_dict['enmin']) + float(invar_dict['efermi'])
+enmat = float(invar_dict['enmax']) + float(invar_dict['efermi'])
+minkpt = int(invar_dict['minkpt']) 
+maxkpt = int(invar_dict['maxkpt']) 
+minband = int(invar_dict['minband']) 
+maxband = int(invar_dict['maxband']) 
+sigfilename = invar_dict['sigmafile']
 en, res, ims = read_sigfile2(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
 # Rescale energy if in hartree
 if enhartree is not None:

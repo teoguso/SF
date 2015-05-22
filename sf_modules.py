@@ -22,7 +22,7 @@ def read_invar(infile='invar.in'):
     var_defaults = { 
             'sigmafile': None,
             'minband': 1, 
-            'maxnband': 1,
+            'maxband': 1,
             'minkpt': 1,
             'maxkpt': 1,
             'nkpt': 1,

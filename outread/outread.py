@@ -113,7 +113,7 @@ class CodeOutReader(object):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,name=None):
+    def __init__(self,code,name=None):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
@@ -124,6 +124,7 @@ class CodeOutReader(object):
         if name is None:
             self.fname = glob.glob('*.out')[0] # This is 'ls *.out' in current dir
         else: self.fname = name
+        self.code = code
         # Initialize variables
         # Most of them are lists, in that they 
         # iterate over the different datasets.
