@@ -101,9 +101,10 @@ def chk_gw(chunkoffile):
             break
     return response
 
-class AbinitOutReader(object):
+class CodeOutReader(object):
     """
-    This class processes the abinit output and 
+    This class processes the output of an electronic
+    structure code and 
     ideally puts it in a form more easily usable 
     within python, using instances and method to 
     access its data. 
@@ -163,6 +164,438 @@ class AbinitOutReader(object):
         print 52*"-"
         print " QP CALCULATION OUTPUT PROCESSED. "
         print 52*"-"
+
+    ### METHODS HERE BELOW ###
+    def get_version(self):
+        """
+        Detects the version of abinit. 
+        """
+        self.version = self.content[1].split()[1]
+        self.nversion = int(self.version.split('.')[0])
+
+    def get_scalar(self,label):
+        """
+        This method returns the scalar value(s) of 
+        a requested scalar variable in the dictionary as a list. 
+        If units are different than default, it 
+        issues a warning. 
+        """
+        #ndts = self.ndtsets
+        #s_e = self.dts_start_end
+        dct = self.var_dict
+        if dct.get(label):
+            value = dct.get(label)[:]
+            if type(value[0]) is not float: 
+                    print "get_scalar ::","ERROR: This is no scalar." 
+                    print "get_scalar ::","See?", value
+                    return None
+                    #raise ValueError 
+            elif not is_number(value[-1]): 
+                print "get_scalar ::", "WARNING: Units used are not default, but", value[-1] 
+                value.pop()
+                return value
+            else:
+                return value
+        else:
+            print "get_scalar ::","ERROR:", label, "not found."
+            return None
+        #else: 
+        #    value.pop()
+        return value
+
+    def chk_units(self):
+        """
+        This method simply checks whether there is a 
+        string at the end of the list of values for all
+        keys in the dictionary, 
+        indicating that the units used for that 
+        variable are not the default.
+        It issues a warning if a string is found. 
+        """
+        print "chk_units :: ",
+        dct = self.var_dict
+        for key in dct.keys():
+            x = dct.get(key)
+            if not is_number(x[-1]):
+                print "WARNING: Units used for", key, "are not default, but", x[-1] 
+        print "Done."
+
+    def get_var_dict(self):
+        """
+        Set up the dictionary. 
+        """
+        self.var_dict = outvars_parser(self.outvars)
+        self.chk_units()
+        self.reshape_dict()
+
+    def reshape_key(self,keylist,size):
+        """
+        This method/function reshapes a single list 
+        relative to a given list of keys to a list of list of 
+        a given size.
+        It accepts a list of keywords, in case they are supposed 
+        to be reshaped the same way. 
+        WARNING: A special value of 'size' is "nband", which 
+        refers to the relative number of bands for the given 
+        quantity (e.g. 'occ'). 
+        """
+        print "reshape_key :: ",
+        dct = self.var_dict
+        l = list(keylist)
+        if not is_number(size):
+            tmp = get_keylist(size,dct)
+            for key,nband in zip(l,tmp): # Should raise an error if not same size
+                tmplist = [key,] # Argument must be a list
+                self.reshape_key(tmplist,dct.get(nband)[0]) #recursion!!!
+        else:
+            klist = []
+            for word in l:
+                tmp = get_keylist(word,dct)
+                if tmp is not None: 
+                    klist.append(tmp)
+                else:
+                    print "WARNING:", "No key for '", word,"' found."
+            #print "klist:", klist
+            for keys in klist:
+                #print "key(s) to reshape, len(keys), size:", keys, len(keys), size
+                for elem in keys: 
+                    bucket1 = []
+                    bucket2 = []
+                    value = dct.get(elem)
+                    for x in value: 
+                        bucket1.append(x)
+                        if len(bucket1)==size: 
+                            bucket2.append(bucket1) 
+                            bucket1 = []
+                    dct[elem] = bucket2
+        print "Done."
+
+    def reshape_dict(self):
+        """
+        This modules fixes a selected (user-defined) 
+        set of variables into a needed shape,  
+        for easier later consumption.
+        - k points are reshaped from a 
+        mere list of numbers to a list of triplets; 
+        - bdgw* is reshaped into a list of pairs; 
+        - occ* is reshaped into nkpt* lists of nband* 
+        elements each; 
+        """ 
+        print "reshape_dict :: ",
+        dct = self.var_dict
+        vectors = ('acell','kpt','kptgw','rprim','symrel','xangst','xcart','xred')
+        couples = ('bdgw',)
+        occ = ('occ',)
+        self.reshape_key(vectors,size=3)
+        self.reshape_key(couples,size=2)
+        self.reshape_key(occ,size='nband')
+        print "Done."
+
+    def get_outvars(self):
+        """
+        This copies the selected part of the abinit output file, 
+        where input variables are summarized at the beginning 
+        of a run, into a list. 
+	"""
+	istart,iend = 0,0
+        f = self.content
+        for i,line in enumerate(f):
+            #print line
+            if "outvars" in line and "preprocessed" in line:
+                #print "OUTVARSSSS!"
+                istart = i+1
+            if "chkinp" in line:
+                iend = i-3 # Distance checked in both abinit 5.5 and 7.10
+                break
+        #print f[istart:iend]
+        self.outvars = f[istart:iend]
+
+    def get_dtsets(self):
+        """
+	Collects all information on datasets in the output file, 
+	such as beginning and end, and the number of them. 
+	"""
+        n = 0
+        f = self.content
+	s_e = []
+        labels = []
+        sets = []
+        for i,line in enumerate(f):
+            if "= DATASET" in line:
+                if s_e: s_e[n-1].append(i-1)
+		s_e.append([i])
+		labels.append(line.split()[2])
+                n += 1
+            if "= END DATASET" in line:
+		s_e[n-1].append(i)
+        if n == 0: raise ValueError
+        self.ndtsets = n
+	self.dts_start_end = s_e
+        self.dts_labels = labels
+        for i in range(n):
+            sets.append(f[s_e[i][0]:s_e[i][1]])
+        self.dtsets = sets
+        print "get_dtsets ::", n, "dataset(s) found, start/end, labels:", s_e, labels
+    
+    def get_file_content(self):
+        """
+	This method keeps the file open just for the
+	strictly necessary time to copy its content.  
+	Lines are duly stripped of newlines. 
+	"""
+        with open(self.fname,'r') as f:
+            self.content = [line.strip('\n') for line in f]
+
+    def chk_completed(self):
+        """
+	Checks whether the abinit output file 
+        has been closed successfully,
+	i.e. if the calculation has finished. 
+	"""
+        if self.content: 
+	    if " Calculation completed." in self.content[-5:]: 
+	        self.completed = True
+                print "chk_completed :: ","Abinit calculation completed. "
+            else: 
+                print "chk_completed :: ","WARNING: Calculation was not completed."
+        else: 
+            print "chk_completed :: ","WARNING: abinit output has not been read yet."
+
+    def chk_name(self):
+        """
+	This method checks whether we are looking 
+        a proper abinit output. 
+	Also, it checks whether the file exists. 
+        If not, it raises an error. 
+        """
+        if self.fname[-4:] != ".out":
+	    print self.fname[-4:], len(self.fname)
+	    print self.fname, ":",
+	    print " The file given is not a standard abinit '.out' output. " 
+	    print " Please check the file or simply rename it. " 
+	    raise ValueError    
+	elif os.path.isfile(self.fname): 
+	    print self.fname, ":",
+	    print " File name correct ", 
+	    print "and it also exists. "
+	else: 
+	    print self.fname, ":",
+	    print " File name correct "
+	    print "but it does not seem to exist. Bye. "
+	    raise ValueError    
+	
+    def get_gw_dts(self):
+        """
+        This methods detects and stores the dataset index 
+        and label (if any) where a gw 
+        calculation has been performed. 
+        This would be given to get_gw_ks_ev().
+        """ 
+        print "get_gw_dts ::"
+        l = self.dtsets
+        dlabels = self.dts_labels
+        gwsets = []
+        gwlabels = []
+        for i,mylist in enumerate(l):
+            if chk_gw(mylist): 
+                gwsets.append(i)
+                gwlabels.append(dlabels[i])
+                print "GW calculation found."
+        self.gw_dts = gwsets
+        self.gw_dts_labels = gwlabels
+        print "Done."
+
+    def get_gw_ks_ev(self,iset=0):
+        """
+        FIX IT!!!!!!
+        This methods returns a list of nkpt nband-long lists, 
+        containing the ks eigenvalues (floats) printed prior to a 
+        SIGMA (GW) calculation. 
+        It assumes that eigenvalues are listed one k point 
+        after the other (referring to 'nkpt') and they span 
+        'nband' values through 10 columns per row.
+        """
+        print "get_gw_ks_ev ::"
+        myset = self.dtsets[iset]
+        mylabels = self.dts_labels
+        thisnband = 'nband'+mylabels[iset]
+        dct = self.var_dict
+        if not dct.get(thisnband): 
+            thisnband = 'nband' # Fallback to nband
+        nkpt = dct.get('nkpt')[0]
+        nband = dct.get(thisnband)[0]
+        tmp_ks_ev = []
+        if chk_gw(myset):
+            tmp_kpt_ev = []
+            for i,line in enumerate(myset):
+                if "k  " in line and "eigenvalues" in line:
+                    istart = i+1
+                    break
+            ikpt = 0
+            ib = -1
+            for line in myset[istart:]:
+                words = line.split() 
+                if line == '':
+                    ib = -1
+                elif ib == -1:
+                    words.pop(0)
+                    ib = 0
+                if ib >= 0:
+                    for word in words:
+                        x = float(word)
+                        if ib < (nband-1): 
+                            tmp_kpt_ev.append(x)
+                            ib += 1
+                        else:
+                            tmp_kpt_ev.append(x)
+                            tmp_ks_ev.append(tmp_kpt_ev)
+                            tmp_kpt_ev = [] 
+                            ikpt += 1
+                            ib = -1
+                            break 
+                if ikpt == nkpt: 
+                    break 
+                self.gw_ks_ev = tmp_ks_ev
+            print "Done."
+        else: 
+            print "Not a valid GW dataset." 
+            raise ValueError 
+
+    def get_gw_qpen(self,iset=0,version=6):
+        """
+        Extracts the quasiparticle energies 
+        and the values for Vhartree
+        (optionally of all the other quantities)
+        from abinit output.
+        Optional variables:
+        - iset: which dataset in the dataset list
+          will be considered.
+        - version: which version of abinit has been used.
+          From version 6 on, the qp output has an additional
+          line containing the imaginary part of values.
+          Accordingly, possible values are: 5, 6.
+        """
+        print "get_gw_qpen ::"
+        myset = self.dtsets[iset]
+        mylabels = self.dts_labels
+        bdgwlabel = 'bdgw'+mylabels[iset]
+        #print "bdgwlabel:", bdgwlabel
+        dct = self.var_dict
+        if not dct.get(bdgwlabel): 
+            print " No", bdgwlabel, "found. Falling back to bdgw."
+            bdgwlabel = 'bdgw' # Fallback to bdgw
+        bdgw = dct.get(bdgwlabel)
+        nkpt = len(bdgw)
+        nband = int(1 + bdgw[0][-1] - bdgw[0][0]) # Hopefully nband is the same for all kptgw
+        type(bdgw)
+#        print "bdgwlabel:", bdgwlabel
+#        print "bdgw:",bdgw
+#        print "nkpt:",nkpt
+#        print "nband:",nband
+        #nband = 1 + dct.get(mybdgw)[-1] - dct.get(mybdgw)[0]
+        #print "nband:",nband
+        istart = 0
+        for i,line in enumerate(myset):
+            if " k = " in line:
+                istart = i
+                #print "i, k point:", i, line
+                break
+        ik = 0
+        ib = 0
+        elda = []
+        vxc = []
+        qpen = []
+        elda_k = []
+        vxc_k = []
+        hartree_k = []
+        qpen_k = []
+        if version >= 6: 
+            ic = 0 
+            qpen_im = []
+            qpen_im_k = []
+        for line in myset[istart:]:
+            if " k = " in line or "Band" in line:
+#                print "k point/header:", line
+                ib = 0
+            elif line == '':
+                #print "empty line", line
+                pass
+            elif "_gap" in line:
+                #print "gap line", line
+                pass
+            elif "energy" in line:
+                #print "energy line", line
+                pass
+#                THERE IS A CHANGE AFTER A CERTAIN VERSION OF ABINIT, 
+#                WHERE, FOR EACH BAND, TWO ROWS ARE DISPLAYED, 
+#                FOR THE REAL AND IMAGINARY PART OF EACH VALUE, 
+#                RESPECTIVELY. WE HAVE TO TAKE THAT INTO ACCOUNT. 
+            elif ib < nband:
+#                print "ik,ib,line:", ik,ib,line
+                words = map(float,line.split())
+                if version >=6: 
+                    if ic == 1: 
+                        qpen_im.append(words[9])
+                        ib += 1
+                        ic = 0
+                    else: 
+                        elda.append(words[1]) 
+                        vxc.append(words[2]) 
+                        qpen.append(words[9]) 
+                        ic += 1
+                else: 
+                    elda.append(words[1]) 
+                    vxc.append(words[2]) 
+                    qpen.append(words[9]) 
+                    ib += 1
+                if ib == (nband ):
+                    elda_k.append(elda)
+                    vxc_k.append(vxc)
+                    qpen_k.append(qpen)
+                    if version >=6: 
+                        qpen_im_k.append(qpen_im)
+                        qpen_im = []
+                        ic = 0
+                    elda = []
+                    vxc = []
+                    qpen = []
+                    ib = 0
+                    ik += 1
+        for a,b in zip(elda_k,vxc_k):
+            tmp = []
+            for c,d in zip(a,b): 
+                tmp.append(c-d) 
+            hartree_k.append(tmp)
+#        print np.array(qpen_k)
+#        if version >= 6: 
+#            print np.array(qpen_im_k) 
+#        print np.array(elda_k)
+#        print np.array(vxc_k)
+#        print np.array(hartree_k)
+        self.qpen = qpen_k
+        self.hartree = hartree_k
+        print "Done."
+#######################################################################
+
+class AbinitOutReader(CodeOutReader):
+    """
+    This class processes the abinit output and 
+    ideally puts it in a form more easily usable 
+    within python, using instances and method to 
+    access its data. 
+    Main feature is that it provides a searchable 
+    dictionary containing variables as keys and 
+    actual values (as float lists or numbers) as 
+    the dictionary's values.
+    """
+    def __init__(self,name=None):
+        """
+	Initialises several instances and calls 
+	a bunch of test methods. 
+	If no file name is given, it takes what 
+	it finds in the running directory. 
+	"""
+        CodeOutReader.__init__(self,name)
 
     ### METHODS HERE BELOW ###
     def get_version(self):

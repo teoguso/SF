@@ -37,7 +37,7 @@ def read_invar(infile='invar.in'):
             'extinf': False,
             'efermi': 0.0,
             'omega_p':0.0,
-            'enhartree': False
+            'enhartree': False,
             'gwcode': 'abinit'
             }
 #    varlist = list((
