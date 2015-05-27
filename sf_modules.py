@@ -150,7 +150,7 @@ def read_occ(maxkpt,minband,maxband):
         occ = 2.0*np.ones((maxkpt,maxband-minband+1))
     return occ                                 
 
-def read_sigfile2(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
+def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
     """                                        
     This function reads the real and imaginary parts of the self energy
     $\Sigma(\omega)$ from the file _SIG for the given bands and k points.

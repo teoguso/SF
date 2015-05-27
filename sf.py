@@ -58,20 +58,12 @@ print(gwout)
     #print(s)
     print(s.format(*x), end='\n')
 """
-hartree = gwout.hartree
-#TODO implement a __str__ method for CodeOutReader 
-# that prints out a well-formatted set of info.
-
 # ====== READING HARTREE ===== #
-#hartree = read_hartree()
-#hartree = hartree # - efermi
+hartree = gwout.hartree
 # ======== READING WTK ======= #
 if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VERSIONS
     wtk = read_wtk()
 # ======== READING _SIG FILE ======= #
-#en, res, ims = read_sigfile(nkpt,nband,sigfilename)
-#print " enmin, enmax"
-#print  enmin, enmax
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
 enmax = float(invar_dict['enmax'])
@@ -82,7 +74,7 @@ maxkpt = int(invar_dict['maxkpt'])
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
 sigfilename = invar_dict['sigmafile']
-en, res, ims = read_sigfile2(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
+en, res, ims = read_sigfile(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
 # Rescale energy if in hartree
 enhartree = invar_dict['enhartree']
 if enhartree is not None:
@@ -92,8 +84,7 @@ if enhartree is not None:
 # Reset wrt efermi
 en = en - efermi
 res[:,:] = res[:,:] - efermi
-print("en[0], en[-1], enmin, enmax")
-print(en[0], en[-1], enmin, enmax)
+print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
 nkpt =  int(invar_dict['nkpt']) 
 nband = maxband - minband +1
 print(" ### nkpt, nband:", nkpt, nband)
