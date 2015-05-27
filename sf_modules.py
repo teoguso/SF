@@ -397,6 +397,25 @@ def read_cross_sections(penergy):
     #print("cs:",np.transpose(cs),cs.shape)
     return cs
 
+def calc_pdos(var_dct):
+    """
+    Calculates projected DOS. 
+    """
+    penergy = var_dct['penergy']
+    sfac =  float(var_dct['sfactor'])
+    pfac =  float(var_dct['pfactor'])
+    nband = int(var_dct['nband'])
+    if penergy != 0:
+        # ======== CROSS SECTIONS ======= #
+        cs = read_cross_sections(penergy)
+        # ====== BAND TYPE AND SYMMETRY ==== #
+        sp = read_band_type_sym(sfac,pfac,nband)
+        # ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
+        pdos = 10000.*np.dot(cs,sp)
+    else:
+        pdos=np.ones((nband))
+    return pdos
+
 def read_band_type_sym(sfac,pfac,nband):
     """
     This function reads the s,p (TODO and d,f)

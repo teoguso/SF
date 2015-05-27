@@ -49,8 +49,11 @@ print (" SF :: END")
 for i in range(52): print('=',end='')
 print()
 #print 52*"="
-
-gwout = CodeOutReader(invar_dict['gwcode'])
+if len(sys.argv) > 1:
+    out_file = sys.argv[1]
+else:
+    out_file = None
+gwout = CodeOutReader(invar_dict['gwcode'],out_file)
 print(gwout)
 #print(gwout.fname)
 """for x in gwout.hartree: 
@@ -63,16 +66,11 @@ hartree = gwout.hartree
 # ======== READING WTK ======= #
 if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VERSIONS
     wtk = read_wtk()
+    invar_dict['wtk'] = wtk
 # ======== READING _SIG FILE ======= #
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
 enmax = float(invar_dict['enmax'])
-#enmit = enmin + efermi
-#enmat = enmax + efermi
-#minkpt = int(invar_dict['minkpt']) 
-#maxkpt = int(invar_dict['maxkpt']) 
-#sigfilename = invar_dict['sigmafile']
-#en, res, ims = read_sigfile(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
 en, res, ims = read_sigfile(invar_dict)
 # Rescale energy if in hartree
 enhartree = invar_dict['enhartree']
@@ -80,6 +78,7 @@ if enhartree is not None:
     print(" ### Converting energies from Hartree to eV ###")
     print(" ### 1 Hartree = 27.2116 eV ###")
     en = 2.0*13.6058*en
+#TODO: enmin and emax are still in hartrees. Check if this is consistent!
 # Reset wrt efermi
 en = en - efermi
 res[:,:] = res[:,:] - efermi
@@ -88,20 +87,39 @@ nkpt =  int(invar_dict['nkpt'])
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
+invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
-penergy = invar_dict['penergy']
-sfac =  float(invar_dict['sfactor'])
-pfac =  float(invar_dict['pfactor'])
-if penergy != 0:
-    # ======== CROSS SECTIONS ======= #
-    cs = read_cross_sections(penergy)
-    # ====== BAND TYPE AND SYMMETRY ==== #
-    sp = read_band_type_sym(sfac,pfac,nband)
-    # ===== EFFECTIVE STATE-DEPENDENT PREFACTOR ==== #
-    pdos = 10000.*np.dot(cs,sp)
-else:
-    pdos=np.ones((nband))
+pdos = calc_pdos(invar_dict)
 print(" pdos:", pdos)
 print(" Size(pdos):",np.size(pdos))
+#TODO: Check if consistent use of numpy arrays. 
+### ===================================================== ###
+print(" # ------------------------------------------------ # ")
+# Here we move to a subdirectory to avoid flooding-up the current directory
+newdirname = "Spfunctions"
+origdir = getcwd() # remember where we are
+newdir = join(origdir, newdirname) # Complete path of the new directory
+print(" Moving into output directory:\n ", newdir)
+if not isdir(newdir) :
+    mkdir(newdir)
+chdir(newdir)
+### ================================= ###
+### ===== GW SPECTRAL FUNCTION ====== ###
+# GW spectral function part
+if int(invar_dict['calc_gw']) == 1:
+    newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree)
+        ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
+    #newen = newen-efermi
+    print(" ### Writing out A(\omega)_GW...  ")
+    outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+    outfile = open(outname,'w')
+    for i in xrange(np.size(newen)):
+        outfile.write("%7.4f %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
+    outfile.close()
+    print(" A(\omega)_GW written in", outname)
+    plt.plot(newen,spftot,label="ftot_gw");
+
+# ============================= ###
+
 
