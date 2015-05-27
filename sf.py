@@ -67,14 +67,13 @@ if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VE
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
 enmax = float(invar_dict['enmax'])
-enmit = enmin + efermi
-enmat = enmax + efermi
-minkpt = int(invar_dict['minkpt']) 
-maxkpt = int(invar_dict['maxkpt']) 
-minband = int(invar_dict['minband']) 
-maxband = int(invar_dict['maxband']) 
-sigfilename = invar_dict['sigmafile']
-en, res, ims = read_sigfile(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
+#enmit = enmin + efermi
+#enmat = enmax + efermi
+#minkpt = int(invar_dict['minkpt']) 
+#maxkpt = int(invar_dict['maxkpt']) 
+#sigfilename = invar_dict['sigmafile']
+#en, res, ims = read_sigfile(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxband)
+en, res, ims = read_sigfile(invar_dict)
 # Rescale energy if in hartree
 enhartree = invar_dict['enhartree']
 if enhartree is not None:
@@ -86,6 +85,8 @@ en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
 nkpt =  int(invar_dict['nkpt']) 
+minband = int(invar_dict['minband']) 
+maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")

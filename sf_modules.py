@@ -5,6 +5,7 @@
 Functions necessary to the main script for the calculation 
 of spectral functions. 
 """
+from __future__ import print_function
 import numpy as np;
 import matplotlib.pylab as plt;
 from scipy.interpolate import interp1d
@@ -48,15 +49,15 @@ def read_invar(infile='invar.in'):
 #            ))
     varlist = var_defaults.keys()
     invar_dict = var_defaults.copy()
-    print "read_invar :: reading file:", infile
+    print("read_invar :: reading file: ", infile)
     with open(infile,'r') as f:
             lines = [line.strip('\n') for line in f]
-    #print varlist
+    #print(varlist)
     for var in varlist:
         for line in lines:
             last =  line.split()[-1]
             if var in last:
-                #print var, last
+                #print(var, last)
                 invar_dict[var] = line.split()[0]
     return invar_dict
     #if not isfile(infile):
@@ -75,17 +76,17 @@ def read_hartree():
 # TODO: write a function to read the parameters from not ad-hoc files
     import numpy as np;
     if isfile("hartree.dat"):
-        print " Reading file hartree.dat... ",
+        print(" Reading file hartree.dat... ",end="")
         hartreefile = open("hartree.dat");
         hartree = [];
         for line in hartreefile.readlines():
             hartree.append(map(float,line.split()));
         hartreefile.close()
-        print "Done."
+        print("Done.")
         hartree = np.array(hartree);
     elif isfile("E_lda.dat") and isfile("Vxc.dat"):
-        print " Auxiliary file (hartree.dat) not found."
-        print " Reading files E_lda.dat and Vxc.dat... ",
+        print("Auxiliary file (hartree.dat) not found.")
+        print("Reading files E_lda.dat and Vxc.dat... ",end="")
         Eldafile = open("E_lda.dat");
         Vxcfile = open("Vxc.dat");
         elda = [];
@@ -96,12 +97,12 @@ def read_hartree():
         for line in Vxcfile.readlines():
             vxc.append(map(float,line.split()));
         Vxcfile.close()
-        print "Done."
+        print("Done.")
         elda = np.array(elda);
         vxc = np.array(vxc);
         hartree = elda - vxc
     else : 
-        print " Auxiliary file not found (hartree/E_lda/Vxc). Impossible to continue."
+        print("Auxiliary file not found (hartree/E_lda/Vxc). Impossible to continue.")
         sys.exit(1)
     return hartree
 
@@ -118,7 +119,7 @@ def read_wtk():
     if isfile("wtk.dat"):
         wtkfile = open("wtk.dat");
     else : 
-        print " Auxiliary file not found (wtk.dat). Impossible to continue."
+        print("Auxiliary file not found (wtk.dat). Impossible to continue.")
         sys.exit(1)
     wtk = [];
     for line in wtkfile.readlines():
@@ -145,29 +146,41 @@ def read_occ(maxkpt,minband,maxband):
         occfile.close()
         occ = np.array(occ)
     else : 
-        print " Auxiliary file not found (occ.dat). "
-        print " Setting all occupations to 2.0."
+        print("Auxiliary file not found (occ.dat). ")
+        print("Setting all occupations to 2.0.")
         occ = 2.0*np.ones((maxkpt,maxband-minband+1))
     return occ                                 
 
-def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
+def read_sigfile(invar_dict):
     """                                        
     This function reads the real and imaginary parts of the self energy
     $\Sigma(\omega)$ from the file _SIG for the given bands and k points.
     It returns numpy arrays containing the energies, the real and the 
     imaginary part of the self energy.
     """
+    print("read_sigfile :: ",end="")
+#def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
     import numpy as np;
+    efermi =  float(invar_dict['efermi'])
+    enmin = float(invar_dict['enmin'])
+    enmax = float(invar_dict['enmax'])
+    enmit = enmin + efermi
+    enmat = enmax + efermi
+    minkpt = int(invar_dict['minkpt']) 
+    maxkpt = int(invar_dict['maxkpt']) 
+    minband = int(invar_dict['minband']) 
+    maxband = int(invar_dict['maxband']) 
+    sigfilename = invar_dict['sigmafile']
     if isfile(sigfilename):
         insigfile = open(sigfilename);
     else:
-        print "File "+sigfilename+" not found."
+        print("File "+sigfilename+" not found.")
         insigfile = open(raw_input("Self-energy file name (_SIG): "))
     # We put the content of the file (lines) in this array
     filelines = insigfile.readlines();
     en=[];
     # loop to prepare  the energy array
-    print " Reading array of energies from first k-point in _SIG file... ",
+    print(" Reading array of energies from first k-point in _SIG file... ",end="")
     trigger=0
     for line in filelines:
         if line[0:3]=='# k':
@@ -176,11 +189,11 @@ def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
         elif line[0:3]=='# b':
             firstband = int(line.split()[-2])
             if firstband>minband: 
-                print "ERROR: first band available in _SIG file is higher than minband. Please check."
+                print("ERROR: first band available in _SIG file is higher than minband. Please check.")
                 sys.exit(1)
             lastband =  int(line.split()[-1])
             if lastband<maxband: 
-                print "ERROR: last band available _SIG file is lower than maxband. Please check."
+                print("ERROR: last band available _SIG file is lower than maxband. Please check.")
                 sys.exit(1)
             trigger = 1
             continue
@@ -191,29 +204,28 @@ def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
             #    en.append(data[0])
             #elif data[0] < enmin: continue
             #else: break
-    print "Done."
-    print " Length of the energy array detected from _SIG file, first k point: "+str(len(en))
-    print " len(en): "+str(len(en))
+    print("Done.")
+    print(" Length of the energy array detected from _SIG file, first k point: ",str(len(en)))
+    print(" len(en): ",str(len(en)))
     en = np.array(en)
-    print " size(en): "+str(np.size(en))
+    print(" size(en): ",str(np.size(en)))
     dx = (en[-1]-en[0])/np.size(en)
-    print " dx:",dx
+    print(" dx:",dx)
     res = []
     ims = []
-    print "en[0], en[-1]"
-    print en[0], en[-1]
+    print("en[0], en[-1]\n", en[0], en[-1])
     ik=-1
     # Loop where we actually read Sigma
     for line in filelines:
         if line[0:3] == "# k": 
             nline=0
             ik=ik+1
-            print " kpt # %02d" % (ik+1)
-            print line,
+            print(" kpt # {:02d}".format(ik+1))
+            print(line,end="")
             res.append([])
             ims.append([])
             continue
-        elif line[0:3] == "# b": print line,; continue
+        elif line[0:3] == "# b": print(line,end=""); pass
         #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
         else:
             tmplist = map(float,line.split())
@@ -246,13 +258,14 @@ def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
         ib2=0
 #        for ib in xrange(minband-1,maxband):
         for ib in xrange(minband-firstband,nband-(lastband-maxband)):
-                #print "ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband
+                #print("ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband)
                 dum1[ik2,ib2]=res[ik,ib]
                 dum2[ik2,ib2]=ims[ik,ib]
                 ib2+=1
         ik2+=1
     res = dum1
     ims = dum2
+    print(" Done.")
     return en, res, ims
 
 def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
@@ -266,13 +279,13 @@ def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
     if isfile(sigfilename):
         insigfile = open(sigfilename);
     else:
-        print "File "+sigfilename+" not found."
+        print("File "+sigfilename+" not found.")
         insigfile = open(raw_input("Self-energy file name (_SIG): "))
     # We put the content of the file (lines) in this array
     filelines = insigfile.readlines();
     en=[];
     # loop to prepare  the energy array
-    print " Reading array of energies from first k-point in _SIG file... ",
+    print(" Reading array of energies from first k-point in _SIG file... ",end="")
     for line in filelines:
         if line[0:3]=='# k':
             continue
@@ -283,20 +296,20 @@ def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
             if float(data[0]) <= enmax :
                 en.append(float(data[0]))
             else: break
-    print "Done."
-    print " Length of the energy array detected from _SIG file, first k point: "+str(len(en))
-    print " len(en): "+str(len(en))
+    print("Done.")
+    print(" Length of the energy array detected from _SIG file, first k point: "+str(len(en)))
+    print(" len(en): "+str(len(en)))
     en = np.array(en)
-    print " size(en): "+str(np.size(en))
+    print(" size(en): "+str(np.size(en)))
     dx = (en[-1]-en[0])/np.size(en)
-    print " dx:",dx
-    print " ### ===== Reading _SIG file ... ===== #### "
+    print(" dx:",dx)
+    print(" ### ===== Reading _SIG file ... ===== #### ")
     # Preparation of arrays
     nkpt = maxkpt-minkpt+1
     nband = maxband-minband+1
     res=np.zeros((nkpt,nband,np.size(en)));
     ims=np.zeros((nkpt,nband,np.size(en)));
-    print " np.shape(res), np.shape(ims):", np.shape(res), np.shape(ims)
+    print(" np.shape(res), np.shape(ims):", np.shape(res), np.shape(ims))
     # Indexes initialization
     ikpt = 0;
     ib = 0;
@@ -306,15 +319,15 @@ def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
         icol = 0;
         ib = 0;
         if line[0:3]=='# k' :
-            #print line,
+            #print(line,)
             # Detect, in commented lines, the k point declaration
             if ikpt<minkpt-1 :
-                #print " --- k point:  %02i ---" % (ikpt);
+                #print(" --- k point:  %02i ---" % (ikpt);)
                 ikpt = ikpt + 1;
                 continue
             elif ikpt==maxkpt :
-                print " End of the reading loop: ikpt == maxkpt. ikpt, maxkpt: ", ikpt, maxkpt; 
-                print " #### ================================================ #### ";
+                print(" End of the reading loop: ikpt == maxkpt. ikpt, maxkpt: ", ikpt, maxkpt)
+                print(" #### ================================================ #### ")
                 break;
             else:
                 ikpt = ikpt + 1;
@@ -366,22 +379,22 @@ def read_cross_sections(penergy):
     cs array is returned. 
     """
     import numpy as np;
-    print " ### Reading cross sections...  "
+    print(" ### Reading cross sections...  ")
     csfilename = "cs"+str(penergy)+".dat"
     if isfile(csfilename):
-        print " Photon energy:", penergy,"eV"
+        print(" Photon energy:", penergy,"eV")
     else:
         penergy = raw_input(" File "+csfilename+" not found. Photon energy (eV): ")
         csfilename = "cs"+str(penergy)+".dat"
     cs = []
-    print " csfilename:",csfilename
+    print(" csfilename:",csfilename)
     csfile = open(csfilename,'r')
     for line in csfile.readlines():
         cs.append((float(line)));
     csfile.close()
     cs = np.array(cs)
-    #print "cs:",cs.shape,cs
-    #print "cs:",np.transpose(cs),cs.shape
+    #print("cs:",cs.shape,cs)
+    #print("cs:",np.transpose(cs),cs.shape)
     return cs
 
 def read_band_type_sym(sfac,pfac,nband):
@@ -402,18 +415,18 @@ def read_band_type_sym(sfac,pfac,nband):
     sp numpy array is returned.
     """
     import numpy as np;
-    print " Reading s bands file... ",
+    print(" Reading s bands file... ",)
     if isfile("s.dat"):
         sfile =  open("s.dat",'r')
         s = map(float,sfile.read().split())
         sfile.close()
         s = np.array(s)
-        print "Done."
+        print("Done.")
     else : 
         print
-        print " WARNING: File for orbital character not found (s.dat). S character will be 1 for all bands. "
+        print(" WARNING: File for orbital character not found (s.dat). S character will be 1 for all bands. ")
         s = np.ones(nband)
-    print " Reading p bands file... ",
+    print(" Reading p bands file... ",)
     if isfile("p_even.dat") and isfile("p_odd.dat"):
         # This file should contain the summed contribution of all even p orbitals
         pevenfile = open("p_even.dat",'r')
@@ -425,10 +438,10 @@ def read_band_type_sym(sfac,pfac,nband):
         poddfile.close()
         peven = np.array(peven)
         podd = np.array(podd)
-        print "Done."
+        print("Done.")
     else : 
         print
-        print " WARNING: File for orbital character not found (p_even.dat/p_odd.dat). P character will be 1 for all bands. "
+        print(" WARNING: File for orbital character not found (p_even.dat/p_odd.dat). P character will be 1 for all bands. ")
         peven = np.ones(nband)
         podd = np.ones(nband)
     # TODO: Add d bands!!!
@@ -440,7 +453,7 @@ def read_band_type_sym(sfac,pfac,nband):
     podd = pfac*podd
     p = peven+podd
     sp = np.array([s,p])
-    #print "sp:",sp
+    #print("sp:",sp)
     return sp
 
 def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree):
@@ -464,13 +477,13 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
         newen = np.arange(enmin,en[-1],newdx)
     else :  
         newen = np.arange(enmin,enmax,newdx)
-    print " ### Interpolation and calculation of A(\omega)_GW...  "
+    print(" ### Interpolation and calculation of A(\omega)_GW...  ")
     spftot = np.zeros((np.size(newen)));
     # Here we interpolate re and im sigma
     # for each band and k point
     for ik in xrange(nkpt):
         ikeff = minkpt+ik-1
-        print " k point = %02d " % (ikeff+1)
+        print(" k point = %02d " % (ikeff+1))
         for ib in xrange(0,nband):
             ibeff = minband+ib-1
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
@@ -478,7 +491,7 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
             tmpres = interpres(newen)
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
-            #print "ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib]
+            #print("ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib])
             tmpim = interpims(newen)
             spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             spftot += spfkb 
@@ -506,7 +519,7 @@ def find_eqp_resigma(en,resigma,efermi):
     zeros = []
     tmpeqp = en[0]
     for i in xrange(1,np.size(resigma)):
-        #print resigma[i]*resigma[i-1] # DEBUG
+        #print(resigma[i]*resigma[i-1] # DEBUG)
         if  resigma[i] == 0: # Yes, it can happen
             tmpeqp = en[i] 
             zeros.append(en[i])
@@ -516,8 +529,8 @@ def find_eqp_resigma(en,resigma,efermi):
             zeros.append(tmpeqp)
             nzeros+=1
     if tmpeqp>efermi: tmpeqp=zeros[0]
-    if nzeros==0 : print " WARNING: No eqp found! "
-    elif nzeros>1 : print " WARNING: Plasmarons! "
+    if nzeros==0 : print(" WARNING: No eqp found! ")
+    elif nzeros>1 : print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
 
 def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
@@ -538,11 +551,13 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
             tempim = interpims(en)
             # New method to overcome plasmaron problem
             eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
-            if nzeros==0: print " ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!";sys.exit()
+            if nzeros==0: 
+                print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
+                sys.exit()
             imeqp[ik,ib] = interpims(eqp[ik,ib])
             ## Warning if imaginary part of sigma < 0 (Convergence problems?)
             if imeqp[ik,ib] <= 0 : 
-                print " WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib]
+                print(" WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib])
 #    plt.show() # DEBUG
 #    sys.exit(1) # DEBUG
     return eqp, imeqp
@@ -559,7 +574,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     import numpy as np;
     from multipole import getdata_file #, write_f_as_sum_of_poles
     #extinfname = "a_wp.dat"
-    print " Reading extrinsic and interference contribution from file "+str(extinfname)+"..."
+    print(" Reading extrinsic and interference contribution from file "+str(extinfname)+"...")
     en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
     en_ei, ainf = getdata_file(origdir+"/"+str(extinfname),2)
     aextinf = aext+ainf
@@ -591,15 +606,15 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     newwmod = np.array(newwmod)
     interpwidth = interp1d(newen_ei, newwmod, kind = 'linear', axis = -1)
     w_extinf = ampole.copy()
-    print "omega_p, a_extinf, a_int:"
-    print newen_ei
-    print newa_ei
-    print newa_ei/newa_int
-    #print en_ei, newenexin
-    #print aextinf, newaexin
+    print("omega_p, a_extinf, a_int:")
+    print(newen_ei)
+    print(newa_ei)
+    print(newa_ei/newa_int)
+    #print(en_ei, newenexin)
+    #print(aextinf, newaexin)
     interpextinf = interp1d(newen_ei, newa_ei/newa_int, kind = 'linear', axis = -1)
     amp_exinf = ampole.copy()
-    #print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
+    #print("Type(amp_exinf, ampole):", type(amp_exinf), type(ampole))
     # Mod following discussion with Josh
     amp_mean = np.mean(ampole)
     for ik in xrange(nkpt):
@@ -625,10 +640,10 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
     if wkb is None:
         wkb = np.zeros(npoles)
     for ipole in xrange(npoles):
-        #print " First order"
+        #print(" First order")
         tmpf2=0.
         for jpole in xrange(npoles):
-            #print " Second order"
+            #print(" Second order")
             tmpf3=0.
             for kpole in xrange(npoles):
                 ## Fourth order
