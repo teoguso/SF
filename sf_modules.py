@@ -17,7 +17,7 @@ def read_invar(infile='invar.in'):
     """
     A small function that produces a list of the input variables
     using a dictionary.
-    Returns a dictionary with keys and variables.
+    Returns a dictionary with keys and variables from the invar file.
     """
     var_defaults = { 
             'sigmafile': None,

@@ -14,6 +14,7 @@ NOT ANYMORE - hartree.dat or elda.dat and vxc.dat for the hartree energies.
 NOT ANYMORE - wtk.dat for the k-points weights.
 TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 """
+from __future__ import print_function
 from sf_modules import *
 from outread import *
 import numpy as np;
@@ -29,23 +30,34 @@ from os import getcwd, pardir, mkdir, chdir
 ### ============================= ###
 
 # ======== READING INPUT VARIABLES ======= #
-print 52*"="
-print " SF :: START"
-print 52*"="
+for i in range(52): print('=',end='')
+print()
+print( " SF :: START")
+for i in range(52): print('=',end='')
+print()
 invar_dict = read_invar()
 #print ('%12s, %9.4f' % invar_dict.keys(), invar_dict.values())
-print " "+4*"="+" Input variables "+4*"="
+print(" "+"===="+" Input variables "+"====")
+print()
 for key in  invar_dict.keys():
     #print key, invar_dict[key]
     print ('%12s :: %12s' % (key, invar_dict[key]))
-print 52*"="
-print " SF :: END"
-print 52*"="
+for i in range(52): print('=',end='')
+print()
+#print 52*"="
+print (" SF :: END")
+for i in range(52): print('=',end='')
+print()
+#print 52*"="
 
 gwout = CodeOutReader(invar_dict['gwcode'])
-
-print gwout.fname
-print gwout.hartree
+print(gwout)
+#print(gwout.fname)
+"""for x in gwout.hartree: 
+    s = ' '.join(['{:10}']*len(x))
+    #print(s)
+    print(s.format(*x), end='\n')
+"""
 hartree = gwout.hartree
 #TODO implement a __str__ method for CodeOutReader 
 # that prints out a well-formatted set of info.
@@ -54,7 +66,8 @@ hartree = gwout.hartree
 #hartree = read_hartree()
 #hartree = hartree # - efermi
 # ======== READING WTK ======= #
-wtk = read_wtk()
+if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VERSIONS
+    wtk = read_wtk()
 # ======== READING _SIG FILE ======= #
 #en, res, ims = read_sigfile(nkpt,nband,sigfilename)
 #print " enmin, enmax"
@@ -73,18 +86,18 @@ en, res, ims = read_sigfile2(sigfilename,enmit,enmat,minkpt,maxkpt,minband,maxba
 # Rescale energy if in hartree
 enhartree = invar_dict['enhartree']
 if enhartree is not None:
-    print " ### Converting energies from Hartree to eV ###"
-    print " ### 1 Hartree = 27.2116 eV ###"
+    print(" ### Converting energies from Hartree to eV ###")
+    print(" ### 1 Hartree = 27.2116 eV ###")
     en = 2.0*13.6058*en
 # Reset wrt efermi
 en = en - efermi
 res[:,:] = res[:,:] - efermi
-print "en[0], en[-1], enmin, enmax"
-print en[0], en[-1], enmin, enmax
+print("en[0], en[-1], enmin, enmax")
+print(en[0], en[-1], enmin, enmax)
 nkpt =  int(invar_dict['nkpt']) 
 nband = maxband - minband +1
-print " ### nkpt, nband:", nkpt, nband
-print " # ------------------------------------------------ # ";
+print(" ### nkpt, nband:", nkpt, nband)
+print(" # ------------------------------------------------ # ")
 penergy = invar_dict['penergy']
 sfac =  float(invar_dict['sfactor'])
 pfac =  float(invar_dict['pfactor'])
@@ -97,6 +110,6 @@ if penergy != 0:
     pdos = 10000.*np.dot(cs,sp)
 else:
     pdos=np.ones((nband))
-print " pdos:", pdos
-print " Size(pdos):",np.size(pdos)
+print(" pdos:", pdos)
+print(" Size(pdos):",np.size(pdos))
 

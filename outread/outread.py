@@ -113,7 +113,7 @@ class CodeOutReader(object):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,code,name=None):
+    def __init__(self,code=None,name=None):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
@@ -167,6 +167,23 @@ class CodeOutReader(object):
         print 52*"-"
 
     ### METHODS HERE BELOW ###
+    def __str__(self):
+        """
+        Outputs a decently formatted output when you try to print 
+        the object.
+        """
+        header=" + == CodeOutReader printout == + "  
+        mystring = (
+                header+"\n" 
+                "    code       "+self.code +"\n"+
+                "    version    "+self.version +"\n"+ 
+                "    filename   "+self.fname +"\n"+
+                "    completed  "+str(self.completed) +"\n"+
+                header+"\n" 
+                )
+        return mystring
+
+
     def get_version(self):
         """
         Detects the version of abinit. 
