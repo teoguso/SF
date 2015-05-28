@@ -15,6 +15,7 @@ NOT ANYMORE - wtk.dat for the k-points weights.
 TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 """
 from __future__ import print_function
+from threading import Thread
 from sf_modules import *
 from outread import *
 import numpy as np;
@@ -24,11 +25,12 @@ import matplotlib.pylab as plt;
 import sys
 from os.path import isfile, join, isdir
 from os import getcwd, pardir, mkdir, chdir
+import time
 
 ### ============================= ###
 ###  ==  PROGRAM BEGINS HERE  ==  ###
 ### ============================= ###
-
+start_time = time.time()
 # ======== READING INPUT VARIABLES ======= #
 for i in range(52): print('=',end='')
 print()
@@ -73,12 +75,13 @@ enmin = float(invar_dict['enmin'])
 enmax = float(invar_dict['enmax'])
 en, res, ims = read_sigfile(invar_dict)
 # Rescale energy if in hartree
+print(invar_dict['enhartree'])
 enhartree = invar_dict['enhartree']
-if enhartree is not None:
+if enhartree and enhartree != 0:
     print(" ### Converting energies from Hartree to eV ###")
     print(" ### 1 Hartree = 27.2116 eV ###")
     en = 2.0*13.6058*en
-#TODO: enmin and emax are still in hartrees. Check if this is consistent!
+#TODO: enmin and emax are unchanged. Check if this is consistent!
 # Reset wrt efermi
 en = en - efermi
 res[:,:] = res[:,:] - efermi
@@ -106,12 +109,22 @@ if not isdir(newdir) :
 chdir(newdir)
 ### ================================= ###
 ### ===== GW SPECTRAL FUNCTION ====== ###
-# GW spectral function part
+t_part1 = time.time() - start_time
+print(" --- Time spent so far: {} seconds. ---".format(t_part1))
+# GW spectral function part (if requested)
 if int(invar_dict['calc_gw']) == 1:
-    newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree)
+    #newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree)
+    newen, spftot, allkb = calc_sf_gw(invar_dict,hartree,pdos,en,res,ims)
         ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
     print(" ### Writing out A(\omega)_GW...  ")
+    # Start a new thread
+    thread = Thread(target = write_spfkb, args = (invar_dict, newen, allkb))
+    thread.start()
+    #write_spfkb(invar_dict,newen,allkb)
+    sfac = invar_dict['sfactor']
+    pfac = invar_dict['pfactor']
+    penergy = invar_dict['penergy']
     outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
     outfile = open(outname,'w')
     for i in xrange(np.size(newen)):
@@ -120,6 +133,8 @@ if int(invar_dict['calc_gw']) == 1:
     print(" A(\omega)_GW written in", outname)
     plt.plot(newen,spftot,label="ftot_gw");
 
+print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
+print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
 # ============================= ###
 
 

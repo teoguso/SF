@@ -475,7 +475,8 @@ def read_band_type_sym(sfac,pfac,nband):
     #print("sp:",sp)
     return sp
 
-def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree):
+#def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree):
+def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     """
     Macro-function calling instructions necessary to calculate 
     the GW spectral function. 
@@ -485,9 +486,18 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
     spf (GW spectral function) is returned.
     """
     import numpy as np;
-    nkpt = maxkpt-minkpt+1
-    nband = maxband-minband+1
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
     newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
     if enmin < en[0] and enmax >= en[-1]:  
         newen = np.arange(en[0],en[-1],newdx)
     elif enmin < en[0]:  
@@ -500,6 +510,10 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
     spftot = np.zeros((np.size(newen)));
     # Here we interpolate re and im sigma
     # for each band and k point
+    spfkb = np.zeros(shape=(np.size(newen),nkpt,nband))
+    reskb = np.zeros(shape=(np.size(newen),nkpt,nband))
+    imskb = np.zeros(shape=(np.size(newen),nkpt,nband))
+    rdenkb = np.zeros(shape=(np.size(newen),nkpt,nband))
     for ik in xrange(nkpt):
         ikeff = minkpt+ik-1
         print(" k point = %02d " % (ikeff+1))
@@ -508,18 +522,46 @@ def calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,ha
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tmpres = interpres(newen)
+            reskb[:,ik,ib] = tmpres
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
+            rdenkb[:,ik,ib] = redenom
             #print("ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib])
             tmpim = interpims(newen)
-            spfkb = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
-            spftot += spfkb 
+            imskb[:,ik,ib] = tmpim
+            spfkb_tmp = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+            #print(spfkb.shape, spfkb_tmp.shape)
+            spfkb[:,ik,ib] = spfkb_tmp
+            spftot += spfkb_tmp
+    allkb = [spfkb,reskb, rdenkb, imskb]
+    return newen, spftot, allkb
+    #return newen, spftot, spfkb,reskb, rdemkb, imskb
+
+def write_spfkb(vardct,newen,allkb):
+    """
+    Does what it says. 
+    """
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    spfkb = allkb[0]
+    reskb = allkb[1]
+    rdenkb = allkb[2]
+    imskb = allkb[3]
+    for ik in xrange(nkpt):
+        ikeff = minkpt+ik-1
+        #print(" k point = %02d " % (ikeff+1))
+        for ib in xrange(0,nband):
+            ibeff = minband+ib-1
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
-                outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ien], redenom[ien], tmpres[ien], tmpim[ien]))
+                outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ien,ik,ib], rdenkb[ien,ik,ib], reskb[ien,ik,ib], imskb[ien,ik,ib]))
             outfilekb.close()
-    return newen, spftot
+    print("write_spfkb :: Done.")
 
 def find_eqp_resigma(en,resigma,efermi):
     """
