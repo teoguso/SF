@@ -541,6 +541,7 @@ def write_spfkb(vardct,newen,allkb):
     """
     Does what it says. 
     """
+    print("write_spfkb :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
     nkpt = maxkpt - minkpt + 1
@@ -594,6 +595,25 @@ def find_eqp_resigma(en,resigma,efermi):
     elif nzeros>1 : print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
 
+def write_eqp_imeqp(eqp,imeqp):
+    """
+    Does what it says.
+    """
+    print("write_eqp_imeqp :: ")
+    outname = "eqp.dat"
+    outfile2 = open(outname,'w')
+    outname = "imeqp.dat"
+    outfile3 = open(outname,'w')
+    for ik in xrange(np.size(eqp[:,0])):
+        for ib in xrange(np.size(eqp[0,:])):
+            outfile2.write("%14.5f" % (eqp[ik,ib]))
+            outfile3.write("%14.5f" % (imeqp[ik,ib]))
+        outfile2.write("\n")
+        outfile3.write("\n")
+    outfile2.close()
+    outfile3.close()
+    print("write_eqp_imeqp :: Done.")
+    
 def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
     """
     This function calculates qp energies and corresponding
@@ -605,6 +625,7 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
     import numpy as np;
     eqp = np.zeros((nkpt,nband))
     imeqp = np.zeros((nkpt,nband))
+    hartree = np.array(hartree)
     for ik in xrange(nkpt):
         for ib in xrange(nband):
             temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
