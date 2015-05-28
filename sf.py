@@ -152,11 +152,15 @@ if int(invar_dict['calc_exp']) == 1:
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
     eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0)
-    print(" Test imeqp:", imeqp)
+    print(" Test imeqp:\n", imeqp)
     # Writing out eqp
     # Writing out imeqp
     thread = Thread(target = write_eqp_imeqp, args = (eqp,imeqp))
     thread.start()
+    calc_sf_c(invar_dict,newen,allkb)
+
+
+    ### TODO: fix all below ###
     npoles = int(invar_dict['npoles'])
     if npoles==999:
         omegampole = np.ones((nkpt,nband))*omega_p
@@ -273,7 +277,9 @@ if int(invar_dict['calc_exp']) == 1:
     f=np.zeros((nkpt,nband,nenexp))
     ftot=np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
-    # With extrinsic effects
+
+    ############################
+    # With extrinsic effects ###
     if extinf == 1:
         from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
         for ik in xrange(nkpt):
