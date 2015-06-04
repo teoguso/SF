@@ -514,29 +514,30 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
     en_ei, ainf = getdata_file(origdir+"/"+str(extinfname),2)
     aextinf = aext+ainf
-    newen_ei = []
-    newen_ei.append(0.0)
-    for x in en_ei.tolist():
-        newen_ei.append(x)
-    newen_ei = np.array(newen_ei)
-    newa_ei = []
-    newa_ei.append(0.0)
-    for x in aextinf.tolist():
-        newa_ei.append(x)
-    newa_ei = np.array(newa_ei)
     # a_int from the model is in the third column
     en_ei, aint = getdata_file(origdir+"/"+str(extinfname),3)
-    newa_int = []
-    a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
-    newa_int.append(a_int_zero)
-    for x in aint.tolist():
-        newa_int.append(x)
-    newa_int = np.array(newa_int)
     # broadening from the model is in the fourth column
     en_ei, width = getdata_file(origdir+"/"+str(extinfname),4)
     newwmod = []
-    w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
-    newwmod.append(w_zero)
+    newen_ei = []
+    newa_ei = []
+    newa_int = []
+    if en_ei[0] != 0.: # Force omega_p = 0 condition if needed
+        newen_ei.append(0.0)
+        newa_ei.append(0.0)
+        a_int_zero = aint[1] - en_ei[1]*(aint[0]-aint[1])/(en_ei[0]-en_ei[1])
+        newa_int.append(a_int_zero)
+        w_zero = width[1] - en_ei[1]*(width[0]-width[1])/(en_ei[0]-en_ei[1])
+        newwmod.append(w_zero)
+    for x in en_ei.tolist():
+        newen_ei.append(x)
+    for x in aextinf.tolist():
+        newa_ei.append(x)
+    newen_ei = np.array(newen_ei)
+    newa_ei = np.array(newa_ei)
+    for x in aint.tolist():
+        newa_int.append(x)
+    newa_int = np.array(newa_int)
     for x in width.tolist():
         newwmod.append(x)
     newwmod = np.array(newwmod)
@@ -553,6 +554,10 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     #print "Type(amp_exinf, ampole):", type(amp_exinf), type(ampole)
     # Mod following discussion with Josh
     amp_mean = np.mean(ampole)
+    nkpt = ampole[:,0,0].size
+    nband = ampole[0,:,0].size
+    #print nkpt,nband
+    #sys.exit()
     for ik in xrange(nkpt):
         for ib in xrange(nband):
             #tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!

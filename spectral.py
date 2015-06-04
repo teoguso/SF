@@ -314,6 +314,8 @@ if flag_calc_exp == 1:
         # Extrinsic and interference contribution
         if extinf == 1:
             extinfname = "a_wp."+str(penergy)
+            #print nkpt, nband
+            #print ampole.shape, ampole[:,0].size, ampole[0,:].size
             amp_exinf, w_extinf = calc_extinf_corrections(origdir,extinfname,ampole,omegampole)
             print " ### Writing out a_j_extinf..."
             outname = "a_j_np"+str(npoles)+"_extinf."+str(penergy)
