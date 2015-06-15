@@ -163,7 +163,7 @@ if int(invar_dict['calc_exp']) == 1:
     # Writing out imeqp
     thread = Thread(target = write_eqp_imeqp, args = (eqp,imeqp))
     thread.start()
-    calc_sf_c(invar_dict, hartree, pdos, eqp, imeqp, newen, allkb)
+    enexp, ftot = calc_sf_c(invar_dict, hartree, pdos, eqp, imeqp, newen, allkb)
 
 
     ### TODO: fix all below ###
@@ -172,6 +172,6 @@ if int(invar_dict['calc_exp']) == 1:
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
 #title = 'Spectral function '+ 'A (' + r'$\omega $ ' + ') - '+r'$ h\nu = $'+str(penergy)+' eV'
-plt.title(title)
+#plt.title(title)
 plt.legend(loc=2)
 plt.show()

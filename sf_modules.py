@@ -775,6 +775,8 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #else :  
     #    newen = np.arange(enmin,enmax,newdx)
     npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
+    penergy = int(vardct['penergy'])
     #allkb = [spfkb,reskb, rdenkb, imskb]
     reskb = allkb[1]
     imskb = allkb[3]
@@ -819,16 +821,20 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             for ib in xrange(nband):
                 ibeff=minband+ib-1
                 print(" ik, ib", ik, ib)
-                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+                #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+                #print(newen.shape, imskb.shape)
+                interpims = interp1d(newen, imskb[:,ik,ib], kind = 'linear', axis = -1)
                 # Here we take the curve starting from eqp and then we invert it
                 # so as to have it defined on the positive x axis
                 # and so that the positive direction is in the 
                 # increasing direction of the array index
                 #if eqp[ik,ib] <= efermi:
                 if eqp[ik,ib] <= 0:
-                    en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+                    #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+                    en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
                 else:
-                    en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
+                    en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
+                    #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                 #en3 = en[en<=efermi]
                 im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
                 en3 = en3 - eqp[ik,ib]
@@ -897,8 +903,6 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
 
     ############################
     # With extrinsic effects ###
-    extinf = int(vardct['extinf'])
-    penergy = int(vardct['penergy'])
     if extinf == 1:
         from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
         for ik in xrange(nkpt):
@@ -977,4 +981,5 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
+    return enexp, ftot
 
