@@ -614,7 +614,7 @@ def write_eqp_imeqp(eqp,imeqp):
     outfile3.close()
     print("write_eqp_imeqp :: Done.")
     
-def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
+def calc_eqp_imeqp(en,res,ims,hartree,efermi):
     """
     This function calculates qp energies and corresponding
     values of the imaginary part of sigma for a set of
@@ -623,6 +623,8 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi):
     eqp and imeqp are returned. 
     """
     import numpy as np;
+    nkpt = np.size(res[:,0,0])
+    nband = np.size(res[0,:,0])
     eqp = np.zeros((nkpt,nband))
     imeqp = np.zeros((nkpt,nband))
     hartree = np.array(hartree)
@@ -747,9 +749,37 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
     ftot += f
     return ftot
 
-def calc_sf_c(invar_dict,newen,allkb):
-    npoles = int(invar_dict['npoles'])
-    if npoles==999:
+def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    This method takes care of the calculation of the cumulant. 
+    """
+    import numpy as np;
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    #if enmin < en[0] and enmax >= en[-1]:  
+    #    newen = np.arange(en[0],en[-1],newdx)
+    #elif enmin < en[0]:  
+    #    newen = np.arange(en[0],enmax,newdx)
+    #elif enmax >= en[-1] :  
+    #    newen = np.arange(enmin,en[-1],newdx)
+    #else :  
+    #    newen = np.arange(enmin,enmax,newdx)
+    npoles = int(vardct['npoles'])
+    #allkb = [spfkb,reskb, rdenkb, imskb]
+    reskb = allkb[1]
+    imskb = allkb[3]
+    if npoles==999: # same omega_p for every state, with the intensity calculated integrating Im(Sigma)
+        omega_p = float(vardct['omega_p'])
         omegampole = np.ones((nkpt,nband))*omega_p
         ampole =  np.zeros((nkpt,nband))
         for ik in xrange(nkpt):
@@ -758,11 +788,11 @@ def calc_sf_c(invar_dict,newen,allkb):
                 #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
                 #if eqp[ik,ib]<=efermi:
                 if eqp[ik,ib]<=0:
-                    tmpen = en[ims[ik,ib]>=0]
-                    tmpim = ims[ik,ib,ims[ik,ib]>=0]
+                    tmpen = newen[imskb[ik,ib]>=0]
+                    tmpim = imskb[ik,ib,imskb[ik,ib]>=0]
                 else:
-                    tmpen = en[ims[ik,ib]<0]
-                    tmpim = ims[ik,ib,ims[ik,ib]<0]
+                    tmpen = newen[imskb[ik,ib]<0]
+                    tmpim = imskb[ik,ib,ims[ik,ib]<0]
                 ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi
                 print(" 1/pi*\int\Sigma   =", ampole[ik,ib])
                 # Workaround correction for small energy plasmons
@@ -852,10 +882,10 @@ def calc_sf_c(invar_dict,newen,allkb):
     else:
         omegampole =  np.zeros((nkpt,nband))
         ampole =  np.zeros((nkpt,nband))
-    elaps2 = time.time() - elaps1 - e0
-    cpu2 = time.clock() - cpu1 - c0
+    #elaps2 = time.time() - elaps1 - e0
+    #cpu2 = time.clock() - cpu1 - c0
     #print(elaps2, cpu2)
-    print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
+    #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
     print(" Calculating multipole exponential A...")
     dxexp=0.005 
     enexp=np.arange(enmin,enmax,dxexp)
@@ -867,6 +897,8 @@ def calc_sf_c(invar_dict,newen,allkb):
 
     ############################
     # With extrinsic effects ###
+    extinf = int(vardct['extinf'])
+    penergy = int(vardct['penergy'])
     if extinf == 1:
         from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
         for ik in xrange(nkpt):
@@ -925,12 +957,14 @@ def calc_sf_c(invar_dict,newen,allkb):
                 outfilekb.close()
                 ftot = ftot + tmpf
                 #print(ftot[0], tmpf[0])
-    elaps2 = time.time() - elaps1 - e0
-    cpu2 = time.clock() - cpu1 - c0
+    #elaps2 = time.time() - elaps1 - e0
+    #cpu2 = time.clock() - cpu1 - c0
     #print(elaps2, cpu2)
-    print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
-    print(" ### Writing out A(\omega)_exp...  ")
+    #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
+    #print(" ### Writing out A(\omega)_exp...  ")
     #enexp = enexp-efermi
+    sfac = vardct['sfactor']
+    pfac = vardct['pfactor']
     if extinf == 1:
         outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
         outfile = open(outname,'w')

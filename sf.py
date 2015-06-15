@@ -114,12 +114,15 @@ chdir(newdir)
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_part1 = time.time() - start_time
 print(" --- Time spent so far: {} seconds. ---".format(t_part1))
-# GW spectral function part (if requested)
-if int(invar_dict['calc_gw']) == 1:
+# GW spectral function part 
     #newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree)
-    newen, spftot, allkb = calc_sf_gw(invar_dict,hartree,pdos,en,res,ims)
+# allkb contains A_GW, Re(Sigma), w-e_H-Re(Sigma), Im(Sigma)
+# for each ik,ib on the 'newen' array of energies. 
+# only A_GW is multiplied by wtk*pdos
+newen, spftot, allkb = calc_sf_gw(invar_dict,hartree,pdos,en,res,ims)
         ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
+if int(invar_dict['calc_gw']) == 1:
     print(" ### Writing out A(\omega)_GW...  ")
     # Start a new thread
     thread = Thread(target = write_spfkb, args = (invar_dict, newen, allkb))
@@ -129,10 +132,11 @@ if int(invar_dict['calc_gw']) == 1:
     pfac = invar_dict['pfactor']
     penergy = invar_dict['penergy']
     outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
-    outfile = open(outname,'w')
-    for i in xrange(np.size(newen)):
-        outfile.write("%7.4f %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
-    outfile.close()
+    #outfile = open(outname,'w')
+    with open(outname,'w') as outfile: 
+        for i in xrange(np.size(newen)): 
+            outfile.write("%7.4f %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
+    #outfile.close()
     print(" A(\omega)_GW written in", outname)
     plt.plot(newen,spftot,label="ftot_gw");
 
@@ -153,21 +157,21 @@ if int(invar_dict['calc_exp']) == 1:
     print(" ### Calculation of exponential A...  ")
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
-    eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0)
+    eqp, imeqp = calc_eqp_imeqp(en,res,ims,hartree,0)
     print(" Test imeqp:\n", imeqp)
     # Writing out eqp
     # Writing out imeqp
     thread = Thread(target = write_eqp_imeqp, args = (eqp,imeqp))
     thread.start()
-    calc_sf_c(invar_dict,newen,allkb)
+    calc_sf_c(invar_dict, hartree, pdos, eqp, imeqp, newen, allkb)
 
 
     ### TODO: fix all below ###
-#    plt.plot(enexp,ftot,label="ftot");
+    plt.plot(enexp,ftot,label="ftot");
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
 #title = 'Spectral function '+ 'A (' + r'$\omega $ ' + ') - '+r'$ h\nu = $'+str(penergy)+' eV'
-#plt.title(title)
-#plt.legend(loc=2)
-#plt.show()
+plt.title(title)
+plt.legend(loc=2)
+plt.show()
