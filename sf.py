@@ -157,7 +157,7 @@ if int(invar_dict['calc_exp']) == 1:
     print(" ### Calculation of exponential A...  ")
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
-    eqp, imeqp = calc_eqp_imeqp(en,res,ims,hartree,0)
+    eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0,minband)
     print(" Test imeqp:\n", imeqp)
     # Writing out eqp
     # Writing out imeqp

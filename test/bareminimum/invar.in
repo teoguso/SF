@@ -8,7 +8,7 @@ spo_DS3_SIG # sigmafile
 100          # enmax
 6.77 # efermi
 1.0         # sfactor
-0.0         # pfactor
+1.0         # pfactor
 800         # penergy
 0           # plasmon2
 0.6         # a_extinf

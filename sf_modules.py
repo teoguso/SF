@@ -614,7 +614,7 @@ def write_eqp_imeqp(eqp,imeqp):
     outfile3.close()
     print("write_eqp_imeqp :: Done.")
     
-def calc_eqp_imeqp(en,res,ims,hartree,efermi):
+def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi,minband):
     """
     This function calculates qp energies and corresponding
     values of the imaginary part of sigma for a set of
@@ -630,7 +630,9 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
     hartree = np.array(hartree)
     for ik in xrange(nkpt):
         for ib in xrange(nband):
-            temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
+            ibeff = minband + ib - 1
+            #temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
+            temparray = np.array(en - hartree[ik,ibeff] - res[ik,ib])
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tempim = interpims(en)
             # New method to overcome plasmaron problem
