@@ -57,7 +57,10 @@ if len(sys.argv) > 1:
     out_file = sys.argv[1]
 else:
     out_file = None
-gwout = CodeOutReader(invar_dict['gwcode'],out_file)
+if invar_dict['gwcode'] is 'abinit':
+    gwout = AbinitOutReader(out_file) 
+else: 
+    gwout = CodeOutReader(invar_dict['gwcode'],out_file)
 print(gwout)
 #print(gwout.fname)
 """for x in gwout.hartree: 
