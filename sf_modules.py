@@ -151,55 +151,51 @@ def read_occ(maxkpt,minband,maxband):
         occ = 2.0*np.ones((maxkpt,maxband-minband+1))
     return occ                                 
 
-def read_sigfile(invar_dict):
-    """                                        
-    This function reads the real and imaginary parts of the self energy
-    $\Sigma(\omega)$ from the file _SIG for the given bands and k points.
-    It returns numpy arrays containing the energies, the real and the 
-    imaginary part of the self energy.
+def read_sigfile2(invar_dict):
     """
-    print("read_sigfile :: ",end="")
-#def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
+    A hopefully better version.
+    This has to deal with the fact that abinit does not write 
+    all values of sigma for one enery on a single line, but
+    instead goes on a newline when a certain limit is reached.
+    """
     import numpy as np;
-    efermi =  float(invar_dict['efermi'])
-    enmin = float(invar_dict['enmin'])
-    enmax = float(invar_dict['enmax'])
-    enmit = enmin + efermi
-    enmat = enmax + efermi
-    minkpt = int(invar_dict['minkpt']) 
-    maxkpt = int(invar_dict['maxkpt']) 
-    minband = int(invar_dict['minband']) 
-    maxband = int(invar_dict['maxband']) 
-    sigfilename = invar_dict['sigmafile']
-    if isfile(sigfilename):
-        insigfile = open(sigfilename);
-    else:
-        print("File "+sigfilename+" not found.")
-        insigfile = open(raw_input("Self-energy file name (_SIG): "))
+    import glob
+    from time import sleep
+    print("read_sigfile :: ",end="")
     # We put the content of the file (lines) in this array
-    filelines = insigfile.readlines();
-    en=[];
-    # loop to prepare  the energy array
-    print(" Reading array of energies from first k-point in _SIG file... ",end="")
+    sigfilename = invar_dict['sigmafile']
+    en=[] 
     trigger=0
+    firstbd = 0
+    lastbd = 0
+    nbd = 0
+    row1 = True # are data not split in more than 1 line?
+    if sigfilename is None:
+        print("File "+str(sigfilename)+" not defined.")
+        sigfilename = glob.glob('*_SIG')[0]
+        print("Looking automatically for a _SIG file... ",sigfilename)
+    with open(sigfilename) as insigfile:
+        filelines = insigfile.readlines() 
     for line in filelines:
         if line[0:3]=='# k':
-            if trigger==1: break # So as to read just the first k point
-            continue
+            if trigger==1: 
+                break # So as to read just the first k point
+            else: 
+                continue
         elif line[0:3]=='# b':
-            firstband = int(line.split()[-2])
-            if firstband>minband: 
-                print("ERROR: first band available in _SIG file is higher than minband. Please check.")
-                sys.exit(1)
-            lastband =  int(line.split()[-1])
-            if lastband<maxband: 
-                print("ERROR: last band available _SIG file is lower than maxband. Please check.")
-                sys.exit(1)
+            firstbd = int(line.split()[-2])
+            lastbd =  int(line.split()[-1])
+            nbd = lastbd - firstbd + 1
             trigger = 1
-            continue
         else : 
             data=map(float,line.split())
-            en.append(data[0])
+            #print(len(data), (3*nbd + 1), row1)
+            if len(data) < (3*nbd + 1) and row1 is True: 
+                en.append(data[0])
+                row1 = False
+            else:
+                row1 = True
+                pass
             #if data[0] >= enmin and data[0] < enmax :
             #    en.append(data[0])
             #elif data[0] < enmin: continue
@@ -211,21 +207,160 @@ def read_sigfile(invar_dict):
     print(" size(en): ",str(np.size(en)))
     dx = (en[-1]-en[0])/np.size(en)
     print(" dx:",dx)
-    res = []
-    ims = []
     print("en[0], en[-1]\n", en[0], en[-1])
+    ### Let's redefine sigma from the beginning
+    ### It's a function of ispin, iband, ikpt, and energy
+    ### i.e. 4 variables. 
+    res = [list() for i in range(4)]
+    ims = [list() for i in range(4)]
+    #for ispin in xrange(nspin):
     ik=-1
+    ib = 0
+    row1 = True
+    nline = 0
     # Loop where we actually read Sigma
     for line in filelines:
+        print("ik, ib, row1, nline:", ik,ib, row1, nline)
         if line[0:3] == "# k": 
-            nline=0
-            ik=ik+1
+            nline = 0
+            ik += 1
+            #if ik == 1: break
             print(" kpt # {:02d}".format(ik+1))
             print(line,end="")
             res.append([])
             ims.append([])
             continue
-        elif line[0:3] == "# b": print(line,end=""); pass
+        elif line[0:3] == "# b": 
+            print(line,end="") 
+            continue
+        #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
+        else:
+            nums = map(float,line.split())
+            if row1 is True: 
+                del nums[0] # This is en
+                if len(nums) < (3*nbd + 1): 
+                    print("Newlines detected!")
+                    row1 = False
+            for i in xrange(len(nums)): 
+                #sleep(0.1)
+                print("ik, ib, row1, nline, np.shape(res):", ik,ib, row1, nline, np.shape(res))
+                if nline == 0:
+                    if i%3==0: 
+                        res[ik].append([])
+                        res[ik][ib].append(nums[i])
+                   #     print("row1 ik ib, i, line[i], res[ik][ib]:", (row1, ik,ib,i,nums[i],res[ik]))
+                    elif (i-1)%3==0:
+                        ims[ik].append([])
+                        ims[ik][ib].append(nums[i])
+                    elif (i-2)%3==0: 
+                        ib = ib+1
+                elif  i%3==0:
+               #    print("ik ib, i, line[i]:", ik,ib,i,tmplist[i])
+               #    print(np.shape(res))
+                    res[ik][ib].append(nums[i])
+                elif (i-1)%3==0 : 
+                    ims[ik][ib].append(nums[i])
+                elif (i-2)%3==0: 
+                    ib = ib+1
+                    continue
+                if ib == nbd:
+                    ib = 0
+                    if row1 is True: 
+                        nline += 1
+                    else:
+                        nline += 1
+                        print("END KPT")
+                        row1 = True
+        #else:  continue
+    res = np.array(res)
+    ims = np.array(ims)
+    print(" Done.")
+    return en, res, ims
+
+    def read_sigfile_OLD2(invar_dict):
+        """                                        
+        This function reads the real and imaginary parts of the self energy
+        $\Sigma(\omega)$ from the file _SIG for the given bands and k points.
+        It returns numpy arrays containing the energies, the real and the 
+        imaginary part of the self energy.
+        """
+        print("read_sigfile :: ",end="")
+    #def read_sigfile(sigfilename,enmin,enmax,minkpt,maxkpt,minband,maxband):
+        import numpy as np;
+        import glob
+        efermi =  float(invar_dict['efermi'])
+        enmin = float(invar_dict['enmin'])
+        enmax = float(invar_dict['enmax'])
+        enmit = enmin + efermi
+        enmat = enmax + efermi
+        minkpt = int(invar_dict['minkpt']) 
+        maxkpt = int(invar_dict['maxkpt']) 
+        minband = int(invar_dict['minband']) 
+        maxband = int(invar_dict['maxband']) 
+        try: 
+        #print(sigfilename)
+        #if isfile(sigfilename):
+            sigfilename = invar_dict['sigmafile']
+            insigfile = open(sigfilename)
+        #else:
+        except:
+            print("File "+str(sigfilename)+" not found.")
+            sigfilename = glob.glob('*_SIG')[0]
+            print("Looking automatically for a _SIG file... ",sigfilename)
+            insigfile = open(sigfilename)
+            #insigfile = open(raw_input("Self-energy file name (_SIG): "))
+        # We put the content of the file (lines) in this array
+        filelines = insigfile.readlines();
+        en=[];
+        # loop to prepare  the energy array
+        print(" Reading array of energies from first k-point in _SIG file... ",end="")
+        trigger=0
+        for line in filelines:
+            if line[0:3]=='# k':
+                if trigger==1: break # So as to read just the first k point
+                continue
+            elif line[0:3]=='# b':
+                firstbd = int(line.split()[-2])
+                if firstbd>minband: 
+                    print("ERROR: first band available in _SIG file is higher than minband. Please check.")
+                    sys.exit(1)
+                lastbd =  int(line.split()[-1])
+                if lastbd<maxband: 
+                    print("ERROR: last band available _SIG file is lower than maxband. Please check.")
+                    sys.exit(1)
+                trigger = 1
+                continue
+            else : 
+                data=map(float,line.split())
+                en.append(data[0])
+                #if data[0] >= enmin and data[0] < enmax :
+                #    en.append(data[0])
+                #elif data[0] < enmin: continue
+            #else: break
+    print("Done.")
+    print(" Length of the energy array detected from _SIG file, first k point: ",str(len(en)))
+    print(" len(en): ",str(len(en)))
+    en = np.array(en)
+    print(" size(en): ",str(np.size(en)))
+    dx = (en[-1]-en[0])/np.size(en)
+    print(" dx:",dx)
+    print("en[0], en[-1]\n", en[0], en[-1])
+    res = []
+    ims = []
+    ik=-1
+    # Loop where we actually read Sigma
+    for line in filelines:
+        if line[0:3] == "# k": 
+            nline=0
+            ik += 1
+            print(" kpt # {:02d}".format(ik+1))
+            print(line,end="")
+            res.append([])
+            ims.append([])
+            continue
+        elif line[0:3] == "# b": 
+            print(line,end="") 
+            continue
         #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
         else:
             tmplist = map(float,line.split())
@@ -253,11 +388,11 @@ def read_sigfile(invar_dict):
     ib2=0
     dum1 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
     dum2 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
-    nband = lastband-firstband+1
+    nband = lastbd-firstbd+1
     for ik in xrange(minkpt-1,maxkpt):
         ib2=0
 #        for ib in xrange(minband-1,maxband):
-        for ib in xrange(minband-firstband,nband-(lastband-maxband)):
+        for ib in xrange(minband-firstbd,nband-(lastbd-maxband)):
                 #print("ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband)
                 dum1[ik2,ib2]=res[ik,ib]
                 dum2[ik2,ib2]=ims[ik,ib]
@@ -363,7 +498,8 @@ def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
                     ib = ib + 1;
                     icol = icol + 1;
                     continue;
-        else: continue
+        else: 
+            continue
     #plt.plot(en,res[0,0]); plt.plot(en,ims[0,0]);plt.show();sys.exit(1)
     return en, res, ims
 
