@@ -180,6 +180,33 @@ def read_sigfile2(invar_dict):
         print("Looking automatically for a _SIG file... ",sigfilename)
     with open(sigfilename) as insigfile:
         filelines = insigfile.readlines() 
+        insigfile.seek(0)
+        insigfile.readline()
+        line = insigfile.readline()
+        firstbd = int(line.split()[-2])
+        lastbd =  int(line.split()[-1])
+        nbd = lastbd - firstbd + 1
+        print("nbd:",nbd)
+        num_cols = len(insigfile.readline().split())
+        print("numcols:",num_cols)
+        insigfile.seek(0)
+        xen = np.genfromtxt(sigfilename,usecols = 0)
+        insigfile.seek(0)
+        x = np.genfromtxt(sigfilename,usecols = range(1,num_cols))
+    print("x[0,:]:",x[0,:])
+    print(len(x[0,:]))
+    print("shape(x)",np.shape(x))
+    print("size(x)",np.size(x))
+    nkpt = int(invar_dict['nkpt'])
+    # From a long line to a proper 2D array
+    a = xen.reshape(nkpt,np.size(xen)/nkpt)
+    #print(a)
+    print("New shape en:",np.shape(a))
+    b = x.reshape(nkpt,3*nbd,np.size(x)/nkpt/nbd/3)
+    print("New shape x:",np.shape(b))
+    #print(a[0])
+    sys.exit()
+    ##################################
     for line in filelines:
         if line[0:3]=='# k':
             if trigger==1: 
