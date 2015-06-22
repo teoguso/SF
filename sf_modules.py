@@ -39,7 +39,9 @@ def read_invar(infile='invar.in'):
             'efermi': 0.0,
             'omega_p':0.0,
             'enhartree': False,
-            'gwcode': 'abinit'
+            'gwcode': 'abinit',
+            'nspin': 0, # AF
+            'spin': 0
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -157,6 +159,8 @@ def read_sigfile2(invar_dict):
     This has to deal with the fact that abinit does not write 
     all values of sigma for one enery on a single line, but
     instead goes on a newline when a certain limit is reached.
+    also: SPIN!!! For the moment, it will skip every second kpt,
+    i.e. it will read only one spin channel. 
     """
     import numpy as np;
     import glob
@@ -169,7 +173,7 @@ def read_sigfile2(invar_dict):
     firstbd = 0
     lastbd = 0
     nbd = 0
-    row1 = True # are data not split in more than 1 line?
+    sngl_row = True # are data not split in more than 1 line?
     if sigfilename is None:
         print("File "+str(sigfilename)+" not defined.")
         sigfilename = glob.glob('*_SIG')[0]
@@ -189,13 +193,12 @@ def read_sigfile2(invar_dict):
             trigger = 1
         else : 
             data=map(float,line.split())
-            #print(len(data), (3*nbd + 1), row1)
-            if len(data) < (3*nbd + 1) and row1 is True: 
+            #print(len(data), (3*nbd + 1), sngl_row)
+            if len(data) < (3*nbd + 1):
                 en.append(data[0])
-                row1 = False
+                sngl_row = False
             else:
-                row1 = True
-                pass
+                en.append(data[0])
             #if data[0] >= enmin and data[0] < enmax :
             #    en.append(data[0])
             #elif data[0] < enmin: continue
@@ -211,71 +214,169 @@ def read_sigfile2(invar_dict):
     ### Let's redefine sigma from the beginning
     ### It's a function of ispin, iband, ikpt, and energy
     ### i.e. 4 variables. 
-    res = [list() for i in range(4)]
-    ims = [list() for i in range(4)]
+    #res = [list() for i in range(4)]
+    #ims = [list() for i in range(4)]
     #for ispin in xrange(nspin):
-    ik=-1
-    ib = 0
-    row1 = True
-    nline = 0
-    # Loop where we actually read Sigma
+    res = []
+    ims = []
+    # Here we build the array structure
     for line in filelines:
-        print("ik, ib, row1, nline:", ik,ib, row1, nline)
-        if line[0:3] == "# k": 
-            nline = 0
-            ik += 1
-            #if ik == 1: break
-            print(" kpt # {:02d}".format(ik+1))
-            print(line,end="")
-            res.append([])
+        if line[0:3]=='# k': 
+            res.append([]) 
             ims.append([])
-            continue
-        elif line[0:3] == "# b": 
-            print(line,end="") 
-            continue
-        #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
+    for a,b in zip(res,ims):
+        for ib in range(nbd):
+            a.append([])
+            b.append([])
+    #print(res)
+    #sys.exit()
+#   nkpt = int(invar_dict['nkpt'])
+#   for ik in range(nkpt):
+#       res.append([])
+#       ims.append([])
+#       for ib in range(nbd):
+#           res[ik].append([])
+#           ims[ik].append([])
+    ik= 0
+    ib = 0
+    if sngl_row is False:
+        print("Data are split between multiple lines!")
+    nline = 0
+    if 'spin' in invar_dict:
+        if int(invar_dict['spin']) == 1:
+            print("Taking a single spin channel!")
+            spin = True
+            nspin = 0
         else:
-            nums = map(float,line.split())
-            if row1 is True: 
-                del nums[0] # This is en
-                if len(nums) < (3*nbd + 1): 
-                    print("Newlines detected!")
-                    row1 = False
-            for i in xrange(len(nums)): 
-                #sleep(0.1)
-                print("ik, ib, row1, nline, np.shape(res):", ik,ib, row1, nline, np.shape(res))
-                if nline == 0:
-                    if i%3==0: 
-                        res[ik].append([])
-                        res[ik][ib].append(nums[i])
-                   #     print("row1 ik ib, i, line[i], res[ik][ib]:", (row1, ik,ib,i,nums[i],res[ik]))
-                    elif (i-1)%3==0:
-                        ims[ik].append([])
-                        ims[ik][ib].append(nums[i])
-                    elif (i-2)%3==0: 
-                        ib = ib+1
-                elif  i%3==0:
-               #    print("ik ib, i, line[i]:", ik,ib,i,tmplist[i])
-               #    print(np.shape(res))
-                    res[ik][ib].append(nums[i])
-                elif (i-1)%3==0 : 
-                    ims[ik][ib].append(nums[i])
-                elif (i-2)%3==0: 
-                    ib = ib+1
+            spin = False
+    else:
+        spin = False
+    for line in filelines:
+        if line[0:3] == "# k":
+            if spin is True: 
+                if nspin == 1: 
+                    nspin = 0 
+                    continue 
+                elif nspin == 0: 
+                    nspin = 1 
+                    print(line,end="")
+            else:
+                print(line,end="")
+        elif line[0:3] == "# b": 
+            if spin is True:
+                if nspin == 0:
                     continue
-                if ib == nbd:
-                    ib = 0
-                    if row1 is True: 
-                        nline += 1
-                    else:
-                        nline += 1
-                        print("END KPT")
-                        row1 = True
-        #else:  continue
+                else:
+                    print(line,end="")
+            else: 
+                print(line,end="") 
+        elif spin is True:
+            if nspin == 0: 
+                continue
+        else:
+            nums_a = map(float,line.split())
+            nrow = 0
+            if sngl_row is True: 
+                nums = nums_a
+            elif nrow == 0:
+                nums = nums_a.copy()
+                nrow += 1
+                continue
+            elif nrow == 1:
+                nums.append(nums_a)
+                nrow = 0
+            nums.pop(0) # This is en
+            print(ik, ib, len(nums), np.shape(res))
+            while(len(nums)>0):
+                res[ik][ib].append(nums.pop(0))
+                ims[ik][ib].append(nums.pop(0))
+                nums.pop(0)
+                print("ik, ib, len(nums), np.shape(res):", ik, ib, len(nums), np.shape(res))
+                ib += 1
+                print(ib)
+            ik += 1
+            #for word in nums:
+            #for i in range(len(nums)): 
+                # TODO
+                # THIS CANNOT WORK BECAUSE A NEWLINE MIGHT
+                # HAPPEN BEFORE OR AFTER A MULTIPLE OF 3.
+                # A DIFFERENT INDEX IS NEEDED.
+#               if  i%3==0:
+#              #    print("ik ib, i, line[i]:", ik,ib,i,tmplist[i])
+#              #    print(np.shape(res))
+#                   res[ik][ib].append(nums[i])
+#               elif (i-1)%3==0: 
+#                   ims[ik][ib].append(nums[i])
+#                   ib = ib+1
+#               #elif (i-2)%3==0: 
+#               if ib == nbd:
+#                   ib = 0
+#                   if sngl_row is True: 
+#                       nline += 1
+#                   else:
+#                       nline += 1
+#                       print("END kpt multiline")
+#                       sngl_row = True
+    res2 = np.zeros((nkpt,nbd,str(np.size(en))))
+    ims2 = np.zeros((nkpt,nbd,str(np.size(en))))
     res = np.array(res)
     ims = np.array(ims)
     print(" Done.")
     return en, res, ims
+#   # Loop where we actually read Sigma
+#   for line in filelines:
+#       print("ik, ib, sngl_row, nline:", ik,ib, sngl_row, nline)
+#       if line[0:3] == "# k": 
+#           nline = 0
+#           ik += 1
+#           #if ik == 1: break
+#           print(" kpt # {:02d}".format(ik+1))
+#           print(line,end="")
+#           res.append([])
+#           ims.append([])
+#           continue
+#       elif line[0:3] == "# b": 
+#           print(line,end="") 
+#           continue
+#       #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
+#       else:
+#           nums = map(float,line.split())
+#           if sngl_row is True: 
+#               del nums[0] # This is en
+#               if len(nums) < (3*nbd + 1): 
+#                   print("Newlines detected!")
+#                   sngl_row = False
+#           for i in xrange(len(nums)): 
+#               #sleep(0.1)
+#               print("ik, ib, sngl_row, nline, np.shape(res):", ik,ib, sngl_row, nline, np.shape(res))
+#               if nline == 0:
+#                   if i%3==0: 
+#                       res[ik].append([])
+#                       res[ik][ib].append(nums[i])
+#                  #     print("sngl_row ik ib, i, line[i], res[ik][ib]:", (sngl_row, ik,ib,i,nums[i],res[ik]))
+#                   elif (i-1)%3==0:
+#                       ims[ik].append([])
+#                       ims[ik][ib].append(nums[i])
+#                   elif (i-2)%3==0: 
+#                       ib = ib+1
+#               elif  i%3==0:
+#              #    print("ik ib, i, line[i]:", ik,ib,i,tmplist[i])
+#              #    print(np.shape(res))
+#                   res[ik][ib].append(nums[i])
+#               elif (i-1)%3==0 : 
+#                   ims[ik][ib].append(nums[i])
+#               elif (i-2)%3==0: 
+#                   ib = ib+1
+#                   continue
+#               if ib == nbd:
+#                   ib = 0
+#                   if sngl_row is True: 
+#                       nline += 1
+#                   else:
+#                       nline += 1
+#                       print("END KPT")
+#                       sngl_row = True
+        #else:  continue
 
     def read_sigfile_OLD2(invar_dict):
         """                                        
