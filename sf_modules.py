@@ -153,7 +153,7 @@ def read_occ(maxkpt,minband,maxband):
         occ = 2.0*np.ones((maxkpt,maxband-minband+1))
     return occ                                 
 
-def read_sigfile2(invar_dict):
+def read_sigfile(invar_dict):
     """
     A hopefully better version.
     This has to deal with the fact that abinit does not write 
@@ -203,7 +203,7 @@ def read_sigfile2(invar_dict):
     y = b[:,:,0::3]
     z = b[:,:,1::3]
     res = np.rollaxis(y,-1,1)
-    ims = np.rollaxis(y,-1,1)
+    ims = np.rollaxis(z,-1,1)
     print(" Done.")
     return en, res, ims
 

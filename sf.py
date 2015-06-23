@@ -78,7 +78,7 @@ if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VE
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
 enmax = float(invar_dict['enmax'])
-en, res, ims = read_sigfile2(invar_dict)
+en, res, ims = read_sigfile(invar_dict)
 # Rescale energy if in hartree
 print(invar_dict['enhartree'])
 enhartree = invar_dict['enhartree']
