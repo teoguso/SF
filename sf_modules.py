@@ -153,6 +153,9 @@ def read_occ(maxkpt,minband,maxband):
         occ = 2.0*np.ones((maxkpt,maxband-minband+1))
     return occ                                 
 
+def strictly_increasing(L):
+    return all(x<y for x, y in zip(L, L[1:]))
+
 def read_sigfile(invar_dict):
     """
     A hopefully better version.
@@ -194,8 +197,10 @@ def read_sigfile(invar_dict):
         insigfile.seek(0)
         x = np.genfromtxt(sigfilename,usecols = range(1,num_cols))
     nkpt = int(invar_dict['nkpt'])
-    # From a long line to a proper 2D array
+    # From a long line to a proper 2D array, then only first row
     en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
+    if not strictly_increasing(en):
+        print("WARNING: newlines in _SIG file.")
     #print(a)
     print("New shape en:",np.shape(en))
     b = x.reshape(nkpt,np.size(x)/nkpt/nbd/3,3*nbd)
