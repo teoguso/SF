@@ -191,16 +191,49 @@ def read_sigfile(invar_dict):
         nbd = lastbd - firstbd + 1
         print("nbd:",nbd)
         num_cols = len(insigfile.readline().split())
+        num_cols2 = len(insigfile.readline().split())
         print("numcols:",num_cols)
-        insigfile.seek(0)
-        xen = np.genfromtxt(sigfilename,usecols = 0)
-        insigfile.seek(0)
-        x = np.genfromtxt(sigfilename,usecols = range(1,num_cols))
+        print("numcols2:",num_cols2)
+        if num_cols != num_cols2: 
+            print("WARNING: newlines in _SIG file.")
+            tmp_file = 'sig.tmp'
+            new_list = []
+            #with open(tmp_file,'w') as f:
+            nline = 0
+            for line in filelines:
+                if line.split()[0] == "#":
+                    continue
+                if nline == 0: 
+                    a = map(float,line.split()) 
+                    nline += 1
+                else: 
+                    b = map(float,line.split())
+                    for word in b: 
+                        a.append(word)
+                    new_list.append(a)
+                    nline = 0
+           #        for word in a:
+           #            f.write("  "+word+"  ")
+           #        f.write("\n")
+               #print(new_list[0])
+               #print(len(new_list[0]))
+           #with open(tmp_file,'r') as f:
+           #    f.seek(0)
+           #    xen = np.genfromtxt(f,usecols = 0)
+           #    f.seek(0)
+           #    x = np.genfromtxt(f,usecols = range(1,num_cols), filling_values = 'NaN')
+            xen = np.asarray(new_list[0])
+            x = np.asarray(new_list[1:])
+        else:
+            insigfile.seek(0)
+            xen = np.genfromtxt(sigfilename,usecols = 0)
+            insigfile.seek(0)
+            x = np.genfromtxt(sigfilename,usecols = range(1,num_cols), filling_values = 'NaN')
     nkpt = int(invar_dict['nkpt'])
     # From a long line to a proper 2D array, then only first row
     en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
-    if not strictly_increasing(en):
-        print("WARNING: newlines in _SIG file.")
+    print(en)
+    sys.exit()
     #print(a)
     print("New shape en:",np.shape(en))
     b = x.reshape(nkpt,np.size(x)/nkpt/nbd/3,3*nbd)
