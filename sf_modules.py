@@ -40,8 +40,8 @@ def read_invar(infile='invar.in'):
             'omega_p':0.0,
             'enhartree': False,
             'gwcode': 'abinit',
-            'nspin': 0, # AF
-            'spin': 0
+            'nspin': 0, 
+            'spin': 1
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -58,12 +58,10 @@ def read_invar(infile='invar.in'):
     for var in varlist:
         for line in lines:
             last =  line.split()[-1]
-            if var in last:
+            if var == last:
                 #print(var, last)
                 invar_dict[var] = line.split()[0]
     return invar_dict
-    #if not isfile(infile):
-    #    sys.exit()
 
 def read_hartree():
     """
@@ -156,6 +154,23 @@ def read_occ(maxkpt,minband,maxband):
 def strictly_increasing(L):
     return all(x<y for x, y in zip(L, L[1:]))
 
+def calc_nkpt_sigfile(insigfile, spin = False):
+    """
+    Get number of kpt from a _SIG file
+    """
+    print("calc_nkpt_sigfile ::",end='')
+    insigfile.seek(0)
+    lines = insigfile.readlines()
+    nkpt = 0
+    for line in lines:
+        if '#' in line:
+            nkpt += 1
+    nkpt = nkpt/2
+    if spin == 1:
+        nkpt = nkpt/2
+    print("nkpt= {}".format(nkpt))
+    return nkpt
+
 def read_sigfile(invar_dict):
     """
     A hopefully better version.
@@ -171,18 +186,22 @@ def read_sigfile(invar_dict):
     print("read_sigfile :: ",end="")
     # We put the content of the file (lines) in this array
     sigfilename = invar_dict['sigmafile']
+    spin = int(invar_dict['spin'])
+    nspin = int(invar_dict['nspin'])
+    nkpt = 0
     #en=[] 
     trigger=0
     firstbd = 0
     lastbd = 0
     nbd = 0
-    sngl_row = True # are data not split in more than 1 line?
+    #sngl_row = True # are data not split in more than 1 line?
     if sigfilename is None:
         print("File "+str(sigfilename)+" not defined.")
         sigfilename = glob.glob('*_SIG')[0]
         print("Looking automatically for a _SIG file... ",sigfilename)
     with open(sigfilename) as insigfile:
         filelines = insigfile.readlines() 
+        nkpt = calc_nkpt_sigfile(insigfile,spin)
         insigfile.seek(0)
         insigfile.readline()
         line = insigfile.readline()
@@ -196,52 +215,81 @@ def read_sigfile(invar_dict):
         print("numcols2:",num_cols2)
         if num_cols != num_cols2: 
             print("WARNING: newlines in _SIG file.")
-            tmp_file = 'sig.tmp'
+            print("Reshaping _SIG file structure...")
+            print("_SIG file length (rows):", len(filelines))
             new_list = []
-            #with open(tmp_file,'w') as f:
             nline = 0
+            a = []
+            b = []
             for line in filelines:
-                if line.split()[0] == "#":
+                #if line.split()[0] == "#":
+                if '#' in line:
+                    print(line.strip('\n'))
                     continue
-                if nline == 0: 
-                    a = map(float,line.split()) 
+                elif nline == 0: 
+                    a = line.strip('\n')
                     nline += 1
                 else: 
-                    b = map(float,line.split())
-                    for word in b: 
-                        a.append(word)
-                    new_list.append(a)
+                    b = line.strip('\n')
+                    new_list.append(a + " " + b)
                     nline = 0
-           #        for word in a:
-           #            f.write("  "+word+"  ")
-           #        f.write("\n")
-               #print(new_list[0])
-               #print(len(new_list[0]))
-           #with open(tmp_file,'r') as f:
-           #    f.seek(0)
-           #    xen = np.genfromtxt(f,usecols = 0)
-           #    f.seek(0)
-           #    x = np.genfromtxt(f,usecols = range(1,num_cols), filling_values = 'NaN')
-            xen = np.asarray(new_list[0])
-            x = np.asarray(new_list[1:])
+            print("New shape for _SIG array:",np.asarray(new_list).shape)
+            tmplist = []
+            tmplist2 = []
+            for line in new_list:
+                tmplist.append(map(float,line.split())[0])
+                tmplist2.append(map(float,line.split())[1:])
+            for el1 in tmplist2:
+                for j in el1:
+                    try:
+                        float(j)
+                    except:
+                        print(j)
+            #tmplist = map(float,tmplist)
+            #tmplist2 = map(float,tmplist2)
+            xen = np.asarray(tmplist)
+            x = np.asarray(tmplist2)
         else:
             insigfile.seek(0)
             xen = np.genfromtxt(sigfilename,usecols = 0)
             insigfile.seek(0)
-            x = np.genfromtxt(sigfilename,usecols = range(1,num_cols), filling_values = 'NaN')
-    nkpt = int(invar_dict['nkpt'])
+            x = np.genfromtxt(sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
+    #nkpt = int(invar_dict['nkpt'])
+    print("nkpt:",nkpt)
+    print("spin:",spin)
+    print("nspin:",nspin)
     # From a long line to a proper 2D array, then only first row
-    en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
-    print(en)
-    sys.exit()
+    #print(xen.shape)
+    #print(x.shape)
+    if spin == 1 and nspin == 0:
+        nspin = 2
+    else:
+        nspin = 1
+    print("nspin:",nspin)
+    print("size(xen):",xen.size)
+    print("The size of a single energy array should be",\
+            float(np.size(xen))/nkpt/nspin)
+    #sys.exit()
+    """#TODO Problem: the number of rows appears to be shorter 
+    than expected, i.e. there is already a factor 2 as if spin was 
+    already counted, but it shouldn't. WTF!!!
+    """
+    en = xen.reshape(nkpt*nspin,np.size(xen)/nkpt/nspin)[0]
+    #en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
+    #if all(x==y for x, y in zip(en, xen)):  print("FFFFFFF")
+    print(en.shape)
+    #print(test[:4])
+    #print(en[:4])
     #print(a)
     print("New shape en:",np.shape(en))
-    b = x.reshape(nkpt,np.size(x)/nkpt/nbd/3,3*nbd)
+    #print("First row of x:",x[0])
+    b = x.reshape(nkpt*nspin,np.size(x)/nkpt/nspin/nbd/3,3*nbd)
     print("New shape x:",b.shape)
-    y = b[:,:,0::3]
-    z = b[:,:,1::3]
+    y = b[0::nspin,:,0::3]
+    z = b[0::nspin,:,1::3]
     res = np.rollaxis(y,-1,1)
     ims = np.rollaxis(z,-1,1)
+    print("New shape res, ims:", res.shape)
     print(" Done.")
     return en, res, ims
 
@@ -467,7 +515,6 @@ def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
                     continue;
         else: 
             continue
-    #plt.plot(en,res[0,0]); plt.plot(en,ims[0,0]);plt.show();sys.exit(1)
     return en, res, ims
 
 def read_cross_sections(penergy):
@@ -747,8 +794,6 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi,minband):
             ## Warning if imaginary part of sigma < 0 (Convergence problems?)
             if imeqp[ik,ib] <= 0 : 
                 print(" WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib])
-#    plt.show() # DEBUG
-#    sys.exit(1) # DEBUG
     return eqp, imeqp
 
 def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
@@ -949,15 +994,12 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     en3 = -en3[::-1] 
                     im3 = im3[::-1]
                 omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
-                #if np.isnan(omegai): sys.exit(1)
-                #omegampole[ik,ib] = omegai + eqp[ik,ib] - efermi
                 omegampole[ik,ib] = omegai 
                 ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
                 print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
                 print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
                 print(" \sum_j^N\lambda_j =", np.sum(gi))
                 #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
-                #plt.show(); sys.exit(1)
                 #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
         # Writing out a_j e omega_j
         print(" ### Writing out a_j and omega_j...")
@@ -1058,7 +1100,6 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     tmpf = np.zeros((nen), order='Fortran')
                     tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                     #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-                #if not tmpf[0]>=0: print("ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles:",ik,ib,prefac,akb,omegakb,eqpkb,imkb,npoles; sys.exit(1))
                 outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
                 outfilekb = open(outnamekb,'w')
                 for ien in xrange(nenexp):
