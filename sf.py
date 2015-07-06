@@ -71,9 +71,12 @@ print(gwout)
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
 # ======== READING WTK ======= #
-if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5: # FOR OLDER ABINIT VERSIONS
+if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
+        and not invar_dict['wtk']: # FOR OLDER ABINIT VERSIONS
     wtk = read_wtk()
     invar_dict['wtk'] = wtk
+if int(invar_dict['add_wtk']) == 1:
+    invar_dict['wtk'] = [1 for i in range(len(invar_dict['wtk']))]
 # ======== READING _SIG FILE ======= #
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
@@ -157,7 +160,7 @@ if int(invar_dict['calc_exp']) == 1:
     elaps1=time.time() - e0
     cpu1=time.clock() - c0
     print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
-    print(" ### Calculation of exponential A...  ")
+    print(" ### Calculation of exponential A ### ")
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
     eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0,minband)

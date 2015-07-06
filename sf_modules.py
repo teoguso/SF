@@ -41,7 +41,8 @@ def read_invar(infile='invar.in'):
             'enhartree': False,
             'gwcode': 'abinit',
             'nspin': 0, 
-            'spin': 1
+            'spin': 0
+            'add_wtk': 1
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -188,9 +189,7 @@ def read_sigfile(invar_dict):
     sigfilename = invar_dict['sigmafile']
     spin = int(invar_dict['spin'])
     nspin = int(invar_dict['nspin'])
-    nkpt = 0
     #en=[] 
-    trigger=0
     firstbd = 0
     lastbd = 0
     nbd = 0
@@ -269,18 +268,8 @@ def read_sigfile(invar_dict):
     print("size(xen):",xen.size)
     print("The size of a single energy array should be",\
             float(np.size(xen))/nkpt/nspin)
-    #sys.exit()
-    """#TODO Problem: the number of rows appears to be shorter 
-    than expected, i.e. there is already a factor 2 as if spin was 
-    already counted, but it shouldn't. WTF!!!
-    """
     en = xen.reshape(nkpt*nspin,np.size(xen)/nkpt/nspin)[0]
     #en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
-    #if all(x==y for x, y in zip(en, xen)):  print("FFFFFFF")
-    print(en.shape)
-    #print(test[:4])
-    #print(en[:4])
-    #print(a)
     print("New shape en:",np.shape(en))
     #print("First row of x:",x[0])
     b = x.reshape(nkpt*nspin,np.size(x)/nkpt/nspin/nbd/3,3*nbd)
@@ -291,230 +280,6 @@ def read_sigfile(invar_dict):
     ims = np.rollaxis(z,-1,1)
     print("New shape res, ims:", res.shape)
     print(" Done.")
-    return en, res, ims
-
-def read_sigfile_OLD2(invar_dict):
-    """                                        
-    This function reads the real and imaginary parts of the self energy
-    $\Sigma(\omega)$ from the file _SIG for the given bands and k points.
-    It returns numpy arrays containing the energies, the real and the 
-    imaginary part of the self energy.
-    """
-    print("read_sigfile :: ",end="")
-    import numpy as np;
-    import glob
-    efermi =  float(invar_dict['efermi'])
-    enmin = float(invar_dict['enmin'])
-    enmax = float(invar_dict['enmax'])
-    enmit = enmin + efermi
-    enmat = enmax + efermi
-    minkpt = int(invar_dict['minkpt']) 
-    maxkpt = int(invar_dict['maxkpt']) 
-    minband = int(invar_dict['minband']) 
-    maxband = int(invar_dict['maxband']) 
-    try: 
-    #print(sigfilename)
-    #if isfile(sigfilename):
-        sigfilename = invar_dict['sigmafile']
-        insigfile = open(sigfilename)
-    #else:
-    except:
-        print("File "+str(sigfilename)+" not found.")
-        sigfilename = glob.glob('*_SIG')[0]
-        print("Looking automatically for a _SIG file... ",sigfilename)
-        insigfile = open(sigfilename)
-        #insigfile = open(raw_input("Self-energy file name (_SIG): "))
-    # We put the content of the file (lines) in this array
-    filelines = insigfile.readlines();
-    en=[];
-    # loop to prepare  the energy array
-    print(" Reading array of energies from first k-point in _SIG file... ",end="")
-    trigger=0
-    for line in filelines:
-        if line[0:3]=='# k':
-            if trigger==1: break # So as to read just the first k point
-            continue
-        elif line[0:3]=='# b':
-            firstbd = int(line.split()[-2])
-            if firstbd>minband: 
-                print("ERROR: first band available in _SIG file is higher than minband. Please check.")
-                sys.exit(1)
-            lastbd =  int(line.split()[-1])
-            if lastbd<maxband: 
-                print("ERROR: last band available _SIG file is lower than maxband. Please check.")
-                sys.exit(1)
-            trigger = 1
-            continue
-        else : 
-            data=map(float,line.split())
-            en.append(data[0])
-            #if data[0] >= enmin and data[0] < enmax :
-            #    en.append(data[0])
-            #elif data[0] < enmin: continue
-        #else: break
-    print("Done.")
-    print(" Length of the energy array detected from _SIG file, first k point: ",str(len(en)))
-    print(" len(en): ",str(len(en)))
-    en = np.array(en)
-    print(" size(en): ",str(np.size(en)))
-    dx = (en[-1]-en[0])/np.size(en)
-    print(" dx:",dx)
-    print("en[0], en[-1]\n", en[0], en[-1])
-    res = []
-    ims = []
-    ik=-1
-    # Loop where we actually read Sigma
-    for line in filelines:
-        if line[0:3] == "# k": 
-            nline=0
-            ik += 1
-            print(" kpt # {:02d}".format(ik+1))
-            print(line,end="")
-            res.append([])
-            ims.append([])
-            continue
-        elif line[0:3] == "# b": 
-            print(line,end="") 
-            continue
-        #elif float(line.split()[0])>=enmin or float(line.split()[0])<enmax:
-        else:
-            tmplist = map(float,line.split())
-            del tmplist[0]
-            ib = 0
-            for i in xrange(len(tmplist)):
-                if i%3==0 and nline==0: 
-                    res[ik].append([])
-                    res[ik][ib].append(tmplist[i])
-                elif  i%3==0:
-                    res[ik][ib].append(tmplist[i])
-                elif (i-1)%3==0 and nline==0 : 
-                    ims[ik].append([])
-                    ims[ik][ib].append(tmplist[i])
-                elif (i-1)%3==0 : 
-                    ims[ik][ib].append(tmplist[i])
-                elif (i-2)%3==0: 
-                    ib = ib+1
-                    continue
-            nline+=1
-        #else:  continue
-    res = np.array(res)
-    ims = np.array(ims)
-    ik2=0
-    ib2=0
-    dum1 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
-    dum2 = np.zeros((maxkpt-minkpt+1,maxband-minband+1,np.size(en)))
-    nband = lastbd-firstbd+1
-    for ik in xrange(minkpt-1,maxkpt):
-        ib2=0
-#        for ib in xrange(minband-1,maxband):
-        for ib in xrange(minband-firstbd,nband-(lastbd-maxband)):
-                #print("ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband", ik, ib, ik2, ib2, minkpt, maxkpt, minband, maxband)
-                dum1[ik2,ib2]=res[ik,ib]
-                dum2[ik2,ib2]=ims[ik,ib]
-                ib2+=1
-        ik2+=1
-    res = dum1
-    ims = dum2
-    print(" Done.")
-    return en, res, ims
-
-def read_sigfile_OLD(sigfilename,enmax,minkpt,maxkpt,minband,maxband):
-    """                                        
-    This function reads the real and imaginary parts of the self energy
-    $\Sigma(\omega)$ from the file _SIG for the given bands and k points.
-    It returns numpy arrays containing the energies, the real and the 
-    imaginary part of the self energy.
-    """
-    import numpy as np;
-    if isfile(sigfilename):
-        insigfile = open(sigfilename);
-    else:
-        print("File "+sigfilename+" not found.")
-        insigfile = open(raw_input("Self-energy file name (_SIG): "))
-    # We put the content of the file (lines) in this array
-    filelines = insigfile.readlines();
-    en=[];
-    # loop to prepare  the energy array
-    print(" Reading array of energies from first k-point in _SIG file... ",end="")
-    for line in filelines:
-        if line[0:3]=='# k':
-            continue
-        elif line[0:3]=='# b':
-            continue
-        else : 
-            data=line.split()
-            if float(data[0]) <= enmax :
-                en.append(float(data[0]))
-            else: break
-    print("Done.")
-    print(" Length of the energy array detected from _SIG file, first k point: "+str(len(en)))
-    print(" len(en): "+str(len(en)))
-    en = np.array(en)
-    print(" size(en): "+str(np.size(en)))
-    dx = (en[-1]-en[0])/np.size(en)
-    print(" dx:",dx)
-    print(" ### ===== Reading _SIG file ... ===== #### ")
-    # Preparation of arrays
-    nkpt = maxkpt-minkpt+1
-    nband = maxband-minband+1
-    res=np.zeros((nkpt,nband,np.size(en)));
-    ims=np.zeros((nkpt,nband,np.size(en)));
-    print(" np.shape(res), np.shape(ims):", np.shape(res), np.shape(ims))
-    # Indexes initialization
-    ikpt = 0;
-    ib = 0;
-    io = 0 # row/energy counter
-    # Cycle over the lines of the file
-    for line in filelines:
-        icol = 0;
-        ib = 0;
-        if line[0:3]=='# k' :
-            #print(line,)
-            # Detect, in commented lines, the k point declaration
-            if ikpt<minkpt-1 :
-                #print(" --- k point:  %02i ---" % (ikpt);)
-                ikpt = ikpt + 1;
-                continue
-            elif ikpt==maxkpt :
-                print(" End of the reading loop: ikpt == maxkpt. ikpt, maxkpt: ", ikpt, maxkpt)
-                print(" #### ================================================ #### ")
-                break;
-            else:
-                ikpt = ikpt + 1;
-        # Detect, in commented lines, the bands declaration
-        elif line[0:3]=='# b':
-            io = 0;
-            continue
-        # TODO: This if test is incorrect: this way it always starts from ib = 0
-        #elif io < np.size(en) and ib < maxband and ikpt >=minkpt-1:
-        elif io < np.size(en) and ikpt >=minkpt-1:
-            data=map(float,line.split());
-            for col in data:
-                # First element (energy) goes into en
-                if icol == 0 : 
-                    icol = icol + 1;
-                    io = io + 1;
-                elif (icol+2)%3 == 0 and ib>=minband-1:
-                    res[ikpt-minkpt,ib-minband,io-1] = col;
-                    icol = icol + 1;
-                    continue;
-                elif (icol+2)%3 == 0 :
-                    icol = icol + 1;
-                    continue;
-                elif (icol+1)%3 == 0 and ib>=minband-1:
-                    ims[ikpt-minkpt,ib-minband,io-1] = col;
-                    icol = icol + 1;
-                    continue;
-                elif (icol+1)%3 == 0 :
-                    icol = icol + 1;
-                    continue;
-                else : 
-                    if ib == maxband-1 : break # number of bands reached
-                    ib = ib + 1;
-                    icol = icol + 1;
-                    continue;
-        else: 
-            continue
     return en, res, ims
 
 def read_cross_sections(penergy):
@@ -741,8 +506,10 @@ def find_eqp_resigma(en,resigma,efermi):
             zeros.append(tmpeqp)
             nzeros+=1
     if tmpeqp>efermi: tmpeqp=zeros[0]
-    if nzeros==0 : print(" WARNING: No eqp found! ")
-    elif nzeros>1 : print(" WARNING: Plasmarons! ")
+    if nzeros==0 : 
+        print(" WARNING: No eqp found! ")
+    elif nzeros>1 : 
+        print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
 
 def write_eqp_imeqp(eqp,imeqp):
@@ -902,6 +669,12 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
+    Different values of npoles command different options:
+    - npoles = 999: single-pole calculation with omega_p
+    used as the plasmon frequency for every state.
+    - npoles = 0: QP-only calculation. Z = 1 and satellite 
+    weights are put to 0. 
+    - Standard cumulant for any other value of npoles.
     """
     import numpy as np;
     wtk = np.array(vardct['wtk'])
