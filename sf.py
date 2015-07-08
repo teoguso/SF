@@ -72,15 +72,13 @@ print(gwout)
 hartree = gwout.hartree
 # ======== READING WTK ======= #
 if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
-        and not invar_dict['wtk']: # FOR OLDER ABINIT VERSIONS
+        and not 'wtk' in invar_dict: # FOR OLDER ABINIT VERSIONS
     wtk = read_wtk()
     invar_dict['wtk'] = wtk
-if int(invar_dict['add_wtk']) == 1:
+if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
+    print("K-point weights are neglected, i.e. all equal to 1.")
     invar_dict['wtk'] = [1 for i in range(len(invar_dict['wtk']))]
 # ======== READING _SIG FILE ======= #
-efermi =  float(invar_dict['efermi'])
-enmin = float(invar_dict['enmin'])
-enmax = float(invar_dict['enmax'])
 en, res, ims = read_sigfile(invar_dict)
 # Rescale energy if in hartree
 print(invar_dict['enhartree'])
@@ -91,6 +89,9 @@ if enhartree and enhartree != 0:
     en = 2.0*13.6058*en
 #TODO: enmin and emax are unchanged. Check if this is consistent!
 # Reset wrt efermi
+efermi =  float(invar_dict['efermi'])
+enmin = float(invar_dict['enmin'])
+enmax = float(invar_dict['enmax'])
 en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)

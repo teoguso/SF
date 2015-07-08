@@ -41,7 +41,7 @@ def read_invar(infile='invar.in'):
             'enhartree': False,
             'gwcode': 'abinit',
             'nspin': 0, 
-            'spin': 0
+            'spin': 0,
             'add_wtk': 1
             }
 #    varlist = list((
@@ -733,7 +733,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         #ampole = ampole/omega_p**2
                 #ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
     elif npoles != 0:
-        from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
+        from multipole import fit_multipole, fit_multipole2, getdata_file #, write_f_as_sum_of_poles
         print(" ### ================== ###")
         print(" ###    Multipole fit   ###")
         print(" Number of poles:", npoles)
@@ -766,7 +766,15 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 if eqp[ik,ib] <= 0:
                     en3 = -en3[::-1] 
                     im3 = im3[::-1]
-                omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
+                omegai, gi, deltai = fit_multipole2(en3,im3,npoles,0)
+                #print("--- multipole2", np.sum(gi))
+                #gi1 = np.sum(gi)
+                #tgi = gi[:6]
+                #omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
+                #print("--- multipole", np.sum(gi))
+                #gi2 = abs((np.sum(gi)-gi1)/gi1)
+                #print("--- m1-m2/m1:",gi2)
+                #print("--- In-place differences: ",gi[:6]-tgi)
                 omegampole[ik,ib] = omegai 
                 ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
                 print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")

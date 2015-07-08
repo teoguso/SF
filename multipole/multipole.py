@@ -33,6 +33,10 @@ def getdata_file(infilename,wantedcol=1):
     return preen, predata
 
 def first_inverse_moment(preen,predata):
+    """
+    Calculates and returns the first inverse moment of
+    a dataset.
+    """
     import numpy as np
     nbin = np.size(preen)
     fxonx = np.zeros(nbin)
@@ -78,6 +82,9 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     It can write out a file with the calculated parameters if the 
     appropriate flag is equal to 1 (ifilewrite).
     It returns omegai, gi, deltai.
+    NOTE that these are not the same gi as in the formula: 
+    these gi are actually equal to \pi/2*gi*omegai.
+    TODO: uniform the notation with the documentation.
     """
     #import matplotlib.pylab as plt
     import numpy as np
@@ -200,6 +207,8 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     omegai = np.array(omegai)
     gi = np.array(gi)
     # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
+    # AKA: This gi is actually the pure lambda coefficient of the delta function
+    # in the multipole model, equal to gi*omegai
     gi = np.pi/2*gi*omegai
     # Here we restore the correct x axis removing safe_shift
     omegai = omegai - safe_shift
@@ -252,19 +261,102 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
         print " Parameters written in file", outname
     return omegai, gi, deltai
 
-def fit_multipole2(preen,predata,nbin,ifilewrite=0,binmode=0):
+def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     """
     Another version with constant bin separation.
+    NOTE: check first multipole model for actual 
+    quantities returned. 
+    --- Formulas used:
+    f(\omega) = \pi/2 \sum_i^N g_i \omega_i \delta(\omega - \omega_i))
+    - General formula: 
+    \int_{\Delta_i} f(\omega) \omega^n = \pi/2 g_i \omega_i^{n+1}
+    - Case n = -1 (first inverse moment): 
+    g_i = 2/\pi \int_{\Delta_i} f(\omega)/\omega
+    - Case n = 1 (first moment): 
+    \omega_i = \sqrt{2/\pi/g_i }  \int_{\Delta_i} \omega f(\omega)
+    - Actual gi that is returned:
+    gi = \pi/2 g_i \omega_i
     """
     import numpy as np
     import sys
     from scipy.interpolate import interp1d
-    from scipy.integrate import fixed_quad
+    from scipy.integrate import fixed_quad,quad, simps
+    for i in range(x.size):
+        if x[i]<0:
+            print "UONOBNOBOOBUOBUOB some energy <<< 0 in multipole "
+            sys.exit()
     nbin = int(nbin)
     eta = 0.005 # This is the Lorentzian broadening that would be used???
-    totalint = np.trapz(predata,preen)
-    totdeltax = abs( preen[-1] - preen[0] )
-    print " Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
+    totint = np.trapz(y,x)
+    totdx = abs( x[-1] - x[0] )
+    # First moment
+    xfx = x * y
+    # First inverse moment
+    fxonx = first_inverse_moment(x,y)
+    interpxfx = interp1d(x, xfx, kind = 'linear', axis = -1)
+    interpfxonx = interp1d(x, fxonx, kind = 'linear', axis = -1)
+    print " Totdeltax, np.size(x), dx:", totdx, np.size(x), ( x[-1] - x[0] ) / float( np.size(x) - 1 )
+    #for n in range(nbin):
+    #    gi[n] = np.trapz(y[n:n+1],x[n:n+1])
+    gi = []
+    omegai = []
+    first_i = []
+    myint = []
+    mysum = []
+    myrange = range(0,x.size,x.size/nbin)
+    if len(myrange) > nbin:
+        myrange.pop()
+    #for i in range(0,x.size,x.size/nbin):
+    if int(nbin) == 1:
+        gi.append(totint)
+        omegai.append(x[y.argmax()])
+        myint.append(totint)
+        gi = np.array(gi)
+        omegai = np.array(omegai)
+     #  print omegai
+     #  sys.exit()
+    else:
+        for i in myrange:
+            #pint = np.trapz(fxonx[i:i+x.size/nbin],x[i:i+x.size/nbin])
+            inv = np.trapz(fxonx[i:i+x.size/nbin],x[i:i+x.size/nbin])
+            #gi.append(np.trapz(y[i:i+x.size/nbin],x[i:i+x.size/nbin]))
+            gi.append(inv)
+            #pom =np.trapz(xfx[i:i+x.size/nbin],x[i:i+x.size/nbin])
+            first = np.trapz(xfx[i:i+x.size/nbin],x[i:i+x.size/nbin])
+            first_i.append(first)
+            omegai.append(np.sqrt(first/inv))
+            #omegai.append((x[i+(x.size/nbin-1)]+x[i])/2)
+            myint.append(np.trapz(y[i:i+x.size/nbin],x[i:i+x.size/nbin]))
+            #mysum.append(np.sum(y[i:i+x.size/nbin]) / (x[i+x.size/nbin-1] - x[i]))
+        gi = np.array(gi)
+        omegai = np.array(omegai)
+        gi = np.sqrt(gi*first_i)
+        dint = (myint - gi)
+        print "--- multipole 2 np.size(gi):", gi.size
+        #if gi.size > nbin:
+        #    print " WARNING: One bin too much created! Correcting..."
+        #    gi = gi[:-1]
+        #    omegai = omegai[:-1]
+        xrest =  x.size - int(x.size/nbin)*nbin
+        if xrest == 0:
+            intrest  = 0.
+        else:
+            intrest  = np.trapz(y[-xrest:],x[-xrest:])
+        print "--- x.size, nbin:", x.size, nbin
+        print "--- Size of one bin:", x.size/nbin
+        print "--- Remaining unused bin size:", xrest 
+        print "--- Integral of neglected part:", intrest 
+        myint = np.array(myint)
+        #mysum = np.array(mysum)
+        print "--- multipole:: np.np.trapz(ims):", totint 
+        print "--- multipole:: np.sum(gi):", np.sum(gi)
+        gi = gi + dint
+        print "--- multipole:: np.sum(gi+dint):", np.sum(gi)
+        print "--- multipole:: np.sum(myint):", np.sum(myint)
+        #print "--- multipole:: np.sum(mysum):", np.sum(mysum)
+        print "--- multipole:: np.trapz(myint)-np.sum(gi):", (np.sum(gi) - np.sum(myint))/np.sum(myint)
+        print "--- multipole:: np.sum(sqrt(dint**2)/totint):", np.sum(np.sqrt(dint**2)/totint)
+    deltai = np.ones(gi.size)*totdx/nbin
     return omegai, gi, deltai
 
 def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
