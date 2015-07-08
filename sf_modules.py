@@ -618,8 +618,8 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     #print("Type(amp_exinf, ampole):", type(amp_exinf), type(ampole))
     # Mod following discussion with Josh
     amp_mean = np.mean(ampole)
-    for ik in xrange(nkpt):
-        for ib in xrange(nband):
+    for ik in range(ampole[:,0].size):
+        for ib in range(ampole[0,:].size):
             #tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
             w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
             tmpextinf = interpextinf(omegampole[ik,ib]) # 
@@ -801,6 +801,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         outfile2.close()
         # Extrinsic and interference contribution
         if extinf == 1:
+            origdir = vardct['origdir']
             extinfname = "a_wp."+str(penergy)
             amp_exinf, w_extinf = calc_extinf_corrections(origdir,extinfname,ampole,omegampole)
             print(" ### Writing out a_j_extinf...")

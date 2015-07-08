@@ -170,7 +170,9 @@ if int(invar_dict['calc_exp']) == 1:
     # Writing out imeqp
     thread = Thread(target = write_eqp_imeqp, args = (eqp,imeqp))
     thread.start()
-    enexp, ftot = calc_sf_c(invar_dict, hartree, pdos, eqp, imeqp, newen, allkb)
+    dict_c = invar_dict
+    dict_c['origdir'] = origdir
+    enexp, ftot = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
 
 
     ### TODO: fix all below ###
