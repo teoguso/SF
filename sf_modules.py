@@ -42,6 +42,7 @@ def read_invar(infile='invar.in'):
             'gwcode': 'abinit',
             'nspin': 0, 
             'spin': 0,
+            'is_sc': 0,
             'add_wtk': 1
             }
 #    varlist = list((

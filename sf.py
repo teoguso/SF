@@ -58,9 +58,9 @@ if len(sys.argv) > 1:
 else:
     out_file = None
 if invar_dict['gwcode'] is 'abinit':
-    gwout = AbinitOutReader(out_file) 
+    gwout = AbinitOutReader(name=out_file,is_sc=invar_dict['is_sc']) 
 else: 
-    gwout = CodeOutReader(invar_dict['gwcode'],out_file)
+    gwout = CodeOutReader(invar_dict['gwcode'],name=out_file,is_sc=invar_dict['is_sc'])
 print(gwout)
 #print(gwout.fname)
 """for x in gwout.hartree: 

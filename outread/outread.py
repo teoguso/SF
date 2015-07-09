@@ -113,7 +113,7 @@ class CodeOutReader(object):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,code=None,name=None):
+    def __init__(self,code=None,name=None,is_sc=0):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
@@ -125,6 +125,7 @@ class CodeOutReader(object):
             self.fname = glob.glob('*.out')[0] # This is 'ls *.out' in current dir
         else: self.fname = name
         self.code = code
+        self.is_sc = is_sc
         # Initialize variables
         # Most of them are lists, in that they 
         # iterate over the different datasets.
@@ -281,14 +282,14 @@ class AbinitOutReader(CodeOutReader):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,name=None):
+    def __init__(self,name=None,is_sc=0):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
 	If no file name is given, it takes what 
 	it finds in the running directory. 
 	"""
-        CodeOutReader.__init__(self,'abinit',name)
+        CodeOutReader.__init__(self,'abinit',name,is_sc)
 	# Attributes
         self.dts_start_end = []
         self.dts_labels = []
@@ -545,12 +546,21 @@ class AbinitOutReader(CodeOutReader):
           From version 6 on, the qp output has an additional
           line containing the imaginary part of values.
           Accordingly, possible values are: 5, 6.
+        - is_sc: Depending whether it is a self-consistent
+        calculation, the number of columns in the abinit 
+        output changes. 
+        Expected columns in abinit 5, for G0W0:
+         Band     E0      <VxcLDA>   SigX SigC(E0)      Z dSigC/dE  Sig(E)    E-E0       E
+        and for a self-consistent calculation:
+         Band     E_lda   <Vxclda>   E(N-1)  <Hhartree>   SigX  SigC[E(N-1)]    Z     dSigC/dE  Sig[E(N)]  DeltaE  E(N)_pert E(N)_diago
+        Abinit 6 and above have not been tested. 
         """
         print "get_gw_qpen ::"
         myset = self.dtsets[iset]
         mylabels = self.dts_labels
         bdgwlabel = 'bdgw'+mylabels[iset]
         #print "bdgwlabel:", bdgwlabel
+        is_sc = int(self.is_sc)
         dct = self.var_dict
         if not dct.get(bdgwlabel): 
             print " No", bdgwlabel, "found. Falling back to bdgw."
@@ -558,7 +568,7 @@ class AbinitOutReader(CodeOutReader):
         bdgw = dct.get(bdgwlabel)
         nkpt = len(bdgw)
         nband = int(1 + bdgw[0][-1] - bdgw[0][0]) # Hopefully nband is the same for all kptgw
-        type(bdgw)
+        #type(bdgw)
 #        print "bdgwlabel:", bdgwlabel
 #        print "bdgw:",bdgw
 #        print "nkpt:",nkpt
@@ -573,14 +583,14 @@ class AbinitOutReader(CodeOutReader):
                 break
         ik = 0
         ib = 0
-        elda = []
-        vxc = []
-        qpen = []
-        elda_k = []
-        vxc_k = []
-        hartree_k = []
+        if is_sc == 0:
+            elda_k = [] 
+            vxc_k = []
+        else: 
+            hartree_k = []
         qpen_k = []
         if version >= 6: 
+            nband = 2*nband
             ic = 0 
             qpen_im = []
             qpen_im_k = []
@@ -588,64 +598,73 @@ class AbinitOutReader(CodeOutReader):
             if " k = " in line or "Band" in line:
 #                print "k point/header:", line
                 ib = 0
+                lines = []
             elif line == '':
                 #print "empty line", line
-                pass
+                continue
             elif "_gap" in line:
                 #print "gap line", line
-                pass
+                continue
             elif "energy" in line:
                 #print "energy line", line
-                pass
-#                THERE IS A CHANGE AFTER A CERTAIN VERSION OF ABINIT, 
-#                WHERE, FOR EACH BAND, TWO ROWS ARE DISPLAYED, 
-#                FOR THE REAL AND IMAGINARY PART OF EACH VALUE, 
-#                RESPECTIVELY. WE HAVE TO TAKE THAT INTO ACCOUNT. 
+                continue
             elif ib < nband:
 #                print "ik,ib,line:", ik,ib,line
                 words = map(float,line.split())
+                lines.append(words)
+                ib += 1
+            if ib == (nband ):
+                qpen = []
                 if version >=6: 
-                    if ic == 1: 
-                        qpen_im.append(words[9])
-                        ib += 1
-                        ic = 0
-                    else: 
-                        elda.append(words[1]) 
-                        vxc.append(words[2]) 
-                        qpen.append(words[9]) 
-                        ic += 1
-                else: 
-                    elda.append(words[1]) 
-                    vxc.append(words[2]) 
-                    qpen.append(words[9]) 
-                    ib += 1
-                if ib == (nband ):
+                    imag = lines[1::2]
+                    lines = lines[0::2]
+                    qpen_im = []
+                if is_sc == 1: 
+                    hartree = []
+                    for line in lines:
+                        hartree.append(line[4])
+                        qpen.append(line[12])
+                    hartree_k.append(hartree)
+                    qpen_k.append(qpen)
+                    hartree = []
+                    qpen = []
+                else:
+                    elda = []
+                    vxc = []
+                    for line in lines:
+                        elda.append(line[1])
+                        vxc.append(line[2])
+                        qpen.append(line[9])
                     elda_k.append(elda)
                     vxc_k.append(vxc)
                     qpen_k.append(qpen)
-                    if version >=6: 
-                        qpen_im_k.append(qpen_im)
-                        qpen_im = []
-                        ic = 0
                     elda = []
                     vxc = []
                     qpen = []
-                    ib = 0
-                    ik += 1
-        for a,b in zip(elda_k,vxc_k):
-            tmp = []
-            for c,d in zip(a,b): 
-                tmp.append(c-d) 
-            hartree_k.append(tmp)
+                ib = 0
+                ik += 1
+                if ik == 1:
+                    break
+        if is_sc == 0:
+            for a,b in zip(elda_k,vxc_k):
+                tmp = []
+                for c,d in zip(a,b): 
+                    tmp.append(c-d) 
+                hartree_k.append(tmp)
+       #print hartree_k[-1]
+        a = np.array(hartree_k)
+        print "a.shape, nband, is_sc",  a.shape, nband, is_sc
+        print a[-1]
+        sys.exit()
+        self.qpen = qpen_k
+        self.hartree = hartree_k
+        print "Done."
 #        print np.array(qpen_k)
 #        if version >= 6: 
 #            print np.array(qpen_im_k) 
 #        print np.array(elda_k)
 #        print np.array(vxc_k)
 #        print np.array(hartree_k)
-        self.qpen = qpen_k
-        self.hartree = hartree_k
-        print "Done."
 
 
 
