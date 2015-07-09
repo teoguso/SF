@@ -565,6 +565,11 @@ class AbinitOutReader(CodeOutReader):
         if not dct.get(bdgwlabel): 
             print " No", bdgwlabel, "found. Falling back to bdgw."
             bdgwlabel = 'bdgw' # Fallback to bdgw
+        if 'nsppol' in dct:
+            nsppol = int(dct['nsppol'][0])
+        else:
+            nsppol = 1
+        print "nsppol: ",nsppol
         bdgw = dct.get(bdgwlabel)
         nkpt = len(bdgw)
         nband = int(1 + bdgw[0][-1] - bdgw[0][0]) # Hopefully nband is the same for all kptgw
@@ -586,8 +591,7 @@ class AbinitOutReader(CodeOutReader):
         if is_sc == 0:
             elda_k = [] 
             vxc_k = []
-        else: 
-            hartree_k = []
+        hartree_k = []
         qpen_k = []
         if version >= 6: 
             nband = 2*nband
@@ -595,10 +599,12 @@ class AbinitOutReader(CodeOutReader):
             qpen_im = []
             qpen_im_k = []
         for line in myset[istart:]:
-            if " k = " in line or "Band" in line:
+            if " k = " in line: 
 #                print "k point/header:", line
                 ib = 0
                 lines = []
+            elif "Band" in line:
+                continue
             elif line == '':
                 #print "empty line", line
                 continue
@@ -643,8 +649,8 @@ class AbinitOutReader(CodeOutReader):
                     qpen = []
                 ib = 0
                 ik += 1
-                if ik == 1:
-                    break
+               #if ik == 1:
+               #    break
         if is_sc == 0:
             for a,b in zip(elda_k,vxc_k):
                 tmp = []
@@ -652,10 +658,12 @@ class AbinitOutReader(CodeOutReader):
                     tmp.append(c-d) 
                 hartree_k.append(tmp)
        #print hartree_k[-1]
-        a = np.array(hartree_k)
-        print "a.shape, nband, is_sc",  a.shape, nband, is_sc
-        print a[-1]
-        sys.exit()
+        if nsppol == 2:
+            hartree_k = hartree_k[::2]
+       #a = np.array(hartree_k)
+       #print "a.shape, nband, is_sc",  a.shape, nband, is_sc
+       #print a[0]
+       #sys.exit()
         self.qpen = qpen_k
         self.hartree = hartree_k
         print "Done."
