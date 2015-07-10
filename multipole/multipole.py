@@ -304,8 +304,9 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     myint = []
     mysum = []
     myrange = range(0,x.size,x.size/nbin)
-    if len(myrange) > nbin:
-        myrange.pop()
+    #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
+    if (len(myrange) > nbin):
+        myrange = myrange[:nbin]
     #for i in range(0,x.size,x.size/nbin):
     if int(nbin) == 1:
         gi.append(totint)
@@ -332,6 +333,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         omegai = np.array(omegai)
         gi = np.sqrt(gi*first_i)
         dint = (myint - gi)
+        #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
         print "--- multipole 2 np.size(gi):", gi.size
         #if gi.size > nbin:
         #    print " WARNING: One bin too much created! Correcting..."

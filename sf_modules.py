@@ -783,46 +783,46 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         for ik in xrange(nkpt):
             ikeff=minkpt+ik-1
             for ib in xrange(nband):
-                ibeff=minband+ib-1
-                print(" ik, ib", ik, ib)
-                #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
-                #print(newen.shape, imskb.shape)
-                interpims = interp1d(newen, imskb[:,ik,ib], kind = 'linear', axis = -1)
-                # Here we take the curve starting from eqp and then we invert it
-                # so as to have it defined on the positive x axis
-                # and so that the positive direction is in the 
-                # increasing direction of the array index
-                #if eqp[ik,ib] <= efermi:
-                if eqp[ik,ib] <= 0:
-                    #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
-                    en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                if eqp[ik,ib] > newen[-npoles]:
+                #if eqp[ik,ib] > newen[-1]:
+                    omegampole[ik,ib] = omegampole[ik,ib-1]
+                    ampole[ik,ib] = ampole[ik,ib-1]
+                    print(" Eqp beyond available energy range. Values from lower band are taken.")
+                    continue
                 else:
-                    en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
-                    #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
-                #en3 = en[en<=efermi]
-                im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
-                en3 = en3 - eqp[ik,ib]
-                #en3 = en3 - efermi
-                #if eqp[ik,ib] <= efermi: 
-                if eqp[ik,ib] <= 0:
-                    en3 = -en3[::-1] 
-                    im3 = im3[::-1]
-                omegai, gi, deltai = fit_multipole2(en3,im3,npoles,0)
-                #print("--- multipole2", np.sum(gi))
-                #gi1 = np.sum(gi)
-                #tgi = gi[:6]
-                #omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
-                #print("--- multipole", np.sum(gi))
-                #gi2 = abs((np.sum(gi)-gi1)/gi1)
-                #print("--- m1-m2/m1:",gi2)
-                #print("--- In-place differences: ",gi[:6]-tgi)
-                omegampole[ik,ib] = omegai 
-                ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
-                print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
-                print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
-                print(" \sum_j^N\lambda_j =", np.sum(gi))
-                #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
-                #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
+                    ibeff=minband+ib-1
+                    print(" ik, ib", ik, ib)
+                    #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+                    #print(newen.shape, imskb.shape)
+                    interpims = interp1d(newen, imskb[:,ik,ib], kind = 'linear', axis = -1)
+                    # Here we take the curve starting from eqp and then we invert it
+                    # so as to have it defined on the positive x axis
+                    # and so that the positive direction is in the 
+                    # increasing direction of the array index
+                    #if eqp[ik,ib] <= efermi:
+                    if eqp[ik,ib] <= 0:
+                        #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+                        en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                    else:
+                        en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
+                        #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
+                    #en3 = en[en<=efermi]
+                    if en3.size == 0:
+                        print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
+                        sys.exit()
+                    im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
+                    en3 = en3 - eqp[ik,ib]
+                    if eqp[ik,ib] <= 0:
+                        en3 = -en3[::-1] 
+                        im3 = im3[::-1]
+                    omegai, gi, deltai = fit_multipole2(en3,im3,npoles,0)
+                    omegampole[ik,ib] = omegai 
+                    ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
+                    print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
+                    print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
+                    print(" \sum_j^N\lambda_j =", np.sum(gi))
+                    #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
+                    #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
         # Writing out a_j e omega_j
         print(" ### Writing out a_j and omega_j...")
         outname = "a_j_np"+str(npoles)+".dat"
