@@ -431,10 +431,10 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     spftot = np.zeros((np.size(newen)));
     # Here we interpolate re and im sigma
     # for each band and k point
-    spfkb = np.zeros(shape=(np.size(newen),nkpt,nband))
-    reskb = np.zeros(shape=(np.size(newen),nkpt,nband))
-    imskb = np.zeros(shape=(np.size(newen),nkpt,nband))
-    rdenkb = np.zeros(shape=(np.size(newen),nkpt,nband))
+    spfkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+    reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+    imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+    rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
     for ik in range(nkpt):
         #ikeff = minkpt+ik-1
         print(" k point = %02d " % (ik))
@@ -443,16 +443,16 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tmpres = interpres(newen)
-            reskb[:,ik,ib] = tmpres
+            reskb[ik,ib] = tmpres
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
-            rdenkb[:,ik,ib] = redenom
+            rdenkb[ik,ib] = redenom
             #print("ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib])
             tmpim = interpims(newen)
-            imskb[:,ik,ib] = tmpim
+            imskb[ik,ib] = tmpim
             spfkb_tmp = wtk[ik] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             #print(spfkb.shape, spfkb_tmp.shape)
-            spfkb[:,ik,ib] = spfkb_tmp
+            spfkb[ik,ib] = spfkb_tmp
             spftot += spfkb_tmp
     allkb = [spfkb, reskb, rdenkb, imskb]
     return newen, spftot, allkb
@@ -473,13 +473,15 @@ def write_spfkb(vardct,newen,allkb):
     reskb = allkb[1]
     rdenkb = allkb[2]
     imskb = allkb[3]
-    for ik in range(spfkb[0,:,0].size):
+    for ik in range(nkpt):
         #print(" k point = %02d " % (ikeff+1))
-        for ib in range(spfkb[0,0,:].size):
-            outnamekb = "spf_gw-k"+str("%02d"%(ik+1))+"-b"+str("%02d"%(ib+1))+".dat"
+        ikeff = minkpt + ik 
+        for ib in range(nband):
+            ibeff = minband + ib
+            outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
-                outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ien,ik,ib], rdenkb[ien,ik,ib], reskb[ien,ik,ib], imskb[ien,ik,ib]))
+                outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ik,ib,ien], rdenkb[ik,ib,ien], reskb[ik,ib,ien], imskb[ik,ib,ien]))
             outfilekb.close()
     print("write_spfkb :: Done.")
 
@@ -707,6 +709,54 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
     ftot += f
     return ftot
 
+def write_sfkb_c(vardct,en,sfkb):
+    """
+    Does what it says. 
+    """
+    print("write_sfkb_c :: ")
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    extinf = int(vardct['extinf'])
+    npoles = int(vardct['npoles'])
+    penergy = int(vardct['penergy'])
+    if extinf == 1: 
+        str_exi = "extinf"
+    else:
+        str_exi = ""
+    #spfkb = allkb[0]
+   #reskb = allkb[1]
+   #rdenkb = allkb[2]
+   #imskb = allkb[3]
+    for ik in range(nkpt):
+        #print(" k point = %02d " % (ikeff+1))
+        ikeff = minkpt + ik 
+        for ib in range(nband):
+            ibeff = minband + ib
+            outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            with open(outnamekb,'w') as ofkb:
+                for ien in range(en.size):
+                    ofkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
+           #outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+           #outfilekb = open(outnamekb,'w')
+           #for ien in xrange(np.size(newen)) :
+           #    outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ik,ib,ien], rdenkb[ik,ib,ien], reskb[ik,ib,ien], imskb[ik,ib,ien]))
+           #outfilekb.close()
+                #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
+                #outfilekb = open(outnamekb,'w')
+                #for ien in xrange(nenexp):
+                #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+                #outfilekb.close()
+               #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf"+"."+str(penergy)
+               #outfilekb = open(outnamekb,'w')
+               #for ien in xrange(nenexp):
+               #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+               #outfilekb.close()
+    print("write_sfkb_c :: Done.")
+
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
@@ -794,7 +844,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     print(" ik, ib", ik, ib)
                     #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
                     #print(newen.shape, imskb.shape)
-                    interpims = interp1d(newen, imskb[:,ik,ib], kind = 'linear', axis = -1)
+                    interpims = interp1d(newen, imskb[ik,ib], kind = 'linear', axis = -1)
                     # Here we take the curve starting from eqp and then we invert it
                     # so as to have it defined on the positive x axis
                     # and so that the positive direction is in the 
@@ -864,13 +914,13 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
     print(" Calculating multipole exponential A...")
     dxexp=0.005 
-    enexp=np.arange(enmin,enmax,dxexp)
-    nenexp=np.size(enexp)
-    ftot=np.zeros((nenexp))
-    f=np.zeros((nkpt,nband,nenexp))
-    ftot=np.zeros((np.size(enexp)),order='Fortran')
+    enexp = np.arange(enmin,enmax,dxexp)
+    nenexp = np.size(enexp)
+    ftot = np.zeros((nenexp))
+    f = np.zeros((nkpt,nband,nenexp))
+    ftot = np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
-
+    sfkb_c = np.zeros((nkpt,nband,nenexp))
     ############################
     # With extrinsic effects ###
     if extinf == 1:
@@ -890,11 +940,12 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 #ftot += tmpf
                 tmpf = np.zeros((nen), order='Fortran')
                 tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
-                outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf."+str(penergy)
-                outfilekb = open(outnamekb,'w')
-                for ien in xrange(nenexp):
-                    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
-                outfilekb.close()
+               #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf."+str(penergy)
+               #outfilekb = open(outnamekb,'w')
+               #for ien in xrange(nenexp):
+               #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+               #outfilekb.close()
+                sfkb_c[ik,ib] = tmpf
                 ftot = ftot + tmpf
     else: # extinf == 0
         from extmod_spf_mpole import f2py_calc_spf_mpole
@@ -923,11 +974,12 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     tmpf = np.zeros((nen), order='Fortran')
                     tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                     #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-                outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
-                outfilekb = open(outnamekb,'w')
-                for ien in xrange(nenexp):
-                    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
-                outfilekb.close()
+                #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
+                #outfilekb = open(outnamekb,'w')
+                #for ien in xrange(nenexp):
+                #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+                #outfilekb.close()
+                sfkb_c[ik,ib] = tmpf
                 ftot = ftot + tmpf
                 #print(ftot[0], tmpf[0])
     #elaps2 = time.time() - elaps1 - e0
@@ -950,5 +1002,5 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
-    return enexp, ftot
+    return enexp, ftot, sfkb_c
 

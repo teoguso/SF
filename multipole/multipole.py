@@ -303,6 +303,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     first_i = []
     myint = []
     mysum = []
+    step = x.size/nbin
     myrange = range(0,x.size,x.size/nbin)
     #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
     if (len(myrange) > nbin):

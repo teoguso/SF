@@ -172,7 +172,10 @@ if int(invar_dict['calc_exp']) == 1:
     thread.start()
     dict_c = invar_dict
     dict_c['origdir'] = origdir
-    enexp, ftot = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+    enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+    # Writing out sfkb
+    thread = Thread(target = write_sfkb_c, args = (invar_dict,enexp,sfkb))
+    thread.start()
 
 
     ### TODO: fix all below ###
