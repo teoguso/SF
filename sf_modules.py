@@ -313,7 +313,7 @@ def read_cross_sections(penergy):
     #print("cs:",np.transpose(cs),cs.shape)
     return cs
 
-def calc_pdos(var_dct):
+def calc_pdos(var_dct,res=None):
     """
     Calculates projected DOS. 
     """
@@ -330,6 +330,9 @@ def calc_pdos(var_dct):
         pdos = 10000.*np.dot(cs,sp)
     else:
         pdos=np.ones((nband))
+    if res is not None:
+        tail = np.ones(shape=(res[0,:,0].size-pdos.size))
+        pdos = np.concatenate((pdos,tail))
     return pdos
 
 def read_band_type_sym(sfac,pfac,nband):
@@ -407,10 +410,12 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     pdos = np.array(pdos)
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
-    nkpt = maxkpt - minkpt + 1
+    nkpt = res[:,0,0].size 
+    #maxkpt - minkpt + 1
     minband = int(vardct['minband'])
     maxband = int(vardct['maxband'])
-    nband = maxband - minband + 1
+    nband =  res[0,:,0].size 
+    #maxband - minband + 1
     newdx = 0.005
     enmin = float(vardct['enmin'])
     enmax = float(vardct['enmax'])
@@ -430,11 +435,11 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     reskb = np.zeros(shape=(np.size(newen),nkpt,nband))
     imskb = np.zeros(shape=(np.size(newen),nkpt,nband))
     rdenkb = np.zeros(shape=(np.size(newen),nkpt,nband))
-    for ik in xrange(nkpt):
-        ikeff = minkpt+ik-1
-        print(" k point = %02d " % (ikeff+1))
-        for ib in xrange(0,nband):
-            ibeff = minband+ib-1
+    for ik in range(nkpt):
+        #ikeff = minkpt+ik-1
+        print(" k point = %02d " % (ik))
+        for ib in range(nband):
+            #ibeff = minband+ib-1
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tmpres = interpres(newen)
@@ -445,11 +450,11 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
             #print("ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib])
             tmpim = interpims(newen)
             imskb[:,ik,ib] = tmpim
-            spfkb_tmp = wtk[ikeff] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
+            spfkb_tmp = wtk[ik] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             #print(spfkb.shape, spfkb_tmp.shape)
             spfkb[:,ik,ib] = spfkb_tmp
             spftot += spfkb_tmp
-    allkb = [spfkb,reskb, rdenkb, imskb]
+    allkb = [spfkb, reskb, rdenkb, imskb]
     return newen, spftot, allkb
     #return newen, spftot, spfkb,reskb, rdemkb, imskb
 
@@ -468,12 +473,10 @@ def write_spfkb(vardct,newen,allkb):
     reskb = allkb[1]
     rdenkb = allkb[2]
     imskb = allkb[3]
-    for ik in xrange(nkpt):
-        ikeff = minkpt+ik-1
+    for ik in range(spfkb[0,:,0].size):
         #print(" k point = %02d " % (ikeff+1))
-        for ib in xrange(0,nband):
-            ibeff = minband+ib-1
-            outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+        for ib in range(spfkb[0,0,:].size):
+            outnamekb = "spf_gw-k"+str("%02d"%(ik+1))+"-b"+str("%02d"%(ib+1))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
                 outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ien,ik,ib], rdenkb[ien,ik,ib], reskb[ien,ik,ib], imskb[ien,ik,ib]))
@@ -490,6 +493,8 @@ def find_eqp_resigma(en,resigma,efermi):
     the x value of the last resigma=0 detected. 
     It should return the value of eqp and the number of zeros
     found (useful in case there are plasmarons or for debugging). 
+    If no zeros are found, it will fit resigma with a line and 
+    extrapolate a value.
     """
     import numpy as np
     import matplotlib.pylab as plt
@@ -506,9 +511,32 @@ def find_eqp_resigma(en,resigma,efermi):
             tmpeqp = en[i-1] - resigma[i-1]*(en[i] - en[i-1])/(resigma[i] - resigma[i-1]) # High school formula
             zeros.append(tmpeqp)
             nzeros+=1
-    if tmpeqp>efermi: tmpeqp=zeros[0]
+    if tmpeqp>efermi: 
+        tmpeqp=zeros[0]
+   #if tmpeqp == en[0]:
+   #    print("WHAT??? tmpqep", tmpeqp)
+   #    print("resigma[n,n-1]:", resigma[n], resigma[n-1])
+   #    plt.plot(en,resigma)
+   #    plt.show()
+   #    sys.exit()
     if nzeros==0 : 
         print(" WARNING: No eqp found! ")
+        def fit_func(x, a, b): 
+            return a*x + b
+        from scipy.optimize import curve_fit
+        params = curve_fit(fit_func, en, resigma)
+        [a, b] = params[0]
+        if -b/a < en[-1]:
+            print("WTF!!!")
+            sys.exit()
+        tmpeqp = -b/a
+        zeros.append(tmpeqp)
+       #print "-b/a", -b/a
+       #plt.plot(en,resigma)
+       #plt.plot(en,a*en+b)
+       #plt.plot(-b/a,0,'o')
+       #plt.show()
+       #sys.exit()
     elif nzeros>1 : 
         print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
@@ -532,7 +560,7 @@ def write_eqp_imeqp(eqp,imeqp):
     outfile3.close()
     print("write_eqp_imeqp :: Done.")
     
-def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi,minband):
+def calc_eqp_imeqp(en,res,ims,hartree,efermi,minband):
     """
     This function calculates qp energies and corresponding
     values of the imaginary part of sigma for a set of
@@ -540,28 +568,40 @@ def calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,efermi,minband):
     The function find_eqp_resigma() is used here.
     eqp and imeqp are returned. 
     """
-    import numpy as np;
+    import numpy as np
+    from scipy import interp
     nkpt = np.size(res[:,0,0])
     nband = np.size(res[0,:,0])
     eqp = np.zeros((nkpt,nband))
     imeqp = np.zeros((nkpt,nband))
     hartree = np.array(hartree)
-    for ik in xrange(nkpt):
-        for ib in xrange(nband):
+    for ik in range(nkpt):
+        for ib in range(nband):
             ibeff = minband + ib - 1
             #temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
-            temparray = np.array(en - hartree[ik,ibeff] - res[ik,ib])
+            temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tempim = interpims(en)
             # New method to overcome plasmaron problem
             eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
+           #import matplotlib.pylab as plt
+           #plt.plot(en,en-hartree[ik,ib]-res[ik,ib])
+           #plt.plot(en,ims[ik,ib])
             if nzeros==0: 
-                print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
-                sys.exit()
-            imeqp[ik,ib] = interpims(eqp[ik,ib])
+                #print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
+                print(" WARNING: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!!")
+                #plt.show()
+                #sys.exit()
+            if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
+                #print(en[0], eqp[ik,ib], en[-1])
+                imeqp[ik,ib] = interpims(eqp[ik,ib])
+            else:
+                imeqp[ik,ib] = interp(eqp[ik,ib], en, ims[ik,ib])
             ## Warning if imaginary part of sigma < 0 (Convergence problems?)
             if imeqp[ik,ib] <= 0 : 
                 print(" WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib])
+    #print("eqp[:,-1] ",eqp[:,-1])
+    #sys.exit()
     return eqp, imeqp
 
 def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):

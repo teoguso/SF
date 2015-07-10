@@ -102,7 +102,7 @@ nband = maxband - minband +1
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
-pdos = calc_pdos(invar_dict)
+pdos = calc_pdos(invar_dict,res)
 print(" pdos:", pdos)
 print(" Size(pdos):",np.size(pdos))
 #TODO: Check if consistent use of numpy arrays. 
@@ -132,9 +132,9 @@ newen, spftot, allkb = calc_sf_gw(invar_dict,hartree,pdos,en,res,ims)
 if int(invar_dict['calc_gw']) == 1:
     print(" ### Writing out A(\omega)_GW...  ")
     # Start a new thread
+    #write_spfkb(invar_dict,newen,allkb)
     thread = Thread(target = write_spfkb, args = (invar_dict, newen, allkb))
     thread.start()
-    #write_spfkb(invar_dict,newen,allkb)
     sfac = invar_dict['sfactor']
     pfac = invar_dict['pfactor']
     penergy = invar_dict['penergy']
@@ -164,7 +164,7 @@ if int(invar_dict['calc_exp']) == 1:
     print(" ### Calculation of exponential A ### ")
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
-    eqp, imeqp = calc_eqp_imeqp(nkpt,nband,en,res,ims,hartree,0,minband)
+    eqp, imeqp = calc_eqp_imeqp(en,res,ims,hartree,0,minband)
     print(" Test imeqp:\n", imeqp)
     # Writing out eqp
     # Writing out imeqp
