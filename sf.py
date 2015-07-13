@@ -58,9 +58,9 @@ if len(sys.argv) > 1:
 else:
     out_file = None
 if invar_dict['gwcode'] is 'abinit':
-    gwout = AbinitOutReader(name=out_file,is_sc=invar_dict['is_sc']) 
+    gwout = AbinitOutReader(filename=out_file,is_sc=invar_dict['is_sc']) 
 else: 
-    gwout = CodeOutReader(invar_dict['gwcode'],name=out_file,is_sc=invar_dict['is_sc'])
+    gwout = CodeOutReader(invar_dict['gwcode'],filename=out_file,is_sc=invar_dict['is_sc'])
 print(gwout)
 #print(gwout.fname)
 """for x in gwout.hartree: 
@@ -79,7 +79,7 @@ if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
     print("K-point weights are neglected, i.e. all equal to 1.")
     invar_dict['wtk'] = [1 for i in range(len(invar_dict['wtk']))]
 # ======== READING _SIG FILE ======= #
-en, res, ims = read_sigfile(invar_dict)
+en, res, ims, sig_bdgw = read_sigfile(invar_dict)
 # Rescale energy if in hartree
 print(invar_dict['enhartree'])
 enhartree = invar_dict['enhartree']
@@ -142,7 +142,7 @@ if int(invar_dict['calc_gw']) == 1:
     #outfile = open(outname,'w')
     with open(outname,'w') as outfile: 
         for i in xrange(np.size(newen)): 
-            outfile.write("%7.4f %15.10e\n"% (newen[i],spftot[i])) # Dump string representations of arrays
+            outfile.write("%7.4f %15.10e\n"% (newen[i], spftot[i])) # Dump string representations of arrays
     #outfile.close()
     print(" A(\omega)_GW written in", outname)
     plt.plot(newen,spftot,label="ftot_gw");
@@ -164,22 +164,23 @@ if int(invar_dict['calc_exp']) == 1:
     print(" ### Calculation of exponential A ### ")
     ### ==== Finding zero in res --> Eqp ===== ###
     print(" Finding zeros in real parts...")
-    eqp, imeqp = calc_eqp_imeqp(en,res,ims,hartree,0,minband)
+    eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
     print(" Test imeqp:\n", imeqp)
     # Writing out eqp
     # Writing out imeqp
-    thread = Thread(target = write_eqp_imeqp, args = (eqp,imeqp))
+    thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
     thread.start()
     dict_c = invar_dict
     dict_c['origdir'] = origdir
+    dict_c['sig_bdgw'] = sig_bdgw
     enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
     # Writing out sfkb
-    thread = Thread(target = write_sfkb_c, args = (invar_dict,enexp,sfkb))
+    thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
     thread.start()
 
 
     ### TODO: fix all below ###
-    plt.plot(enexp,ftot,label="ftot");
+    plt.plot(enexp, ftot, label="ftot")
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)

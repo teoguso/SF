@@ -280,8 +280,9 @@ def read_sigfile(invar_dict):
     res = np.rollaxis(y,-1,1)
     ims = np.rollaxis(z,-1,1)
     print("New shape res, ims:", res.shape)
+    print("First and last band in _SIG file:", firstbd, lastbd)
     print(" Done.")
-    return en, res, ims
+    return en, res, ims, (firstbd, lastbd)
 
 def read_cross_sections(penergy):
     """

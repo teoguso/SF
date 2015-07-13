@@ -113,7 +113,7 @@ class CodeOutReader(object):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,code=None,name=None,is_sc=0):
+    def __init__(self, code=None, filename=None, is_sc=0):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
@@ -121,9 +121,9 @@ class CodeOutReader(object):
 	it finds in the running directory. 
 	"""
 #	try: 
-        if name is None:
+        if filename is None:
             self.fname = glob.glob('*.out')[0] # This is 'ls *.out' in current dir
-        else: self.fname = name
+        else: self.fname = filename
         self.code = code
         self.is_sc = is_sc
         # Initialize variables
@@ -282,20 +282,20 @@ class AbinitOutReader(CodeOutReader):
     actual values (as float lists or numbers) as 
     the dictionary's values.
     """
-    def __init__(self,name=None,is_sc=0):
+    def __init__(self, filename=None, is_sc=0):
         """
 	Initialises several instances and calls 
 	a bunch of test methods. 
 	If no file name is given, it takes what 
 	it finds in the running directory. 
 	"""
-        CodeOutReader.__init__(self,'abinit',name,is_sc)
+        CodeOutReader.__init__(self, 'abinit', filename, is_sc)
 	# Attributes
         self.dts_start_end = []
         self.dts_labels = []
         self.dtsets = []
         # Methods
-        self.chk_name()
+        self.chk_fname()
         self.get_version()
         flag = self.chk_completed()
 	self.get_dtsets(flag)
@@ -307,7 +307,7 @@ class AbinitOutReader(CodeOutReader):
             self.get_gw_ks_ev(i)
             self.get_gw_qpen(i,self.nversion)
 
-    def chk_name(self):
+    def chk_fname(self):
         """
 	This method checks whether we are looking 
         a proper abinit output. 
