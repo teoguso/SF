@@ -19,9 +19,34 @@ def read_invar(infile='invar.in'):
     A small function that produces a list of the input variables
     using a dictionary.
     Returns a dictionary with keys and variables from the invar file.
+    List of variables with default values:
+     'sigmafile': None,   # Name of file containing the self-energy
+     'minband': 1, Lowest band to be used in the calculation
+     'maxband': 1, Highest band to be used in the calculation
+     'minkpt': 1, Lowest kpt to be used in the calculation
+     'maxkpt': 1, Highest kpt to be used in the calculation
+     'nkpt': 1, Number of kpt (redundant, but useful to keep in mind the actual total)
+     'enmin': -20.0, Lowest energy to be used in the calculation for the sf output
+     'enmax': 20.0, Highest energy to be used in the calculation for the sf output
+     'sfactor': 1., Percentage of LV spectrum to be calculated [0.;1.]
+     'pfactor': 1., Percentage of LH spectrum to be calculated [0.;1.]
+     'penergy': 0.0, Photon energy
+     'npoles': 1, Number of poles for multipole fit
+     'calc_gw': 1, Enables output of GW spectral function
+     'calc_exp': 0, Enables output of cumulant spectral function
+     'extinf': 0, Includes extrinsic and interference effects (0, 1)
+     'efermi': 0.0, Fermi energy
+     'omega_p':0.0, Arbitrary plasmon frequency (used only in the case npoles=999)
+     'enhartree': 0, Converts energies to eV in case they are given in Hartree (0, 1)
+     'gwcode': 'abinit', Name of code
+     'nspin': 0, Number of spin polarizations (0, 1, 2)
+     'spin': 0, Spin calculation (0, 1)
+     'is_sc': 0, Self-consistent calculation (0, 1)
+     'restart': 0, Will not calculate anything, but simply use the single spf files already calculated (0, 1)
+     'add_wtk': 1 Include k-point weights (0, 1)
     """
     var_defaults = { 
-            'sigmafile': None,
+            'sigmafile': None,   
             'minband': 1, 
             'maxband': 1,
             'minkpt': 1,
@@ -35,14 +60,15 @@ def read_invar(infile='invar.in'):
             'npoles': 1,
             'calc_gw': 1,
             'calc_exp': 0,
-            'extinf': False,
+            'extinf': 0,
             'efermi': 0.0,
             'omega_p':0.0,
-            'enhartree': False,
+            'enhartree': 0,
             'gwcode': 'abinit',
             'nspin': 0, 
             'spin': 0,
             'is_sc': 0,
+            'restart': 0,
             'add_wtk': 1
             }
 #    varlist = list((
@@ -316,12 +342,14 @@ def read_cross_sections(penergy):
 
 def calc_pdos(var_dct,res=None):
     """
-    Calculates projected DOS. 
+    Calculates projected DOS for all bands contained in the
+    sigma file. 
     """
     penergy = var_dct['penergy']
     sfac =  float(var_dct['sfactor'])
     pfac =  float(var_dct['pfactor'])
-    nband = int(var_dct['nband'])
+    #nband = int(var_dct['nband'])
+    nband = int(var_dct['sig_bdgw'][1]) - int(var_dct['sig_bdgw'][0])
     if penergy != 0:
         # ======== CROSS SECTIONS ======= #
         cs = read_cross_sections(penergy)
@@ -332,7 +360,7 @@ def calc_pdos(var_dct,res=None):
     else:
         pdos=np.ones((nband))
     if res is not None:
-        tail = np.ones(shape=(res[0,:,0].size-pdos.size))
+        tail = np.ones(shape=(res[0,:,0].size-pdos.size))*pdos[-1] # same weight as last item of pdos
         pdos = np.concatenate((pdos,tail))
     return pdos
 
@@ -406,16 +434,21 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     spf (GW spectral function) is returned.
     """
     import numpy as np;
+    print("calc_sf_gw :: ")
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
-    minkpt = int(vardct['minkpt'])
-    maxkpt = int(vardct['maxkpt'])
+   #minkpt = int(vardct['minkpt'])
+   #maxkpt = int(vardct['maxkpt'])
     nkpt = res[:,0,0].size 
     #maxkpt - minkpt + 1
-    minband = int(vardct['minband'])
-    maxband = int(vardct['maxband'])
+   #minband = int(vardct['minband'])
+   #maxband = int(vardct['maxband'])
     nband =  res[0,:,0].size 
+    print("nkpt, nband ", nkpt, nband)
+   #bdgw = map(int, vardct['sig_bdgw'])
+   #bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+   #kptrange = range(minkpt - 1, maxkpt)
     #maxband - minband + 1
     newdx = 0.005
     enmin = float(vardct['enmin'])
@@ -432,30 +465,42 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     spftot = np.zeros((np.size(newen)));
     # Here we interpolate re and im sigma
     # for each band and k point
-    spfkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+    spfkb = np.zeros(shape=(res[:,0,0].size,res[0,:,0].size,np.size(newen)))
+    reskb = np.zeros(shape=(res[:,0,0].size,res[0,:,0].size,np.size(newen)))
+    imskb = np.zeros(shape=(res[:,0,0].size,res[0,:,0].size,np.size(newen)))
+    rdenkb = np.zeros(shape=(res[:,0,0].size,res[0,:,0].size,np.size(newen)))
+   #spfkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+   #reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+   #imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+   #rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
+    import matplotlib.pylab as plt
     for ik in range(nkpt):
         #ikeff = minkpt+ik-1
-        print(" k point = %02d " % (ik))
+        print(" k point, nband = %02d %02d" % (ik,nband))
+        #print(" nband = %02d " % (nband))
         for ib in range(nband):
             #ibeff = minband+ib-1
+           #print(ik, ib)
+           #plt.plot(en,ims[ik,ib])
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
             tmpres = interpres(newen)
             reskb[ik,ib] = tmpres
             #redenom = newen + efermi - hartree[ik,ib] - interpres(newen)
             redenom = newen - hartree[ik,ib] - interpres(newen)
+            #plt.plot(hartree[ik,ib],'o')
             rdenkb[ik,ib] = redenom
             #print("ik ib minband maxband ibeff hartree[ik,ib]", ik, ib, minband, maxband, ibeff, hartree[ik,ib])
             tmpim = interpims(newen)
             imskb[ik,ib] = tmpim
+           #print("pdos ",pdos)
             spfkb_tmp = wtk[ik] * pdos[ib] * abs(tmpim)/np.pi/(redenom**2 + tmpim**2)
             #print(spfkb.shape, spfkb_tmp.shape)
             spfkb[ik,ib] = spfkb_tmp
             spftot += spfkb_tmp
     allkb = [spfkb, reskb, rdenkb, imskb]
+   #plt.plot(newen,spftot)
+    print("reskb.shape:",reskb.shape)
     return newen, spftot, allkb
     #return newen, spftot, spfkb,reskb, rdemkb, imskb
 
@@ -470,15 +515,22 @@ def write_spfkb(vardct,newen,allkb):
     minband = int(vardct['minband'])
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband - bdgw[0], maxband - bdgw[0] + 1)
+    kptrange = range(minkpt - 1, maxkpt)
     spfkb = allkb[0]
     reskb = allkb[1]
     rdenkb = allkb[2]
     imskb = allkb[3]
-    for ik in range(nkpt):
-        #print(" k point = %02d " % (ikeff+1))
-        ikeff = minkpt + ik 
-        for ib in range(nband):
-            ibeff = minband + ib
+   #for ik in range(nkpt):
+   #    #print(" k point = %02d " % (ikeff+1))
+   #    ikeff = minkpt + ik 
+   #    for ib in range(nband):
+    for ik in kptrange:
+        ikeff = ik + 1
+        #for ib in range(nband):
+        for ib in bdrange:
+            ibeff = ib + 1
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
@@ -563,7 +615,7 @@ def write_eqp_imeqp(eqp,imeqp):
     outfile3.close()
     print("write_eqp_imeqp :: Done.")
     
-def calc_eqp_imeqp(en,res,ims,hartree,efermi,minband):
+def calc_eqp_imeqp(en,res,ims,hartree,efermi):
     """
     This function calculates qp energies and corresponding
     values of the imaginary part of sigma for a set of
@@ -580,7 +632,6 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi,minband):
     hartree = np.array(hartree)
     for ik in range(nkpt):
         for ib in range(nband):
-            ibeff = minband + ib - 1
             #temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
             temparray = np.array(en - hartree[ik,ib] - res[ik,ib])
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
@@ -741,21 +792,6 @@ def write_sfkb_c(vardct,en,sfkb):
             with open(outnamekb,'w') as ofkb:
                 for ien in range(en.size):
                     ofkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
-           #outnamekb = "spf_gw-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-           #outfilekb = open(outnamekb,'w')
-           #for ien in xrange(np.size(newen)) :
-           #    outfilekb.write("%8.4f %12.8e %12.8e %12.8e %12.8e\n" % (newen[ien], spfkb[ik,ib,ien], rdenkb[ik,ib,ien], reskb[ik,ib,ien], imskb[ik,ib,ien]))
-           #outfilekb.close()
-                #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
-                #outfilekb = open(outnamekb,'w')
-                #for ien in xrange(nenexp):
-                #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
-                #outfilekb.close()
-               #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf"+"."+str(penergy)
-               #outfilekb = open(outnamekb,'w')
-               #for ien in xrange(nenexp):
-               #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
-               #outfilekb.close()
     print("write_sfkb_c :: Done.")
 
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
@@ -768,6 +804,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     weights are put to 0. 
     - Standard cumulant for any other value of npoles.
     """
+    print(" calc_sf_c :: ")
     import numpy as np;
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -778,6 +815,9 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     minband = int(vardct['minband'])
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
     newdx = 0.005
     enmin = float(vardct['enmin'])
     enmax = float(vardct['enmax'])
@@ -797,10 +837,16 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     imskb = allkb[3]
     if npoles==999: # same omega_p for every state, with the intensity calculated integrating Im(Sigma)
         omega_p = float(vardct['omega_p'])
-        omegampole = np.ones((nkpt,nband))*omega_p
-        ampole =  np.zeros((nkpt,nband))
-        for ik in xrange(nkpt):
-            for ib in xrange(nband):
+       #omegampole = np.ones((nkpt,nband))*omega_p
+       #ampole =  np.zeros((nkpt,nband))
+        omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))*omega_p
+        ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))
+        #for ik in range(nkpt):
+        #for ik in kptrange:
+           #for ib in range(nband):
+           #for ib in bdrange:
+        for ik in range(imskb[:,0,0].size):
+            for ib in range(imskb[0,:,0].size):
                 print(" ik, ib", ik, ib)
                 #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
                 #if eqp[ik,ib]<=efermi:
@@ -829,11 +875,17 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         print(" ### ================== ###")
         print(" ###    Multipole fit   ###")
         print(" Number of poles:", npoles)
-        omegampole =  np.zeros((nkpt,nband,npoles))
-        ampole =  np.zeros((nkpt,nband,npoles))
-        for ik in xrange(nkpt):
-            ikeff=minkpt+ik-1
-            for ib in xrange(nband):
+       #omegampole =  np.zeros((nkpt,nband,npoles))
+       #ampole =  np.zeros((nkpt,nband,npoles))
+        omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+        ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+        #for ik in range(nkpt):
+        #    ikeff=minkpt+ik-1
+       #for ik in kptrange:
+            #for ib in range(nband):
+       #    for ib in bdrange:
+        for ik in range(imskb[:,0,0].size):
+            for ib in range(imskb[0,:,0].size):
                 if eqp[ik,ib] > newen[-npoles]:
                 #if eqp[ik,ib] > newen[-1]:
                     omegampole[ik,ib] = omegampole[ik,ib-1]
@@ -881,8 +933,11 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         outname = "omega_j_np"+str(npoles)+".dat"
         outfile2 = open(outname,'w')
         for ipole in xrange(npoles):
-            for ik in xrange(nkpt):
-                for ib in xrange(nband):
+     #      for ik in kptrange:
+     #          #for ib in range(nband):
+     #          for ib in bdrange:
+            for ik in range(imskb[:,0,0].size):
+                for ib in range(imskb[0,:,0].size):
                     outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
                     outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
                 outfile.write("\n")
@@ -900,15 +955,19 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             outname = "a_j_np"+str(npoles)+"_extinf."+str(penergy)
             outfile = open(outname,'w')
             for ipole in xrange(npoles):
-                for ik in xrange(nkpt):
-                    for ib in xrange(nband):
+           #    for ik in kptrange:
+           #        for ib in bdrange:
+                for ik in range(imskb[:,0,0].size):
+                    for ib in range(imskb[0,:,0].size):
                         outfile.write("%10.5f"  % (amp_exinf[ik,ib,ipole]))
                     outfile.write("\n")
                 outfile.write("\n")
             outfile.close()
     else:
-        omegampole =  np.zeros((nkpt,nband))
-        ampole =  np.zeros((nkpt,nband))
+        omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))
+        ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))
+       #omegampole =  np.zeros((nkpt,nband))
+       #ampole =  np.zeros((nkpt,nband))
     #elaps2 = time.time() - elaps1 - e0
     #cpu2 = time.clock() - cpu1 - c0
     #print(elaps2, cpu2)
@@ -921,17 +980,20 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     f = np.zeros((nkpt,nband,nenexp))
     ftot = np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
-    sfkb_c = np.zeros((nkpt,nband,nenexp))
+    #sfkb_c = np.zeros((nkpt,nband,nenexp))
+    sfkb_c = np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,nenexp))
     ############################
     # With extrinsic effects ###
     if extinf == 1:
         from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
-        for ik in xrange(nkpt):
-            ikeff=minkpt+ik-1
-            for ib in xrange(nband):
-                ibeff=minband+ib-1
-                print(" ik, ib", ik, ib)
-                prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
+        #for ik in range(nkpt):
+        for ik in kptrange:
+            ikeff=minkpt+ik
+            #for ib in range(nband):
+            for ib in bdrange:
+                ibeff=bdgw[0]+ib
+                print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
+                prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 akb=amp_exinf[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -950,12 +1012,14 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 ftot = ftot + tmpf
     else: # extinf == 0
         from extmod_spf_mpole import f2py_calc_spf_mpole
-        for ik in xrange(nkpt):
-            ikeff=minkpt+ik-1
-            for ib in xrange(nband):
-                ibeff=minband+ib-1
-                print(" ik, ib, ikeff, ibeff", ik, ib, ikeff+1, ibeff+1)
-                prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
+        #for ik in range(nkpt):
+            #for ib in range(nband):
+        for ik in kptrange:
+            ikeff=minkpt+ik
+            for ib in bdrange:
+                ibeff=bdgw[0]+ib
+                print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
+                prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]
@@ -992,15 +1056,20 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     sfac = vardct['sfactor']
     pfac = vardct['pfactor']
     if extinf == 1:
-        outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
+        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
         outfile = open(outname,'w')
-        for i in xrange(nenexp):
+        outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
+        outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
+        for i in range(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
     else: # extinf == 0
-        outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+        #outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
         outfile = open(outname,'w')
-        for i in xrange(nenexp):
+        outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
+        outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
+        for i in range(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
     return enexp, ftot, sfkb_c

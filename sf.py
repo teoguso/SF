@@ -40,6 +40,7 @@ print( " SF :: START")
 for i in range(52): print('=',end='')
 print()
 invar_dict = read_invar()
+dict_c = invar_dict # So as not to change invar_dict
 #print(('%12s, %9.4f' % invar_dict.keys(), invar_dict.values()))
 print(" "+"===="+" Input variables "+"====")
 print()
@@ -80,6 +81,7 @@ if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
     invar_dict['wtk'] = [1 for i in range(len(invar_dict['wtk']))]
 # ======== READING _SIG FILE ======= #
 en, res, ims, sig_bdgw = read_sigfile(invar_dict)
+dict_c['sig_bdgw'] = sig_bdgw
 # Rescale energy if in hartree
 print(invar_dict['enhartree'])
 enhartree = invar_dict['enhartree']
@@ -102,7 +104,7 @@ nband = maxband - minband +1
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
-pdos = calc_pdos(invar_dict,res)
+pdos = calc_pdos(dict_c,res)
 print(" pdos:", pdos)
 print(" Size(pdos):",np.size(pdos))
 #TODO: Check if consistent use of numpy arrays. 
@@ -126,14 +128,26 @@ print(" --- Time spent so far: {} seconds. ---".format(t_part1))
 # allkb contains A_GW, Re(Sigma), w-e_H-Re(Sigma), Im(Sigma)
 # for each ik,ib on the 'newen' array of energies. 
 # only A_GW is multiplied by wtk*pdos
-newen, spftot, allkb = calc_sf_gw(invar_dict,hartree,pdos,en,res,ims)
+if minband < sig_bdgw[0]: 
+    print("WARNING: requested first band", minband, " is below the lowest available GW band.")
+    dict_c['minband'] = sig_bdgw[0]
+    print("The first available band", minband, " will be taken.")
+if maxband > sig_bdgw[1]:
+    print("WARNING: requested first band", maxband, " is above the highest available GW band.")
+    dict_c['maxband'] = sig_bdgw[1]
+    print("The last available band", maxband, " will be taken.")
+if int(dict_c['restart']) == 0:  
+    newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
+else: # restart == 1
+    dict_c['calc_gw'] == 0:
+    dict_c['calc_exp'] == 0:
         ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
-if int(invar_dict['calc_gw']) == 1:
+if int(dict_c['calc_gw']) == 1:
     print(" ### Writing out A(\omega)_GW...  ")
     # Start a new thread
     #write_spfkb(invar_dict,newen,allkb)
-    thread = Thread(target = write_spfkb, args = (invar_dict, newen, allkb))
+    thread = Thread(target = write_spfkb, args = (dict_c, newen, allkb))
     thread.start()
     sfac = invar_dict['sfactor']
     pfac = invar_dict['pfactor']
@@ -153,7 +167,7 @@ print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time)
 
 ### ===================================== ###
 ### ===== EXPONENTIAL SPECTRAL FUNCTION ====== ###
-if int(invar_dict['calc_exp']) == 1:
+if int(dict_c['calc_exp']) == 1:
     # Time section
     #import time
     e0=time.time()
@@ -170,9 +184,7 @@ if int(invar_dict['calc_exp']) == 1:
     # Writing out imeqp
     thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
     thread.start()
-    dict_c = invar_dict
     dict_c['origdir'] = origdir
-    dict_c['sig_bdgw'] = sig_bdgw
     enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
     # Writing out sfkb
     thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
@@ -181,6 +193,10 @@ if int(invar_dict['calc_exp']) == 1:
 
     ### TODO: fix all below ###
     plt.plot(enexp, ftot, label="ftot")
+
+if int(dict_c['restart']) == 1:
+    enexp, ftot_a = read_sf(dict_c, pdos, 'exp')
+    enexp, ftot_b = read_sf(dict_c, pdos, 'gw')
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
