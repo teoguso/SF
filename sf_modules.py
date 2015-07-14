@@ -746,10 +746,6 @@ def read_sf(vardct, pdos, approx):
         str_exi = "_extinf"
     else:
         str_exi = ""
-    #spfkb = allkb[0]
-   #reskb = allkb[1]
-   #rdenkb = allkb[2]
-   #imskb = allkb[3]
     if approx == 'exp':
         end_fname = "_np"+str(npoles)+str_exi+"."+str(penergy)
     elif approx == 'gw':
@@ -761,11 +757,18 @@ def read_sf(vardct, pdos, approx):
     en = np.genfromtxt(fname, usecols = 0) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
     #sf = np.genfromtxt(fname, usecols = 1) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
     sf = np.zeros((en.size))
-    for ik in range(nkpt):
+    #bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband, maxband + 1)
+    kptrange = range(minkpt , maxkpt + 1)
+    #for ik in range(nkpt):
+    for ik in kptrange:
         #print(" k point = %02d " % (ikeff+1))
-        ikeff = minkpt + ik 
-        for ib in range(nband):
-            ibeff = minband + ib
+        ikeff = ik 
+        #for ib in range(nband):
+        for ib in bdrange:
+            #ibeff = minband + ib
+            ibeff = ib 
+            print("ikeff, ibeff: ",ikeff,ibeff)
             #outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             #outnamekb = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             fname = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str_exi+end_fname

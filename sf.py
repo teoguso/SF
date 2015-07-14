@@ -165,7 +165,7 @@ else: # restart == 1
         else: 
             str_exi = ""
         outname = "sftot_gw"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
-        print("outname ", outname)
+        print(" Output file: ", outname)
         with open(outname,'w') as fout:
             fout.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n") 
             fout.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
@@ -182,7 +182,8 @@ else: # restart == 1
             str_exi = "_extinf" 
         else: 
             str_exi = ""
-        outname = "sftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_"+str(penergy)+"ev_np"+str(npoles)+str_exi+"_extinf.dat"
+        outname = "sftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_"+str(penergy)+"ev_np"+str(npoles)+str_exi+".dat"
+        print(" Output file: ", outname)
         with open(outname,'w') as fout:
             fout.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n") 
             fout.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
