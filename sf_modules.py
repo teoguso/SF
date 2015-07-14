@@ -504,9 +504,9 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     return newen, spftot, allkb
     #return newen, spftot, spfkb,reskb, rdemkb, imskb
 
-def write_spfkb(vardct,newen,allkb):
+def write_spfkb(vardct, newen, allkb):
     """
-    Does what it says. 
+    Does what it says. For the GW spectral function. 
     """
     print("write_spfkb :: ")
     minkpt = int(vardct['minkpt'])
@@ -538,7 +538,7 @@ def write_spfkb(vardct,newen,allkb):
             outfilekb.close()
     print("write_spfkb :: Done.")
 
-def find_eqp_resigma(en,resigma,efermi):
+def find_eqp_resigma(en, resigma, efermi):
     """
     This function is supposed to deal with the plasmaron problem 
     and calculate the quasiparticle energy once it is fed with 
@@ -723,8 +723,64 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
             amp_exinf[ik,ib] += amp_mean * tmpextinf
     return amp_exinf, w_extinf
 
+def read_sf(vardct, pdos, approx):
+    """
+    This function reads the spectral functions from  the files 
+    spf_gw- or spf_exp- and returns their sum, 
+    according to minband, maxband and minkpt, maxkpt. 
+    """
+    print("read_sf :: ")
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    extinf = int(vardct['extinf'])
+    npoles = int(vardct['npoles'])
+    penergy = int(vardct['penergy'])
+    #wtk = np.array(vardct['wtk'])
+    #hartree = np.array(hartree)
+    pdos = np.array(pdos)
+    if extinf == 1: 
+        str_exi = "_extinf"
+    else:
+        str_exi = ""
+    #spfkb = allkb[0]
+   #reskb = allkb[1]
+   #rdenkb = allkb[2]
+   #imskb = allkb[3]
+    if approx == 'exp':
+        end_fname = "_np"+str(npoles)+str_exi+"."+str(penergy)
+    elif approx == 'gw':
+        end_fname = ".dat"
+    # Initialize sf
+    ikeff = minkpt
+    ibeff = minband
+    fname = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str_exi+end_fname
+    en = np.genfromtxt(fname, usecols = 0) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
+    #sf = np.genfromtxt(fname, usecols = 1) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
+    sf = np.zeros((en.size))
+    for ik in range(nkpt):
+        #print(" k point = %02d " % (ikeff+1))
+        ikeff = minkpt + ik 
+        for ib in range(nband):
+            ibeff = minband + ib
+            #outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
+            #outnamekb = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            fname = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str_exi+end_fname
+            tmp_sf = np.genfromtxt(fname, usecols = 1) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
+           #en, tmp_sf = np.genfromtxt(fname) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
+            sf += tmp_sf
+           #with open(fname,'r') as ifkb:
+           #    for ien in range(en.size):
+           #        ifkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
+    print("read_sf :: Done.")
+    return en, sf
+
 def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
     """
+    OBSOLETE???
     This function calculates the exponential spectral function. 
     """
     import numpy as np;
@@ -763,7 +819,7 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
 
 def write_sfkb_c(vardct,en,sfkb):
     """
-    Does what it says. 
+    Does what it says. For the cumulant spectral function. 
     """
     print("write_sfkb_c :: ")
     minkpt = int(vardct['minkpt'])
@@ -776,7 +832,7 @@ def write_sfkb_c(vardct,en,sfkb):
     npoles = int(vardct['npoles'])
     penergy = int(vardct['penergy'])
     if extinf == 1: 
-        str_exi = "extinf"
+        str_exi = "_extinf"
     else:
         str_exi = ""
     #spfkb = allkb[0]

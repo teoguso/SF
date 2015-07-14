@@ -123,6 +123,20 @@ chdir(newdir)
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_part1 = time.time() - start_time
 print(" --- Time spent so far: {} seconds. ---".format(t_part1))
+sfac = invar_dict['sfactor']
+pfac = invar_dict['pfactor']
+penergy = invar_dict['penergy']
+minkpt = int(dict_c['minkpt'])
+maxkpt = int(dict_c['maxkpt'])
+npoles = int(dict_c['npoles'])
+extinf = int(dict_c['extinf'])
+print("penergy = ", penergy)
+print("minkpt = ", minkpt)
+print("maxkpt = ", maxkpt)
+print("minband = ", minband)
+print("maxband = ", maxband)
+print("npoles = ", npoles)
+print("extinf = ", extinf)
 # GW spectral function part 
     #newen, spftot = calc_spf_gw(minkpt,maxkpt,minband,maxband,wtk,pdos,en,enmin,enmax,res,ims,hartree)
 # allkb contains A_GW, Re(Sigma), w-e_H-Re(Sigma), Im(Sigma)
@@ -139,9 +153,42 @@ if maxband > sig_bdgw[1]:
 if int(dict_c['restart']) == 0:  
     newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
 else: # restart == 1
-    dict_c['calc_gw'] == 0:
-    dict_c['calc_exp'] == 0:
-        ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
+    print("### RESTART: READING SPECTRAL FUNCTIONS ###")
+#if int(dict_c['restart']) == 1:
+    if int(dict_c['calc_gw']) == 1:
+        print("### GW SPECTRAL FUNCTIONS ###")
+        en, ftot_a = read_sf(dict_c, pdos, 'gw') 
+        dict_c['calc_gw'] = 0 
+        plt.plot(en, ftot_a, label="ftot_gw "+str(minkpt)+" "+str(maxkpt)+" "+str(minband)+" "+str(maxband))
+        if extinf == 1: 
+            str_exi = "_extinf" 
+        else: 
+            str_exi = ""
+        outname = "sftot_gw"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+        print("outname ", outname)
+        with open(outname,'w') as fout:
+            fout.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n") 
+            fout.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
+           #fout.write("# minkpt maxkpt %8.4f %12.8f\n" % (minkpt, maxkpt))
+           #fout.write("# minband maxband %8.4f %12.8f\n" % (minband, maxband))
+            for i in range(en.size): 
+                fout.write("%8.4f %12.8f\n" % (en[i], ftot_a[i]))
+    if int(dict_c['calc_exp']) == 1:
+        print("### EXP SPECTRAL FUNCTIONS ###")
+        enexp, ftot_b = read_sf(dict_c, pdos, 'exp') 
+        dict_c['calc_exp'] = 0
+        plt.plot(enexp, ftot_b, label="ftot_exp "+str(minkpt)+" "+str(maxkpt)+" "+str(minband)+" "+str(maxband))
+        if extinf == 1: 
+            str_exi = "_extinf" 
+        else: 
+            str_exi = ""
+        outname = "sftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_"+str(penergy)+"ev_np"+str(npoles)+str_exi+"_extinf.dat"
+        with open(outname,'w') as fout:
+            fout.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n") 
+            fout.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
+            for i in range(en.size): 
+                fout.write("%8.4f %12.8f\n" % (en[i], ftot_b[i]))
+    ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
 if int(dict_c['calc_gw']) == 1:
     print(" ### Writing out A(\omega)_GW...  ")
@@ -149,9 +196,6 @@ if int(dict_c['calc_gw']) == 1:
     #write_spfkb(invar_dict,newen,allkb)
     thread = Thread(target = write_spfkb, args = (dict_c, newen, allkb))
     thread.start()
-    sfac = invar_dict['sfactor']
-    pfac = invar_dict['pfactor']
-    penergy = invar_dict['penergy']
     outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
     #outfile = open(outname,'w')
     with open(outname,'w') as outfile: 
@@ -194,9 +238,6 @@ if int(dict_c['calc_exp']) == 1:
     ### TODO: fix all below ###
     plt.plot(enexp, ftot, label="ftot")
 
-if int(dict_c['restart']) == 1:
-    enexp, ftot_a = read_sf(dict_c, pdos, 'exp')
-    enexp, ftot_b = read_sf(dict_c, pdos, 'gw')
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
