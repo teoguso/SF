@@ -497,7 +497,6 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    import matplotlib.pylab as plt
     for ik in range(nkpt):
         #ikeff = minkpt+ik-1
         print(" k point, nband = %02d %02d" % (ik,nband))
@@ -576,7 +575,6 @@ def find_eqp_resigma(en, resigma, efermi):
     extrapolate a value.
     """
     import numpy as np
-    import matplotlib.pylab as plt
     nzeros=0
     zeros = []
     tmpeqp = en[0]
@@ -653,7 +651,7 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
             if nzeros==0: 
                 #print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
                 print(" WARNING: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!!")
-             if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
+            if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
                 #print(en[0], eqp[ik,ib], en[-1])
                 imeqp[ik,ib] = interpims(eqp[ik,ib])
             else:
@@ -975,8 +973,8 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                     #en3 = en[en<=efermi]
                     if en3.size == 0:
-                        print("ERROR: QP energy is outside of given energy range!\n\ 
-                                You might want to modify enmin/enmax. Bye!")
+                        print("ERROR: QP energy is outside of given energy range!\n"+\
+                                "You might want to modify enmin/enmax. Bye!")
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         sys.exit()
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
