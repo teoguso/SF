@@ -28,8 +28,8 @@ def read_invar(infile='invar.in'):
      'nkpt': 1, Number of kpt (redundant, but useful to keep in mind the actual total)
      'enmin': -20.0, Lowest energy to be used in the calculation for the sf output
      'enmax': 20.0, Highest energy to be used in the calculation for the sf output
-     'sfactor': 1., Percentage of LV spectrum to be calculated [0.;1.]
-     'pfactor': 1., Percentage of LH spectrum to be calculated [0.;1.]
+     'sfactor': 1., Percentage of LH spectrum to be calculated [0.;1.]
+     'pfactor': 1., Percentage of LV spectrum to be calculated [0.;1.]
      'penergy': 0.0, Photon energy
      'npoles': 1, Number of poles for multipole fit
      'calc_gw': 1, Enables output of GW spectral function
@@ -199,6 +199,23 @@ def calc_nkpt_sigfile(insigfile, spin = False):
     print("nkpt= {}".format(nkpt))
     return nkpt
 
+def read_wtk_sigfile(insigfile, spin = 0):
+    """
+    Get wtk (k-point weights) from a SelfXC.dat file (exciting)
+    """
+    print("read_wtk_sigfile ::")
+    insigfile.seek(0)
+    lines = insigfile.readlines()
+    wtk = []
+    for line in lines:
+        if 'wkpt' in line:
+            wtk.append(float(line.split()[-1]))
+    if spin == 1:
+        wtk = wtk[::2]
+    print("wtk = {}".format(wtk))
+    print("read_wtk_sigfile :: Done.")
+    return wtk
+
 def read_sigfile(invar_dict):
     """
     A hopefully better version.
@@ -228,6 +245,8 @@ def read_sigfile(invar_dict):
     with open(sigfilename) as insigfile:
         filelines = insigfile.readlines() 
         nkpt = calc_nkpt_sigfile(insigfile,spin)
+        if invar_dict['gwcode'] == 'exciting':
+            invar_dict['wtk'] = read_wtk_sigfile(insigfile)
         insigfile.seek(0)
         insigfile.readline()
         line = insigfile.readline()
@@ -286,7 +305,7 @@ def read_sigfile(invar_dict):
     print("nspin:",nspin)
     # From a long line to a proper 2D array, then only first row
     #print(xen.shape)
-    #print(x.shape)
+    print("x.shape", x.shape)
     if spin == 1 and nspin == 0:
         nspin = 2
     else:
@@ -298,11 +317,16 @@ def read_sigfile(invar_dict):
     en = xen.reshape(nkpt*nspin,np.size(xen)/nkpt/nspin)[0]
     #en = xen.reshape(nkpt,np.size(xen)/nkpt)[0]
     print("New shape en:",np.shape(en))
-    #print("First row of x:",x[0])
-    b = x.reshape(nkpt*nspin,np.size(x)/nkpt/nspin/nbd/3,3*nbd)
+    print("First row of x:",x[0])
+    if invar_dict['gwcode'] == 'abinit':
+        nb_cols = 3
+    elif invar_dict['gwcode'] == 'exciting':
+        nb_cols = 2
+       #b = x.reshape(nkpt*nspin,np.size(x)/nkpt/nspin/nbd/3,3*nbd)
+    b = x.reshape(nkpt*nspin,np.size(x)/nkpt/nspin/nbd/nb_cols,nb_cols*nbd)
     print("New shape x:",b.shape)
-    y = b[0::nspin,:,0::3]
-    z = b[0::nspin,:,1::3]
+    y = b[0::nspin,:,0::nb_cols]
+    z = b[0::nspin,:,1::nb_cols]
     res = np.rollaxis(y,-1,1)
     ims = np.rollaxis(z,-1,1)
     print("New shape res, ims:", res.shape)
@@ -568,12 +592,6 @@ def find_eqp_resigma(en, resigma, efermi):
             nzeros+=1
     if tmpeqp>efermi: 
         tmpeqp=zeros[0]
-   #if tmpeqp == en[0]:
-   #    print("WHAT??? tmpqep", tmpeqp)
-   #    print("resigma[n,n-1]:", resigma[n], resigma[n-1])
-   #    plt.plot(en,resigma)
-   #    plt.show()
-   #    sys.exit()
     if nzeros==0 : 
         print(" WARNING: No eqp found! ")
         def fit_func(x, a, b): 
@@ -586,12 +604,6 @@ def find_eqp_resigma(en, resigma, efermi):
             sys.exit()
         tmpeqp = -b/a
         zeros.append(tmpeqp)
-       #print "-b/a", -b/a
-       #plt.plot(en,resigma)
-       #plt.plot(en,a*en+b)
-       #plt.plot(-b/a,0,'o')
-       #plt.show()
-       #sys.exit()
     elif nzeros>1 : 
         print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
@@ -638,15 +650,10 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
             tempim = interpims(en)
             # New method to overcome plasmaron problem
             eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
-           #import matplotlib.pylab as plt
-           #plt.plot(en,en-hartree[ik,ib]-res[ik,ib])
-           #plt.plot(en,ims[ik,ib])
             if nzeros==0: 
                 #print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
                 print(" WARNING: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!!")
-                #plt.show()
-                #sys.exit()
-            if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
+             if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
                 #print(en[0], eqp[ik,ib], en[-1])
                 imeqp[ik,ib] = interpims(eqp[ik,ib])
             else:
@@ -654,8 +661,6 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
             ## Warning if imaginary part of sigma < 0 (Convergence problems?)
             if imeqp[ik,ib] <= 0 : 
                 print(" WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib])
-    #print("eqp[:,-1] ",eqp[:,-1])
-    #sys.exit()
     return eqp, imeqp
 
 def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
@@ -970,6 +975,8 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                     #en3 = en[en<=efermi]
                     if en3.size == 0:
+                        print("ERROR: QP energy is outside of given energy range!\n\ 
+                                You might want to modify enmin/enmax. Bye!")
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         sys.exit()
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted

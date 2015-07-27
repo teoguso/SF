@@ -44,7 +44,7 @@ dict_c = invar_dict # So as not to change invar_dict
 #print(('%12s, %9.4f' % invar_dict.keys(), invar_dict.values()))
 print(" "+"===="+" Input variables "+"====")
 print()
-for key in  invar_dict.keys():
+for key in sorted(invar_dict.keys()):
     #print(key, invar_dict[key])
     print(('%12s :: %12s' % (key, invar_dict[key])))
 for i in range(52): print('=',end='')
@@ -58,9 +58,17 @@ if len(sys.argv) > 1:
     out_file = sys.argv[1]
 else:
     out_file = None
-if invar_dict['gwcode'] is 'abinit':
-    gwout = AbinitOutReader(filename=out_file,is_sc=invar_dict['is_sc']) 
+# TODO: remove the debugging prints here below
+print(invar_dict['gwcode']) 
+print(invar_dict['gwcode'] == 'exciting')
+if invar_dict['gwcode'] == 'abinit':
+    print("1")
+    gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
+elif invar_dict['gwcode'] == 'exciting':
+    print("2")
+    gwout = ExcitingOutReader() 
 else: 
+    print("3")
     gwout = CodeOutReader(invar_dict['gwcode'],filename=out_file,is_sc=invar_dict['is_sc'])
 print(gwout)
 #print(gwout.fname)
@@ -78,13 +86,15 @@ if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
     invar_dict['wtk'] = wtk
 if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
     print("K-point weights are neglected, i.e. all equal to 1.")
-    invar_dict['wtk'] = [1 for i in range(len(invar_dict['wtk']))]
+    invar_dict['wtk'] = [1 for i in range(len(hartree[:][0]))]
+else:
+    dict_c['wtk'] = gwout.var_dict['wtk']
 # ======== READING _SIG FILE ======= #
 en, res, ims, sig_bdgw = read_sigfile(invar_dict)
 dict_c['sig_bdgw'] = sig_bdgw
 # Rescale energy if in hartree
 print(invar_dict['enhartree'])
-enhartree = invar_dict['enhartree']
+enhartree = int(invar_dict['enhartree'])
 if enhartree and enhartree != 0:
     print(" ### Converting energies from Hartree to eV ###")
     print(" ### 1 Hartree = 27.2116 eV ###")
