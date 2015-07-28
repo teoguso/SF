@@ -134,6 +134,7 @@ with open('hartree.dat','w') as of:
     for ik in range(len(hartree)):
         for ib in range(len(hartree[0])):
             of.write("%14.5f" % (hartree[ik][ib]))
+        of.write("\n")
 ### ================================= ###
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_part1 = time.time() - start_time

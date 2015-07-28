@@ -833,6 +833,9 @@ def write_sfkb_c(vardct,en,sfkb):
     minband = int(vardct['minband'])
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband - 1,maxband)
+    kptrange = range(minkpt - 1, maxkpt)
     extinf = int(vardct['extinf'])
     npoles = int(vardct['npoles'])
     penergy = int(vardct['penergy'])
@@ -844,11 +847,14 @@ def write_sfkb_c(vardct,en,sfkb):
    #reskb = allkb[1]
    #rdenkb = allkb[2]
    #imskb = allkb[3]
-    for ik in range(nkpt):
+   #for ik in range(nkpt):
+    for ik in kptrange:
         #print(" k point = %02d " % (ikeff+1))
-        ikeff = minkpt + ik 
-        for ib in range(nband):
-            ibeff = minband + ib
+       #ikeff = minkpt + ik 
+        ikeff = ik + 1
+        for ib in bdrange:
+           #ibeff = minband + ib
+            ibeff = ib + 1
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             with open(outnamekb,'w') as ofkb:
                 for ien in range(en.size):
