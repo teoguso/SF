@@ -5,15 +5,16 @@
 New version, trying to give it a more c++/object-orented feel.
 List of files needed:
 - invar.in with input variables.
-- _SIG for the self-energy.
+- Output file from GW calculation for wtk, hartree, eqp and whatnot.
+- _SIG/SelfXC.dat for the self-energy.
 - s.dat, p_even.dat, p_odd.dat, d_even.dat, etc. 
 for the orbital character and symmetries.
 - cs*.dat for the photon cross sections.
 
 TODO: Fix the inconsistency with ik,ib/ikeff,ibeff: Easiest way to do it:
     Read all kpt and bd, and then read just between minkpt,maxkpt/minbd,maxbd
-NOT ANYMORE - hartree.dat or elda.dat and vxc.dat for the hartree energies.
-NOT ANYMORE - wtk.dat for the k-points weights.
+ONLY FOR LEGACY - hartree.dat or elda.dat and vxc.dat for the hartree energies.
+ONLY FOR LEGACY - wtk.dat for the k-points weights.
 TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 """
 from __future__ import print_function
@@ -80,26 +81,18 @@ print(gwout)
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
 # ======== READING WTK ======= #
-if invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
-        and not 'wtk' in invar_dict: # FOR OLDER ABINIT VERSIONS
-    wtk = read_wtk()
-    invar_dict['wtk'] = wtk
 if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
     print("K-point weights are neglected, i.e. all equal to 1.")
     invar_dict['wtk'] = [1 for i in range(len(hartree[:][0]))]
+elif invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
+        and not 'wtk' in invar_dict: # FOR OLDER ABINIT VERSIONS
+    wtk = read_wtk()
+    invar_dict['wtk'] = wtk
 else:
     dict_c['wtk'] = gwout.var_dict['wtk']
 # ======== READING _SIG FILE ======= #
 en, res, ims, sig_bdgw = read_sigfile(invar_dict)
 dict_c['sig_bdgw'] = sig_bdgw
-# Rescale energy if in hartree
-print(invar_dict['enhartree'])
-enhartree = int(invar_dict['enhartree'])
-if enhartree and enhartree != 0:
-    print(" ### Converting energies from Hartree to eV ###")
-    print(" ### 1 Hartree = 27.2116 eV ###")
-    en = 2.0*13.6058*en
-#TODO: enmin and emax are unchanged. Check if this is consistent!
 # Reset wrt efermi
 efermi =  float(invar_dict['efermi'])
 enmin = float(invar_dict['enmin'])
@@ -107,6 +100,14 @@ enmax = float(invar_dict['enmax'])
 en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
+# Rescale energy if in hartree
+#print(invar_dict['enhartree'])
+enhartree = int(invar_dict['enhartree'])
+if enhartree and enhartree != 0:
+    print(" ### Converting energies from Hartree to eV ###")
+    print(" ### 1 Hartree = 27.2116 eV ###")
+    en = 2.0*13.6058*en
+#TODO: enmin and emax are unchanged. Check if this is consistent!
 nkpt =  int(invar_dict['nkpt']) 
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
@@ -128,7 +129,11 @@ print(" Moving into output directory:\n ", newdir)
 if not isdir(newdir) :
     mkdir(newdir)
 chdir(newdir)
-
+### WRITING OUT HARTREE ###
+with open('hartree.dat','w') as of:
+    for ik in range(len(hartree)):
+        for ib in range(len(hartree[0])):
+            of.write("%14.5f" % (hartree[ik][ib]))
 ### ================================= ###
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_part1 = time.time() - start_time
