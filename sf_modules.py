@@ -649,7 +649,6 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
             # New method to overcome plasmaron problem
             eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
             if nzeros==0: 
-                #print(" ERROR: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!! Bye bye!")
                 print(" WARNING: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!!")
             if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
                 #print(en[0], eqp[ik,ib], en[-1])
@@ -973,10 +972,11 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                     #en3 = en[en<=efermi]
                     if en3.size == 0:
-                        print("ERROR: QP energy is outside of given energy range!\n"+\
-                                "You might want to modify enmin/enmax. Bye!")
+                        print("WARNING: QP energy is outside of given energy range!\n"+\
+                                " This state will be skipped!\n"+\
+                                "You might want to modify enmin/enmax.")
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
-                        sys.exit()
+                        continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
                     en3 = en3 - eqp[ik,ib]
                     if eqp[ik,ib] <= 0:
