@@ -715,8 +715,8 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     #print("Type(amp_exinf, ampole):", type(amp_exinf), type(ampole))
     # Mod following discussion with Josh
     amp_mean = np.mean(ampole)
-    for ik in range(ampole[:,0].size):
-        for ib in range(ampole[0,:].size):
+    for ik in range(ampole[:,0,0].size):
+        for ib in range(ampole[0,:,0].size):
             #tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
             try: 
                 w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
