@@ -78,25 +78,25 @@ print(gwout)
     #print(s)
     print(s.format(*x), end='\n')
 """
+# ======== READING _SIG FILE ======= #
+en, res, ims, sig_bdgw = read_sigfile(dict_c)
+dict_c['sig_bdgw'] = sig_bdgw
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
 # ======== READING WTK ======= #
-if 'add_wtk' in invar_dict and int(invar_dict['add_wtk']) == 0:
+if 'add_wtk' in dict_c and int(dict_c['add_wtk']) == 0:
     print("K-point weights are neglected, i.e. all equal to 1.")
-    invar_dict['wtk'] = [1 for i in range(len(hartree[:][0]))]
-elif invar_dict['gwcode']=='abinit' and gwout.nversion <= 5 \
-        and not 'wtk' in invar_dict: # FOR OLDER ABINIT VERSIONS
+    dict_c['wtk'] = [1 for i in range(len(hartree[:][0]))]
+elif dict_c['gwcode']=='abinit' and gwout.nversion <= 5 \
+        and not 'wtk' in dict_c: # FOR OLDER ABINIT VERSIONS
     wtk = read_wtk()
-    invar_dict['wtk'] = wtk
-else:
+    dict_c['wtk'] = wtk
+elif not 'wtk' in dict_c:
     dict_c['wtk'] = gwout.var_dict['wtk']
-# ======== READING _SIG FILE ======= #
-en, res, ims, sig_bdgw = read_sigfile(invar_dict)
-dict_c['sig_bdgw'] = sig_bdgw
 # Reset wrt efermi
-efermi =  float(invar_dict['efermi'])
-enmin = float(invar_dict['enmin'])
-enmax = float(invar_dict['enmax'])
+efermi =  float(dict_c['efermi'])
+enmin = float(dict_c['enmin'])
+enmax = float(dict_c['enmax'])
 en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
@@ -139,9 +139,9 @@ with open('hartree.dat','w') as of:
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_part1 = time.time() - start_time
 print(" --- Time spent so far: {} seconds. ---".format(t_part1))
-sfac = invar_dict['sfactor']
-pfac = invar_dict['pfactor']
-penergy = invar_dict['penergy']
+sfac = dict_c['sfactor']
+pfac = dict_c['pfactor']
+penergy = dict_c['penergy']
 minkpt = int(dict_c['minkpt'])
 maxkpt = int(dict_c['maxkpt'])
 npoles = int(dict_c['npoles'])
