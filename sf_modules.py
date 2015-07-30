@@ -720,9 +720,16 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
             #tmpextinf = interpextinf(omegampole[ik,ib])/npoles # <-- Divided by the number of poles (normalization)!
             try: 
                 w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
-            except IndexError:
+            except ValueError:
+                print("WARNING: A value for omega_p is beyond what contained in a_wp.x.")
+                print(" The last available value is taken. ")
+                print("ik, ib, omegampole: ", ik, ib, omegampole[ik,ib])
                 w_extinf[ik,ib] = np.interp(omegampole[ik,ib],newen_ei,newwmod)
-            tmpextinf = interpextinf(omegampole[ik,ib]) # 
+            try: 
+                tmpextinf = interpextinf(omegampole[ik,ib]) # 
+            except ValueError:
+                print("WARNING: A value for omega_p is beyond what contained in a_wp.x.")
+                tmpextinf = np.interp(omegampole[ik,ib],newen_ei, newa_ei/newa_int)
             # Mod following discussion with Josh
             #amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
             amp_exinf[ik,ib] += amp_mean * tmpextinf
