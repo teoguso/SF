@@ -332,8 +332,8 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
             #mysum.append(np.sum(y[i:i+x.size/nbin]) / (x[i+x.size/nbin-1] - x[i]))
         gi = np.array(gi)
         omegai = np.array(omegai)
-        gi = np.sqrt(gi*first_i)
-        dint = (myint - gi)
+        lambdai = np.sqrt(gi*first_i)
+        dint = (myint - lambdai)
         #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
         print "--- multipole 2 np.size(gi):", gi.size
         #if gi.size > nbin:
@@ -352,15 +352,15 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         myint = np.array(myint)
         #mysum = np.array(mysum)
         print "--- multipole:: np.np.trapz(ims):", totint 
-        print "--- multipole:: np.sum(gi):", np.sum(gi)
-        gi = gi + dint
-        print "--- multipole:: np.sum(gi+dint):", np.sum(gi)
+        print "--- multipole:: np.sum(lambdai):", np.sum(lambdai)
+        lambdai = lambdai + dint
+        print "--- multipole:: np.sum(lambdai+dint):", np.sum(lambdai)
         print "--- multipole:: np.sum(myint):", np.sum(myint)
         #print "--- multipole:: np.sum(mysum):", np.sum(mysum)
-        print "--- multipole:: np.trapz(myint)-np.sum(gi):", (np.sum(gi) - np.sum(myint))/np.sum(myint)
+        print "--- multipole:: np.trapz(myint)-np.sum(lambdai):", (np.sum(lambdai) - np.sum(myint))/np.sum(myint)
         print "--- multipole:: np.sum(sqrt(dint**2)/totint):", np.sum(np.sqrt(dint**2)/totint)
-    deltai = np.ones(gi.size)*totdx/nbin
-    return omegai, gi, deltai
+    deltai = np.ones(lambdai.size)*totdx/nbin
+    return omegai, lambdai, deltai
 
 def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
     """

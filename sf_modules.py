@@ -958,11 +958,13 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
         #for ik in range(nkpt):
         #    ikeff=minkpt+ik-1
-       #for ik in kptrange:
+        bdrange = vardct['bdrange']
+        kptrange = vardct['kptrange']
+        for ik in kptrange:
+            for ib in bdrange:
+       #for ik in range(imskb[:,0,0].size):
             #for ib in range(nband):
-       #    for ib in bdrange:
-        for ik in range(imskb[:,0,0].size):
-            for ib in range(imskb[0,:,0].size):
+       #    for ib in range(imskb[0,:,0].size):
                 if eqp[ik,ib] > newen[-npoles]:
                 #if eqp[ik,ib] > newen[-1]:
                     omegampole[ik,ib] = omegampole[ik,ib-1]
@@ -998,12 +1000,14 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     if eqp[ik,ib] <= 0:
                         en3 = -en3[::-1] 
                         im3 = im3[::-1]
-                    omegai, gi, deltai = fit_multipole2(en3,im3,npoles,0)
+                    omegai, lambdai, deltai = fit_multipole2(en3,im3,npoles,0)
+                   #omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
                     omegampole[ik,ib] = omegai 
-                    ampole[ik,ib] = gi/(omegampole[ik,ib])**2 
+                    ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+                   #ampole[ik,ib] = gi
                     print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
                     print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
-                    print(" \sum_j^N\lambda_j =", np.sum(gi))
+                    print(" \sum_j^N\lambda_j =", np.sum(lambdai))
                     #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
                     #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
         # Writing out a_j e omega_j
@@ -1068,7 +1072,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
         #for ik in range(nkpt):
         for ik in kptrange:
-            ikeff=minkpt+ik
+            ikeff = ik + 1
             #for ib in range(nband):
             for ib in bdrange:
                 ibeff=bdgw[0]+ib
@@ -1095,11 +1099,13 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         #for ik in range(nkpt):
             #for ib in range(nband):
         for ik in kptrange:
-            ikeff=minkpt+ik
+            ikeff = ik + 1
             for ib in bdrange:
-                ibeff=bdgw[0]+ib
+                ibeff = ib + 1
                 print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
                 prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                print("PREFAC:", np.sum(ampole[ik,ib]))
+                print("PREFAC/npoles:", np.sum(ampole[ik,ib])/npoles)
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]

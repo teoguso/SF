@@ -60,16 +60,14 @@ if len(sys.argv) > 1:
 else:
     out_file = None
 # TODO: remove the debugging prints here below
-print(invar_dict['gwcode']) 
-print(invar_dict['gwcode'] == 'exciting')
 if invar_dict['gwcode'] == 'abinit':
-    print("1")
+   #print("1")
     gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
 elif invar_dict['gwcode'] == 'exciting':
-    print("2")
+   #print("2")
     gwout = ExcitingOutReader() 
 else: 
-    print("3")
+   #print("3")
     gwout = CodeOutReader(invar_dict['gwcode'],filename=out_file,is_sc=invar_dict['is_sc'])
 print(gwout)
 #print(gwout.fname)
@@ -166,9 +164,12 @@ if maxband > sig_bdgw[1]:
     print("WARNING: requested first band", maxband, " is above the highest available GW band.")
     dict_c['maxband'] = sig_bdgw[1]
     print("The last available band", maxband, " will be taken.")
-if int(dict_c['restart']) == 0:  
-    newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
-else: # restart == 1
+# Maybe a good global variable?
+dict_c['bdrange'] = range(minband - 1,maxband)
+dict_c['kptrange'] = range(minkpt - 1, maxkpt)
+
+### RESTART??? ###
+if int(dict_c['restart']) == 1:  
     print("### RESTART: READING SPECTRAL FUNCTIONS ###")
 #if int(dict_c['restart']) == 1:
     if int(dict_c['calc_gw']) == 1:
@@ -207,54 +208,69 @@ else: # restart == 1
                 fout.write("%8.4f %12.8f\n" % (en[i], ftot_b[i]))
     ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
-if int(dict_c['calc_gw']) == 1:
-    print(" ### Writing out A(\omega)_GW...  ")
-    # Start a new thread
-    #write_spfkb(invar_dict,newen,allkb)
-    thread = Thread(target = write_spfkb, args = (dict_c, newen, allkb))
-    thread.start()
-    outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
-    #outfile = open(outname,'w')
-    with open(outname,'w') as outfile: 
-        for i in xrange(np.size(newen)): 
-            outfile.write("%7.4f %15.10e\n"% (newen[i], spftot[i])) # Dump string representations of arrays
-    #outfile.close()
-    print(" A(\omega)_GW written in", outname)
-    plt.plot(newen,spftot,label="ftot_gw");
-
-print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
-print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
-# ============================= ###
-
-### ===================================== ###
-### ===== EXPONENTIAL SPECTRAL FUNCTION ====== ###
-if int(dict_c['calc_exp']) == 1:
-    # Time section
-    #import time
-    e0=time.time()
-    c0=time.clock()
-    elaps1=time.time() - e0
-    cpu1=time.clock() - c0
-    print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
-    print(" ### Calculation of exponential A ### ")
-    ### ==== Finding zero in res --> Eqp ===== ###
-    print(" Finding zeros in real parts...")
-    eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
-    print(" Test imeqp:\n", imeqp)
-    # Writing out eqp
-    # Writing out imeqp
-    thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
-    thread.start()
-    dict_c['origdir'] = origdir
-    enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-    # Writing out sfkb
-    thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
-    thread.start()
-
-
-    ### TODO: fix all below ###
-    plt.plot(enexp, ftot, label="ftot")
-
+else:
+#if int(dict_c['restart']) == 0:  
+    newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
+    print("="*40)
+    print("MEMORY USAGE TEST")
+    print("="*40)
+    dummy = 0
+    for item in allkb:
+        dummy += item.nbytes
+    print(" GB size: ", float((newen.nbytes + spftot.nbytes + dummy)) / 1000000000)
+    print("="*40)
+    if int(dict_c['calc_gw']) == 1:
+        print(" ### Writing out A(\omega)_GW...  ")
+        # Start a new thread
+        #write_spfkb(invar_dict,newen,allkb)
+        thread = Thread(target = write_spfkb, args = (dict_c, newen, allkb))
+        thread.start()
+        outname = "spftot_gw"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+        #outfile = open(outname,'w')
+        with open(outname,'w') as outfile: 
+            for i in xrange(np.size(newen)): 
+                outfile.write("%7.4f %15.10e\n"% (newen[i], spftot[i])) # Dump string representations of arrays
+        #outfile.close()
+        print(" A(\omega)_GW written in", outname)
+        plt.plot(newen,spftot,label="ftot_gw");
+    
+    print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
+    print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
+    # ============================= ###
+    
+    ### ===================================== ###
+    ### ===== EXPONENTIAL SPECTRAL FUNCTION ====== ###
+    if int(dict_c['calc_exp']) == 1:
+        # Time section
+        #import time
+        e0=time.time()
+        c0=time.clock()
+        elaps1=time.time() - e0
+        cpu1=time.clock() - c0
+        print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
+        print(" ### Calculation of exponential A ### ")
+        ### ==== Finding zero in res --> Eqp ===== ###
+        print(" Finding zeros in real parts...")
+        eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
+        print(" Test imeqp:\n", imeqp)
+        # Writing out eqp
+        # Writing out imeqp
+        thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
+        thread.start()
+        dict_c['origdir'] = origdir
+        enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        print("="*40)
+        print("MEMORY USAGE TEST")
+        print("="*40)
+        print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
+        # Writing out sfkb
+        thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
+        thread.start()
+    
+    
+        ### TODO: fix all below ###
+        plt.plot(enexp, ftot, label="ftot")
+    
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)

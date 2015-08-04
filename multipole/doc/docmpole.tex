@@ -31,6 +31,8 @@
 
 \maketitle
 
+\tableofcontents
+
 \section{The multipole model}
 Following Josh's prescription and notes, I resume here the main points of the 
 multipole model and multipole curve fitting approach. 
@@ -89,6 +91,56 @@ Applying this relation  to Eq.\@ \eqref{eq:mpole2} gives
 \ee
 which, for $ \omega \geq 0 $, gives Eq.\@ \eqref{eq:mpole1}. q.e.d. 
 
+\section{Multipole fit in practice} 
+
+There are surely a few ways to implement the multipole fit. 
+Things are made a bit easier here, since we have the condition
+$ \omega \geq 0 $. 
+One has freedom on how to determine the intervals 
+of the $N$ $ \Delta_i $, since they should coincide as 
+$ N \rightarrow \infty $ (i.e. at convergence). 
+As mentioned above, one possible choice is to have intervals such 
+as the area under $ f(\omega) $ is constant. 
+Another choice could be to have evenly-spaced intervals. 
+Let us explore the latter first. 
+
+\subsection{Evenly-spaced intervals}
+
+Once one has determined the $ \Delta_i $, one can focus on a single 
+interval at a time, using the moments' relation \eqref{eq:mpolemoments}. 
+It is handy to first define a few quantities that will ease the notation. 
+The 0-th moment is defined as $I_i$: 
+\begin{equation}
+	I_i = \frac{\pi}{2} g_i \omega_i  
+  = \int_{\Delta_i} d \omega \; f( \omega ) . 
+\end{equation}
+The first moment is defined as $F_i$:
+\begin{equation}
+	F_i = \frac{\pi}{2} g_i \omega_i^2  
+  = \int_{\Delta_i} d \omega \; \omega f( \omega )  
+\end{equation}
+and the first inverse moment is
+\begin{equation}
+	INV_i = \frac{\pi}{2} g_i 
+	= \int_{\Delta_i} d \omega \; \frac1\omega f( \omega ) . 
+\end{equation}
+
+Using these formulas, one can first calculate $g_i$ as 
+\begin{equation}
+	g_i = \frac2{\pi} 
+	\int_{\Delta_i} d \omega \; \frac1\omega f( \omega ) 
+	=  \frac2{\pi} INV_i , 
+\end{equation}
+then one can calculate $\omega_i$ as 
+\begin{equation}
+	\omega_i = \sqrt{ \frac2{\pi g_i }
+	\int_{\Delta_i} d \omega \; \omega f( \omega ) } = \sqrt{ \frac{F_i}{INV_i} } . 
+\end{equation}
+Now, the actual coefficients of the expansion are $ \lambda_i = \frac{\pi}{2} \omega_i g_i $, 
+which can be calculated as follows: 
+\begin{equation}
+	\lambda_i =  \sqrt{ {F_i} \cdot {INV_i} } . 
+\end{equation}
 
 
 \end{document}
