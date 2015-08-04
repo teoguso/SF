@@ -313,7 +313,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         gi.append(totint)
         omegai.append(x[y.argmax()])
         myint.append(totint)
-        gi = np.array(gi)
+        lambdai = np.array(gi)
         omegai = np.array(omegai)
      #  print omegai
      #  sys.exit()
