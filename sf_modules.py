@@ -1001,7 +1001,20 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         en3 = -en3[::-1] 
                         im3 = im3[::-1]
                     omegai, lambdai, deltai = fit_multipole2(en3,im3,npoles,0)
-                   #omegai, gi, deltai = fit_multipole(en3,im3,npoles,0)
+                   #with open('mytest.dat','w') as outf:
+                   #    outf.write(" npoles sum(lamba_i) sum(lamba_i/omega_i**2)"+\
+                   #            " first_moment fst_inv_moment sum(omegai)/npoles"+\
+                   #            " sum(omegai**2)/npoles int(ImSigma)/sum(omegai**2)*npoles\n")  
+                   #    for ip in [1,10,20,40,60,100,200,400,1000]:
+                   #        omegai, lambdai, deltai = fit_multipole(en3,im3,ip,0)
+                   #        outf.write(8*"%12.5f" % \
+                   #                (ip, np.sum(lambdai), \
+                   #                np.sum(np.true_divide(lambdai,(np.square(omegai)))), \
+                   #                np.trapz(im3*en3,en3), np.trapz(im3/en3,en3), \
+                   #                np.sum(omegai)/ip, np.sum(np.square(omegai))/ip, \
+                   #                np.trapz(im3,en3)/np.sum(np.square(omegai))*ip))
+                   #        outf.write("\n")
+                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,0)
                     omegampole[ik,ib] = omegai 
                     ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
                    #ampole[ik,ib] = gi
@@ -1077,7 +1090,10 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             for ib in bdrange:
                 ibeff=bdgw[0]+ib
                 print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
-                prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+               #prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                # Experimental fix for npoles dependence
+                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
                 akb=amp_exinf[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -1103,9 +1119,14 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             for ib in bdrange:
                 ibeff = ib + 1
                 print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
-                prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-                print("PREFAC:", np.sum(ampole[ik,ib]))
-                print("PREFAC/npoles:", np.sum(ampole[ik,ib])/npoles)
+                #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                # Experimental fix for npoles dependence
+                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
+               #print("\n === Normalization test === ")
+               #print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
+               #print(" Exponent:", np.sum(ampole[ik,ib]))
+               #print(" Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n")
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]

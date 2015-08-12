@@ -352,12 +352,13 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         myint = np.array(myint)
         #mysum = np.array(mysum)
         print "--- multipole:: np.np.trapz(ims):", totint 
+        print "--- multipole:: np.np.trapz(fxonx):", np.trapz(fxonx,x)
         print "--- multipole:: np.sum(lambdai):", np.sum(lambdai)
-        lambdai = lambdai + dint
-        print "--- multipole:: np.sum(lambdai+dint):", np.sum(lambdai)
+        print "--- multipole:: np.sum(lambdai+dint):", np.sum(lambdai+dint)
         print "--- multipole:: np.sum(myint):", np.sum(myint)
         #print "--- multipole:: np.sum(mysum):", np.sum(mysum)
         print "--- multipole:: np.trapz(myint)-np.sum(lambdai):", (np.sum(lambdai) - np.sum(myint))/np.sum(myint)
+        lambdai = lambdai + dint
         print "--- multipole:: np.sum(sqrt(dint**2)/totint):", np.sum(np.sqrt(dint**2)/totint)
     deltai = np.ones(lambdai.size)*totdx/nbin
     return omegai, lambdai, deltai
