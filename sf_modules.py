@@ -1000,7 +1000,6 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     if eqp[ik,ib] <= 0:
                         en3 = -en3[::-1] 
                         im3 = im3[::-1]
-                    omegai, lambdai, deltai = fit_multipole2(en3,im3,npoles,0)
                    #with open('mytest.dat','w') as outf:
                    #    outf.write(" npoles sum(lamba_i) sum(lamba_i/omega_i**2)"+\
                    #            " first_moment fst_inv_moment sum(omegai)/npoles"+\

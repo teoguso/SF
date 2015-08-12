@@ -1,9 +1,9 @@
 spo_DS3_SIG # sigmafile
-1           # minkpt
+19          # minkpt
 19          # maxkpt
 19          # nkpt
 1           # minband
-4           # maxband
+1           # maxband
 -80          # enmin
 5            # enmax
 6.77 # efermi
