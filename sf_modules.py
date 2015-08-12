@@ -1092,7 +1092,8 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                #prefac=np.exp(-np.sum(amp_exinf[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 # Experimental fix for npoles dependence
                 tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-                prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
+                prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
+               #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
                 akb=amp_exinf[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 wkb=w_extinf[ik,ib] # This is a numpy array (slice)
@@ -1121,7 +1122,8 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 # Experimental fix for npoles dependence
                 tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-                prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
+                prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
+                #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
                #print("\n === Normalization test === ")
                #print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
                #print(" Exponent:", np.sum(ampole[ik,ib]))
