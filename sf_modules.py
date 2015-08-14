@@ -1101,8 +1101,17 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 imkb=imeqp[ik,ib] # + w_extinf[ik,ib]/2 # extinf width added
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb)
                 #ftot += tmpf
-                tmpf = np.zeros((nen), order='Fortran')
-                tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
+                if eqpkb < 0.0:
+                    tmpf = np.zeros((nen), order='Fortran')
+                    tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
+                    #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+                else:
+                    print(" This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1)
+                    #print("omegakb", omegakb)
+                    omegakb=-omegakb
+                    #print("-omegakb", omegakb)
+                    tmpf = np.zeros((nen), order='Fortran')
+                    tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
                #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf."+str(penergy)
                #outfilekb = open(outnamekb,'w')
                #for ien in xrange(nenexp):
