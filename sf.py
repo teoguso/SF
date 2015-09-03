@@ -98,14 +98,15 @@ enmax = float(dict_c['enmax'])
 en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
+# TODO: This part is broken (it would work if only en was in hartree, but not all the other quantities)
 # Rescale energy if in hartree
 #print(invar_dict['enhartree'])
-enhartree = int(invar_dict['enhartree'])
-if enhartree and enhartree != 0:
-    print(" ### Converting energies from Hartree to eV ###")
-    print(" ### 1 Hartree = 27.2116 eV ###")
-    en = 2.0*13.6058*en
-#TODO: enmin and emax are unchanged. Check if this is consistent!
+#enhartree = int(invar_dict['enhartree'])
+#if enhartree and enhartree != 0:
+#    print(" ### Converting energies from Hartree to eV ###")
+#    print(" ### 1 Hartree = 27.2116 eV ###")
+#    en = 2.0*13.6058*en
+##TODO: enmin and emax are unchanged. Check if this is consistent!
 nkpt =  int(invar_dict['nkpt']) 
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 

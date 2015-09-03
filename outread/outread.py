@@ -395,7 +395,7 @@ class ExcitingOutReader(CodeOutReader):
             else:
                 istate = int(words[0])
                #print(line)
-                hartree[ik].append(float(words[2]))
+                hartree[ik].append(float(words[2])-float(words[4]))
                 ib += 1
                 pass
         print("nkpt: ", nkpt)
