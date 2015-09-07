@@ -734,16 +734,21 @@ class AbinitOutReader(CodeOutReader):
             vxc_k = []
         hartree_k = []
         qpen_k = []
+        if nsppol == 2:
+            nkpt = 2*nkpt
         if version >= 6.19: 
             nband = 2*nband
             ic = 0 
             qpen_im = []
             qpen_im_k = []
         for line in myset[istart:]:
+           #if " k = " in line: 
+           #    print(line)
+           #    pass
             if ik == nkpt:
                 break
             elif " k = " in line: 
-#                print("k point/header:", line
+               #print("k point/header:", line)
                 ib = 0
                 lines = []
             elif "Band" in line:
@@ -765,7 +770,7 @@ class AbinitOutReader(CodeOutReader):
                 ib += 1
             if ib == nband :
                 qpen = []
-                if version >=6.2: 
+                if version >= 6.2: 
                     imag = lines[1::2]
                     lines = lines[0::2]
                     qpen_im = []
@@ -793,7 +798,7 @@ class AbinitOutReader(CodeOutReader):
                     qpen = []
                 ib = 0
                 ik += 1
-               #print("ik += 1")
+               #print("ik += 1, ik:", ik)
                #if ik == 1:
                #    break
         if is_sc == 0:
@@ -805,6 +810,7 @@ class AbinitOutReader(CodeOutReader):
        #print(hartree_k[-1])
         if nsppol == 2:
             hartree_k = hartree_k[::2]
+            qpen_k = qpen_k[::2]
        #a = np.array(hartree_k)
        #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
        #print(a[0])
