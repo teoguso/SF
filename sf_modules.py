@@ -895,6 +895,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     bdgw = map(int, vardct['sig_bdgw'])
     bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
+   #print("kptrange, bdrange ", kptrange, bdrange)
     newdx = 0.005
     enmin = float(vardct['enmin'])
     enmax = float(vardct['enmax'])
@@ -958,8 +959,9 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
         #for ik in range(nkpt):
         #    ikeff=minkpt+ik-1
-        bdrange = vardct['bdrange']
-        kptrange = vardct['kptrange']
+        #bdrange = vardct['bdrange']
+        #kptrange = vardct['kptrange']
+        #print("kptrange, bdrange ", kptrange, bdrange)
         for ik in kptrange:
             for ib in bdrange:
        #for ik in range(imskb[:,0,0].size):
