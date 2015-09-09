@@ -550,10 +550,10 @@ def write_spfkb(vardct, newen, allkb):
    #    ikeff = minkpt + ik 
    #    for ib in range(nband):
     for ik in kptrange:
-        ikeff = ik + 1
+        ikeff = ik + minkpt
         #for ib in range(nband):
         for ib in bdrange:
-            ibeff = ib + 1
+            ibeff = ib + minband
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
@@ -949,7 +949,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         #ampole = ampole/omega_p**2
                 #ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
     elif npoles != 0:
-        from multipole import fit_multipole, fit_multipole2, getdata_file #, write_f_as_sum_of_poles
+        from multipole import fit_multipole, fit_multipole_fast, getdata_file #, write_f_as_sum_of_poles
         print(" ### ================== ###")
         print(" ###    Multipole fit   ###")
         print(" Number of poles:", npoles)
@@ -1015,7 +1015,16 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #                np.sum(omegai)/ip, np.sum(np.square(omegai))/ip, \
                    #                np.trapz(im3,en3)/np.sum(np.square(omegai))*ip))
                    #        outf.write("\n")
-                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,0)
+                   #omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,0)
+                   #print(omegai, lambdai, deltai)
+                   #plt.plot(omegai,lambdai,'o',label='m1')
+                    omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                   #print("omegai, lambdai, deltai:\n", omegai, lambdai, deltai)
+                    plt.plot(omegai,lambdai,'o',label='m1_fast')
+                    plt.plot(en3,im3)
+                   #plt.legend()
+                    plt.show()
+                   #sys.exit()
                     omegampole[ik,ib] = omegai 
                     ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
                    #ampole[ik,ib] = gi

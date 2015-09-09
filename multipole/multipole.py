@@ -73,6 +73,161 @@ def resize_en(preen, nbin) :
         en = preen
     return en
 
+def fit_multipole_fast(preen,predata,nbin):
+    """
+    This function fits a curve given by some dataset (preen,predata) 
+    with a given number of poles (nbin).
+    preen is supposed to be all positive and with increasing
+    numbers starting from its first element (not decreasing numbers). 
+    It can write out a file with the calculated parameters if the 
+    appropriate flag is equal to 1 (ifilewrite).
+    It returns omegai, gi, deltai.
+    NOTE that these are not the same gi as in the formula: 
+    these gi are actually equal to \pi/2*gi*omegai, i.e. lambdai.
+    This version aims at getting rid of the interpolation and 
+    just use the bare data. 
+    TODO: uniform the notation with the documentation.
+    """
+    #import matplotlib.pylab as plt
+    import numpy as np
+    import sys
+    print("fit_multipole_fast :: ")
+    nbin = int(nbin)
+    eta = 0.005 # This is the Lorentzian broadening that would be used???
+    safe_shift = 10. # This is a little trick to avoid x=zero which introduces errors. 
+    preen = preen + safe_shift
+    totalint = np.trapz(predata,preen)
+    totdeltax = abs( preen[-1] - preen[0] )
+    print " Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
+    print " Number of poles (nbin):", nbin
+    print " Total integral:", totalint 
+    print " Total integral / nbin:", totalint / float(nbin)
+    # This is the supposed integral within a single interval
+    partint = totalint / float(nbin)
+    # First moment
+    xfx = np.zeros(np.size(preen))
+    xfx = predata * preen
+    # First inverse moment
+    fxonx = first_inverse_moment(preen,predata)
+    # Test plot
+   #plt.plot(preen,predata,label="data")
+   #plt.plot(preen,xfx,'-x',label="f(x)*x")
+   #plt.plot(preen,(predata*preen),label="f(x)*x")
+   #plt.plot(preen,fxonx,label="f(x)/x")
+   #plt.plot(preen,(predata/preen),'-x',label="f(x)/x")
+    ### =========================================== ###
+    # Here we calculate the bins' bounds
+    # First we want the x-axis grid to be finer than the density of poles
+    en = preen
+    bdensity = 1
+    bounds = []
+    ibound = 0
+    gi = []
+    omegai = []
+    istart = 0
+    funcint = 0
+    bounds.append(en[istart])
+    x0 = en[istart]
+    x1 = x0
+    # Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
+    ngaussint = 20
+    print " Getting poles...",
+    if int(nbin) == 1:
+        gi.append(totalint)
+        omegai.append(en[predata.argmax()])
+    else:
+        for i in xrange(1,np.size(en)) : 
+            x2 = en[i]
+            #i2 = i
+            x3 = ( x1 + x2 ) / 2
+           #(tmpint,dummy) = fixed_quad(interpdata, x0, x2,(), ngaussint)
+            tmpint = np.trapz(predata[istart:i],en[istart:i])
+           #print(tmpint, partint)
+            if tmpint > partint :
+               #print " Bound found. ibound, en, tmpint:", ibound, en[i], tmpint
+                bounds.append(en[i] )
+                # Formula to calculate g_i
+                #gi.append(float( 2. / np.pi * tmpint2))
+               #tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
+                tmpint2 = np.trapz(fxonx[istart:i],en[istart:i])
+                tmpgi = 2. / np.pi * tmpint2
+                gi.append( tmpgi )
+                # Formula to calculate omega_i
+               #tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
+                tmpint = np.trapz(xfx[istart:i],en[istart:i])
+                tmpomegai = np.sqrt( 2./np.pi * tmpint / tmpgi ) 
+                omegai.append( tmpomegai )
+                #print " gi, omegai:", tmpgi, tmpomegai # Test print
+                # Reset variables
+                istart = i - 1
+                ibound += 1
+        # There should always be a patch-up last bin 
+        tmpint2 = np.trapz(fxonx[istart:],en[istart:])
+        bounds.append( en[-1] )
+        tmpgi = 2. / np.pi * tmpint2
+        gi.append( tmpgi )
+        tmpint = np.trapz(xfx[istart:],en[istart:])
+        tmpomegai = np.sqrt( 2/np.pi * tmpint / tmpgi ) 
+        omegai.append( tmpomegai )
+        ibound += 1
+        print "Done."
+    # Add last value as the upper bound
+    print " ibound       = %4i (should be %g) " % (ibound, nbin)
+    print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+    print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+    if ibound < nbin:
+        print("WARNING: too few bins! Adding a fictitious one.")
+        gi.append(0.0)
+        omegai.append(en[-1])
+        bounds.append( en[-1] )
+        ibound += 1
+    gi = np.array(gi)
+    omegai = np.array(omegai)
+    # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
+    # AKA: This gi is actually the pure lambda coefficient of the delta function
+    # in the multipole model, equal to gi*omegai
+    gi = np.pi/2*gi*omegai
+    # Here we restore the correct x axis removing safe_shift
+    omegai = omegai - safe_shift
+    deltai = []
+    sumcheck = 0
+    print " Calculating deltai..."
+    for i in xrange(1,np.size(bounds)) :
+        deltai.append(bounds[i]-bounds[i-1])
+        sumcheck += abs(bounds[i]-bounds[i-1])
+    deltai = np.array(deltai)
+    print " Check if sum of deltai gives the original length: ", sumcheck,
+    if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-02: 
+        print
+        print en[-1] - en[0]
+        print "WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck)
+    else: print "(OK)"
+    #intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
+    intcheck = np.sum(gi)
+    print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
+    if abs((intcheck - totalint) / intcheck) > 1E-02: 
+        print
+        print "WARNING: the difference is", abs((intcheck - totalint) / intcheck)
+    else: print "(OK)"
+    print " ibound       = %4i (should be %g) " % (ibound, nbin)
+    print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+    print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+    print " Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin)
+    # Print a file like Josh output
+    # omega_i  gamma_i  g_i    delta_i
+    #    .        .       .       .
+    #    .        .       .       .
+    #    .        .       .       .
+   #outname = "poles."+str(nbin)+"_fast.dat"
+   #with open(outname,'w') as outfile:
+   #    # print 2-line header
+   #    outfile.write("### number of poles: %g\n" % (nbin))
+   #    outfile.write("### omega_i  gamma_i  g_i    delta_i \n")
+   #    for j in xrange(np.size(omegai)) :
+   #        outfile.write("%12.8f %12.8f %12.8f %12.8f\n" % (omegai[j], eta, gi[j], deltai[j]))
+   #print " Parameters written in file", outname
+    return omegai, gi, deltai
+
 def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     """
     This function fits a curve given by some dataset (preen,predata) 
@@ -91,6 +246,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     import sys
     from scipy.interpolate import interp1d
     from scipy.integrate import fixed_quad
+    print("fit_multipole :: ")
     nbin = int(nbin)
     eta = 0.005 # This is the Lorentzian broadening that would be used???
     safe_shift = 10. # This is a little trick to avoid x=zero which introduces errors. 
