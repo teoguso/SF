@@ -205,8 +205,8 @@ if int(dict_c['restart']) == 1:
         with open(outname,'w') as fout:
             fout.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n") 
             fout.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
-            for i in range(en.size): 
-                fout.write("%8.4f %12.8f\n" % (en[i], ftot_b[i]))
+            for i in range(enexp.size): 
+                fout.write("%8.4f %12.8f\n" % (enexp[i], ftot_b[i]))
     ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
 else:
