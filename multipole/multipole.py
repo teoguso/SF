@@ -171,16 +171,16 @@ def fit_multipole_fast(preen,predata,nbin):
         omegai.append( tmpomegai )
         ibound += 1
         print "Done."
-    # Add last value as the upper bound
-    print " ibound       = %4i (should be %g) " % (ibound, nbin)
-    print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-    print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
-    if ibound < nbin:
-        print("WARNING: too few bins! Adding a fictitious one.")
-        gi.append(0.0)
-        omegai.append(en[-1])
-        bounds.append( en[-1] )
-        ibound += 1
+        # Add last value as the upper bound
+        print " ibound       = %4i (should be %g) " % (ibound, nbin)
+        print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+        print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+        if ibound < nbin:
+            print("WARNING: too few bins! Adding a fictitious one.")
+            gi.append(0.0)
+            omegai.append(en[-1])
+            bounds.append( en[-1] )
+            ibound += 1
     gi = np.array(gi)
     omegai = np.array(omegai)
     # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
