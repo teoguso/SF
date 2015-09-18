@@ -1020,10 +1020,10 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #plt.plot(omegai,lambdai,'o',label='m1')
                     omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
                    #print("omegai, lambdai, deltai:\n", omegai, lambdai, deltai)
-                    plt.plot(omegai,lambdai,'o',label='m1_fast')
-                    plt.plot(en3,im3)
+                   #plt.plot(omegai,lambdai,'o',label='m1_fast')
+                   #plt.plot(en3,im3)
                    #plt.legend()
-                    plt.show()
+                   #plt.show()
                    #sys.exit()
                     omegampole[ik,ib] = omegai 
                     ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
