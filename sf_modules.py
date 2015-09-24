@@ -1025,8 +1025,17 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #plt.legend()
                    #plt.show()
                    #sys.exit()
-                    omegampole[ik,ib] = omegai 
-                    ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+                    # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
+                    # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
+                    if npoles > omegai.size:
+                        omegampole[ik,ib][:omegai.size] = omegai 
+                        ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                        print("WARNING: npoles used ("+str(npoles)+") is larger"+\
+                                " than x data array ("+str(omegai.size)+").")
+                        print("WARNING: Reduce npoles. You are wasting resources!!!")
+                    else:
+                        omegampole[ik,ib] = omegai 
+                        ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
                    #ampole[ik,ib] = gi
                     print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
                     print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
