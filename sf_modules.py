@@ -871,7 +871,7 @@ def write_sfkb_c(vardct,en,sfkb):
                     ofkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
     print("write_sfkb_c :: Done.")
 
-def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
     Different values of npoles command different options:

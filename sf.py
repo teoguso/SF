@@ -259,7 +259,7 @@ else:
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir
-        enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        enexp, ftot, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         print("Integral test, spftot: ", np.trapz(ftot,enexp))
         print("="*40)
         print("MEMORY USAGE TEST")
