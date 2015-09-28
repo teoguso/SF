@@ -132,9 +132,13 @@ def fit_multipole_fast(preen,predata,nbin):
     # Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
     ngaussint = 20
     print " Getting poles...",
+    # CASE NPOLES == 1
     if int(nbin) == 1:
         gi.append(totalint)
         omegai.append(en[predata.argmax()])
+        bounds.append( en[-1] )
+        ibound += 1
+    # CASE NPOLES > 1
     else:
         for i in xrange(1,np.size(en)) : 
             x2 = en[i]
@@ -181,12 +185,13 @@ def fit_multipole_fast(preen,predata,nbin):
             omegai.append(en[-1])
             bounds.append( en[-1] )
             ibound += 1
-    gi = np.array(gi)
+        # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
+        # AKA: This gi is actually the pure lambda coefficient of the delta function
+        # in the multipole model, equal to gi*omegai
+        gi = np.array(gi)
+        gi = np.pi/2*gi*omegai
+    print "TEST GI:", gi
     omegai = np.array(omegai)
-    # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
-    # AKA: This gi is actually the pure lambda coefficient of the delta function
-    # in the multipole model, equal to gi*omegai
-    gi = np.pi/2*gi*omegai
     # Here we restore the correct x axis removing safe_shift
     omegai = omegai - safe_shift
     deltai = []
@@ -196,7 +201,7 @@ def fit_multipole_fast(preen,predata,nbin):
         deltai.append(bounds[i]-bounds[i-1])
         sumcheck += abs(bounds[i]-bounds[i-1])
     deltai = np.array(deltai)
-    print " Check if sum of deltai gives the original length: ", sumcheck,
+    print(" Check if sum of deltai gives the original length: ", sumcheck)
     if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-02: 
         print
         print en[-1] - en[0]
@@ -204,6 +209,7 @@ def fit_multipole_fast(preen,predata,nbin):
     else: print "(OK)"
     #intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
     intcheck = np.sum(gi)
+    print "gi:", gi
     print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
     if abs((intcheck - totalint) / intcheck) > 1E-02: 
         print
@@ -213,19 +219,6 @@ def fit_multipole_fast(preen,predata,nbin):
     print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
     print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
     print " Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin)
-    # Print a file like Josh output
-    # omega_i  gamma_i  g_i    delta_i
-    #    .        .       .       .
-    #    .        .       .       .
-    #    .        .       .       .
-   #outname = "poles."+str(nbin)+"_fast.dat"
-   #with open(outname,'w') as outfile:
-   #    # print 2-line header
-   #    outfile.write("### number of poles: %g\n" % (nbin))
-   #    outfile.write("### omega_i  gamma_i  g_i    delta_i \n")
-   #    for j in xrange(np.size(omegai)) :
-   #        outfile.write("%12.8f %12.8f %12.8f %12.8f\n" % (omegai[j], eta, gi[j], deltai[j]))
-   #print " Parameters written in file", outname
     return omegai, gi, deltai
 
 def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):

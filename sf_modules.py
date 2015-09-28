@@ -871,6 +871,194 @@ def write_sfkb_c(vardct,en,sfkb):
                     ofkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
     print("write_sfkb_c :: Done.")
 
+def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    Meta-function that calls serial or para version.
+    """
+    npoles = int(vardct['npoles'])
+    if npoles == 0 or npoles == 1 or npoles == 999: 
+        enexp, ftot, sfkb_c = \
+                calc_sf_c_serial(\
+                vardct, hartree, pdos, eqp, imeqp, newen, allkb)
+    else:
+        enexp, ftot, sfkb_c = \
+                calc_sf_c_para(\
+                vardct, hartree, pdos, eqp, imeqp, newen, allkb)
+    return  enexp, ftot, sfkb_c
+
+def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
+    """
+    Separate function that calculates the frequencies and amplitudes
+    of ImSigma using the multipole model. 
+    """
+    from multipole import fit_multipole_fast #, write_f_as_sum_of_poles
+    print(" ### ================== ###")
+    print(" ###    Multipole fit   ###")
+    print(" Number of poles:", npoles)
+    omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    for ik in kptrange:
+        for ib in bdrange:
+            if eqp[ik,ib] > newen[-npoles]:
+                omegampole[ik,ib] = omegampole[ik,ib-1]
+                ampole[ik,ib] = ampole[ik,ib-1]
+                print(" Eqp beyond available energy range. Values from lower band are taken.")
+                continue
+            else:
+                ibeff = bdrange[0] + ib - 1
+                print(" ik, ib", ik, ib)
+                # Here we take the curve starting from eqp and then we invert it
+                # so as to have it defined on the positive x axis
+                # and so that the positive direction is in the 
+                # increasing direction of the array index
+                if eqp[ik,ib] <= 0:
+                    en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                    im3 = abs(imskb[ik,ib][newen<=eqp[ik,ib]]/np.pi) # This is what should be fitted
+                else:
+                    en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
+                    im3 = abs(imskb[ik,ib][newen<=eqp[ik,ib]]/np.pi) # This is what should be fitted
+                if en3.size == 0:
+                    print("WARNING: QP energy is outside of given energy range!\n"+\
+                            " This state will be skipped!\n"+\
+                            "You might want to modify enmin/enmax.")
+                    print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
+                    continue
+                en3 = en3 - eqp[ik,ib]
+                if eqp[ik,ib] <= 0:
+                    en3 = -en3[::-1] 
+                    im3 = im3[::-1]
+                omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
+                # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
+                if npoles > omegai.size:
+                    omegampole[ik,ib][:omegai.size] = omegai 
+                    ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                    print("WARNING: npoles used ("+str(npoles)+") is larger"+\
+                            " than x data array ("+str(omegai.size)+").")
+                    print("WARNING: Reduce npoles. You are wasting resources!!!")
+                else:
+                    omegampole[ik,ib] = omegai 
+                    ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+                print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
+                print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
+                print(" \sum_j^N\lambda_j =", np.sum(lambdai))
+    # Writing out a_j e omega_j
+    print(" ### Writing out a_j and omega_j...")
+    outname = "a_j_np"+str(npoles)+".dat"
+    outfile = open(outname,'w')
+    outname = "omega_j_np"+str(npoles)+".dat"
+    outfile2 = open(outname,'w')
+    for ipole in xrange(npoles):
+        for ik in range(imskb[:,0,0].size):
+            for ib in range(imskb[0,:,0].size):
+                outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+                outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+            outfile.write("\n")
+            outfile2.write("\n")
+        outfile.write("\n")
+        outfile2.write("\n")
+    outfile.close()
+    outfile2.close()
+    return omegampole, ampole
+
+def calc_extinf(vardct, ampole, omegampole):
+    """
+    # Extrinsic and interference contribution
+    """
+    penergy = int(vardct['penergy'])
+    origdir = vardct['origdir']
+    extinfname = "a_wp."+str(penergy)
+    amp_exinf, w_extinf = calc_extinf_corrections(origdir,extinfname,ampole,omegampole)
+    print(" ### Writing out a_j_extinf...")
+    outname = "a_j_np"+str(npoles)+"_extinf."+str(penergy)
+    with open(outname,'w') as outfile:
+        for ipole in xrange(npoles):
+            for ik in range(imskb[:,0,0].size):
+                for ib in range(imskb[0,:,0].size):
+                    outfile.write("%10.5f"  % (amp_exinf[ik,ib,ipole]))
+                outfile.write("\n")
+            outfile.write("\n")
+    return amp_extinf, w_extinf
+
+def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    Parallel version of calc_sf_c_serial, hopefully more modular,
+    functional and polished than its predecessor. 
+    The idea is to parallelize the energies over the number of 
+    cores that will be detected.
+    """
+    print(" calc_sf_c_para :: ")
+    import numpy as np;
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    #nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
+    newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
+    reskb = allkb[1]
+    imskb = allkb[3]
+    # Setting up multipole:
+    omegampole, ampole = calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen)
+    if extinf == 1:
+        amp_extinf, w_extinf = calc_extinf(vardct, ampole, omegampole)
+    print(" Calculating multipole exponential A...")
+    dxexp=0.005 
+    enexp = np.arange(enmin,enmax,dxexp)
+    nenexp = np.size(enexp)
+    ftot = np.zeros((np.size(enexp)),order='Fortran')
+    sfkb_c = np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,nenexp))
+    from extmod_spf_mpole import f2py_calc_spf_mpole, f2py_calc_spf_mpole_extinf
+    for ik in kptrange:
+        ikeff = ik + 1
+        for ib in bdrange:
+            ibeff=bdgw[0]+ib
+            print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
+            tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+            prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
+            akb=ampole[ik,ib] # This is a numpy array (slice)
+            omegakb=omegampole[ik,ib] # This is a numpy array (slice)
+            eqpkb=eqp[ik,ib]
+            imkb=imeqp[ik,ib] # + w_extinf[ik,ib]/2 # extinf width added
+            if eqpkb < 0.0:
+                pass
+            else:
+                print(" This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1)
+                omegakb=-omegakb
+            tmpf = np.zeros((nenexp), order='Fortran')
+            if extinf == 1: 
+                akb=amp_exinf[ik,ib] # This is a numpy array (slice)
+                wkb=w_extinf[ik,ib] # This is a numpy array (slice) 
+                tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
+            else: 
+                tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            sfkb_c[ik,ib] = tmpf
+            ftot = ftot + tmpf
+    sfac = vardct['sfactor']
+    pfac = vardct['pfactor']
+    penergy = int(vardct['penergy'])
+    if extinf == 1:
+        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
+    else: # extinf == 0
+        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+    outfile = open(outname,'w')
+    with open(outname,'w') as outfile:
+        outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
+        outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
+        for i in range(nenexp):
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
+    return enexp, ftot, sfkb_c
+
 def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
@@ -1092,8 +1280,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     dxexp=0.005 
     enexp = np.arange(enmin,enmax,dxexp)
     nenexp = np.size(enexp)
-    ftot = np.zeros((nenexp))
-    f = np.zeros((nkpt,nband,nenexp))
     ftot = np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
     #sfkb_c = np.zeros((nkpt,nband,nenexp))
@@ -1129,7 +1315,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     #print("omegakb", omegakb)
                     omegakb=-omegakb
                     #print("-omegakb", omegakb)
-                tmpf = np.zeros((nen), order='Fortran')
+                tmpf = np.zeros((nenexp), order='Fortran')
                 tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
                #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_extinf."+str(penergy)
                #outfilekb = open(outnamekb,'w')
@@ -1170,7 +1356,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     #print("omegakb", omegakb)
                     omegakb=-omegakb
                     #print("-omegakb", omegakb)
-                tmpf = np.zeros((nen), order='Fortran')
+                tmpf = np.zeros((nenexp), order='Fortran')
                 tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                     #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
                 #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
