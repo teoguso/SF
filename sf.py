@@ -260,14 +260,14 @@ else:
         thread.start()
         dict_c['origdir'] = origdir
         enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-       ## TEST!!!!
-       #dict_c['npoles'] = 1  
-       #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-       #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-       #plt.plot(enexp1, ftot1, label="ftot_para")
-       #plt.plot(enexp2, ftot2, label="ftot_serial")
-       #plt.legend(loc=2)
-       #plt.show()
+        # TEST!!!!
+        dict_c['npoles'] = 1  
+        enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        plt.plot(enexp1, ftot1, label="ftot_para")
+        plt.plot(enexp2, ftot2, label="ftot_serial")
+        plt.legend(loc=2)
+        plt.show()
         print("Integral test, spftot: ", np.trapz(ftot,enexp))
         print("="*40)
         print("MEMORY USAGE TEST")

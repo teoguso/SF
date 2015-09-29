@@ -1036,12 +1036,15 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 print(" This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1)
                 omegakb=-omegakb
             tmpf = np.zeros((nenexp), order='Fortran')
+            # The calculation can be done in both cases by the extinf version, 
+            # with wkb = 0 for the intrinsic. 
             if extinf == 1: 
                 akb=amp_exinf[ik,ib] # This is a numpy array (slice)
                 wkb=w_extinf[ik,ib] # This is a numpy array (slice) 
-                tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             else: 
-                tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+                wkb = np.zeros((akb.size))
+               #tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
     write_sftot_c(vardct, enexp, ftot)
