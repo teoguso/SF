@@ -1044,6 +1044,48 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             else: 
                 wkb = np.zeros((akb.size))
                #tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            # PARALLELISM STARTS HERE
+            print(" ==================== ")
+            print(" PARALLELIZATION HERE ")
+            print(" ==================== ")
+            import multiprocessing as mp
+            ncpu = mp.cpu_count()
+           #ncpu = 3
+            print("TEST cpu_count()", ncpu)
+            if enexp.size%ncpu > 0: 
+                bite = enexp.size/ncpu + 1
+            else: 
+                bite = enexp.size/ncpu
+            print("bite ", bite)
+            print("bite*ncpu", bite*ncpu)
+            print("enexp.size", enexp.size)
+            split_idx = range(bite,enexp.size,bite)
+            print("split_indices:", split_idx)
+            sub_enexp = np.split(enexp,split_idx)
+            sub_tmpf = np.split(tmpf,split_idx)
+            sub_prefac = np.split(enexp,split_idx) 
+            sub_akb = np.split(enexp,split_idx) 
+            sub_omegakb = np.split(enexp,split_idx) 
+            sub_wkb = np.split(enexp,split_idx) 
+            sub_eqpkb = np.split(enexp,split_idx) 
+            sub_imkb = np.split(enexp,split_idx)
+            arglist = []
+            for a,b,c,d,e,f,g,h in zip(sub_tmpf,sub_enexp,sub_prefac,sub_akb,sub_omegakb,sub_wkb,sub_eqpkb,sub_imkb):
+           #range(sub_enexp):
+                arglist.append([a,b,c,d,e,f,g,h])
+               #arglist.append(sub_tmpf,sub_enexp,sub_prefac,sub_akb,sub_omegakb,sub_wkb,sub_eqpkb,sub_imkb)
+            print("len(sub_enexp), length of chunks:", len(sub_enexp), [x.size for x in sub_enexp])
+            print("len(sub_tmpf), length of chunks:", len(sub_tmpf), [x.size for x in sub_tmpf])
+            # This determines the number of threads
+           #pool = mp.Pool(ncpu)
+           #pool.map(f2py_calc_spf_mpole_extinf,arglist)
+            processes = [mp.Process(target = f2py_calc_spf_mpole_extinf, args = arglist[i]) for i in range(ncpu)]
+            for p in processes:
+                print("Starting process")
+                p.start()
+            for p in processes:
+                p.join()
+            sys.exit()
             tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
