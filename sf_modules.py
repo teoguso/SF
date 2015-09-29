@@ -1044,6 +1044,27 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
+    write_sftot_c(vardct, enexp, ftot)
+    print(" calc_sf_c_para :: Done.")
+    return enexp, ftot, sfkb_c
+
+def write_sftot_c(vardct, enexp, ftot):
+    """
+    Just a small piece of code that writes two numpy arrays 
+    (frequencies, spectral function) to disk.
+    """
+    print(" write_sf_c ::")
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    #nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
+    newdx = 0.005
+    npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
     sfac = vardct['sfactor']
     pfac = vardct['pfactor']
     penergy = int(vardct['penergy'])
@@ -1055,9 +1076,9 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     with open(outname,'w') as outfile:
         outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
         outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
-        for i in range(nenexp):
+        for i in range(enexp.size):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
-    return enexp, ftot, sfkb_c
+    print(" write_sf_c :: Done.")
 
 def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
@@ -1069,7 +1090,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     weights are put to 0. 
     - Standard cumulant for any other value of npoles.
     """
-    print(" calc_sf_c :: ")
+    print(" calc_sf_c_serial :: ")
     import numpy as np;
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -1373,24 +1394,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
     #print(" ### Writing out A(\omega)_exp...  ")
     #enexp = enexp-efermi
-    sfac = vardct['sfactor']
-    pfac = vardct['pfactor']
-    if extinf == 1:
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
-        outfile = open(outname,'w')
-        outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
-        outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
-        for i in range(nenexp):
-            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
-        outfile.close()
-    else: # extinf == 0
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
-        #outname = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
-        outfile = open(outname,'w')
-        outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
-        outfile.write("# bd  "+str(minband)+" "+str(maxband)+"\n")
-        for i in range(nenexp):
-            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
-        outfile.close()
+    write_sftot_c(vardct, enexp, ftot)
+    print(" calc_sf_c_serial :: Done.")
     return enexp, ftot, sfkb_c
 
