@@ -160,11 +160,19 @@ print("extinf = ", extinf)
 if minband < sig_bdgw[0]: 
     print("WARNING: requested first band", minband, " is below the lowest available GW band.")
     dict_c['minband'] = sig_bdgw[0]
-    print("The first available band", minband, " will be taken.")
+    minband = int(dict_c['minband']) 
+    print("The first available band (", minband, ") will be taken.")
+    if maxband < minband:
+        maxband = minband
+        print("WARNING: maxband was below minband and was changed accordingly.")
 if maxband > sig_bdgw[1]:
-    print("WARNING: requested first band", maxband, " is above the highest available GW band.")
+    print("WARNING: requested last band", maxband, " is above the highest available GW band.")
     dict_c['maxband'] = sig_bdgw[1]
+    maxband = int(dict_c['maxband']) 
     print("The last available band", maxband, " will be taken.")
+    if minband > maxband:
+        minband = maxband
+        print("WARNING: minband was above maxband and was changed accordingly.")
 # Maybe a good global variable?
 dict_c['bdrange'] = range(minband - 1,maxband)
 dict_c['kptrange'] = range(minkpt - 1, maxkpt)
@@ -260,14 +268,14 @@ else:
         thread.start()
         dict_c['origdir'] = origdir
         enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        # TEST!!!!
-        dict_c['npoles'] = 1  
-        enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        plt.plot(enexp1, ftot1, label="ftot_para")
-        plt.plot(enexp2, ftot2, label="ftot_serial")
-        plt.legend(loc=2)
-        plt.show()
+       ## TEST!!!!
+       #dict_c['npoles'] = 1  
+       #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+       #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+       #plt.plot(enexp1, ftot1, label="ftot_para")
+       #plt.plot(enexp2, ftot2, label="ftot_serial")
+       #plt.legend(loc=2)
+       #plt.show()
         print("Integral test, spftot: ", np.trapz(ftot,enexp))
         print("="*40)
         print("MEMORY USAGE TEST")

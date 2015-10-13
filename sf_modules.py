@@ -753,6 +753,10 @@ def read_sf(vardct, pdos, approx):
     penergy = int(vardct['penergy'])
     #wtk = np.array(vardct['wtk'])
     #hartree = np.array(hartree)
+    bdrange = vardct['bdrange']
+    print("bdrange", bdrange)
+    kptrange = vardct['kptrange']
+    print("kptrange", kptrange)
     pdos = np.array(pdos)
     if extinf == 1: 
         str_exi = "_extinf"
@@ -770,20 +774,19 @@ def read_sf(vardct, pdos, approx):
     #sf = np.genfromtxt(fname, usecols = 1) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
     sf = np.zeros((en.size))
     #bdgw = map(int, vardct['sig_bdgw'])
-    bdrange = range(minband, maxband + 1)
-    kptrange = range(minkpt , maxkpt + 1)
     #for ik in range(nkpt):
     for ik in kptrange:
         #print(" k point = %02d " % (ikeff+1))
-        ikeff = ik 
+        ikeff = ik + 1 
         #for ib in range(nband):
         for ib in bdrange:
             #ibeff = minband + ib
-            ibeff = ib 
+            ibeff = ib + 1 
             print("ikeff, ibeff: ",ikeff,ibeff)
             #outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             #outnamekb = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             fname = "spf_"+str(approx)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str_exi+end_fname
+            print("fname: ",fname)
             tmp_sf = np.genfromtxt(fname, usecols = 1) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
            #en, tmp_sf = np.genfromtxt(fname) # sigfilename,usecols = range(1,num_cols), filling_values = 'myNaN')
             sf += tmp_sf
@@ -836,6 +839,7 @@ def write_sfkb_c(vardct,en,sfkb):
     """
     Does what it says. For the cumulant spectral function. 
     """
+    import numpy as np
     print("write_sfkb_c :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -858,6 +862,11 @@ def write_sfkb_c(vardct,en,sfkb):
    #rdenkb = allkb[2]
    #imskb = allkb[3]
    #for ik in range(nkpt):
+   #print("WTF1",type(sfkb))
+   #print("WTF2",sfkb.shape)
+           #import matplotlib.pylab as plt
+           #plt.plot(en,sfkb[ik,ib])
+           #plt.show()
     for ik in kptrange:
         #print(" k point = %02d " % (ikeff+1))
        #ikeff = minkpt + ik 
@@ -876,14 +885,16 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     Meta-function that calls serial or para version.
     """
     npoles = int(vardct['npoles'])
-    if npoles == 0 or npoles == 1 or npoles == 999: 
+   #if npoles == 0 or npoles == 1 or npoles == 999: 
+    while True:
         enexp, ftot, sfkb_c = \
                 calc_sf_c_serial(\
                 vardct, hartree, pdos, eqp, imeqp, newen, allkb)
-    else:
-        enexp, ftot, sfkb_c = \
-                calc_sf_c_para(\
-                vardct, hartree, pdos, eqp, imeqp, newen, allkb)
+        break
+   #else:
+   #    enexp, ftot, sfkb_c = \
+   #            calc_sf_c_para(\
+   #            vardct, hartree, pdos, eqp, imeqp, newen, allkb)
     return  enexp, ftot, sfkb_c
 
 def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
@@ -982,6 +993,7 @@ def calc_extinf(vardct, ampole, omegampole):
 
 def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
+    STILL BROKEN!!!!
     Parallel version of calc_sf_c_serial, hopefully more modular,
     functional and polished than its predecessor. 
     The idea is to parallelize the energies over the number of 
@@ -1035,7 +1047,6 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             else:
                 print(" This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1)
                 omegakb=-omegakb
-            tmpf = np.zeros((nenexp), order='Fortran')
             # The calculation can be done in both cases by the extinf version, 
             # with wkb = 0 for the intrinsic. 
             if extinf == 1: 
@@ -1044,7 +1055,9 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             else: 
                 wkb = np.zeros((akb.size))
                #tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            tmpf = np.zeros((nenexp), order='Fortran')
             # PARALLELISM STARTS HERE
+            # PARALLELIZATION OVER ENERGIES
             print(" ==================== ")
             print(" PARALLELIZATION HERE ")
             print(" ==================== ")
@@ -1061,31 +1074,38 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             print("enexp.size", enexp.size)
             split_idx = range(bite,enexp.size,bite)
             print("split_indices:", split_idx)
+            # ONLY ENERGY-DEPENDENT QUANTITIES HAVE TO BE SPLIT
             sub_enexp = np.split(enexp,split_idx)
             sub_tmpf = np.split(tmpf,split_idx)
-            sub_prefac = np.split(enexp,split_idx) 
-            sub_akb = np.split(enexp,split_idx) 
-            sub_omegakb = np.split(enexp,split_idx) 
-            sub_wkb = np.split(enexp,split_idx) 
-            sub_eqpkb = np.split(enexp,split_idx) 
-            sub_imkb = np.split(enexp,split_idx)
+           #sub_prefac = np.split(prefac,split_idx) 
+           #sub_akb = np.split(akb,split_idx) 
+           #sub_omegakb = np.split(omegakb,split_idx) 
+           #sub_wkb = np.split(wkb,split_idx) 
+           #sub_eqpkb = np.split(eqpkb,split_idx) 
             arglist = []
-            for a,b,c,d,e,f,g,h in zip(sub_tmpf,sub_enexp,sub_prefac,sub_akb,sub_omegakb,sub_wkb,sub_eqpkb,sub_imkb):
-           #range(sub_enexp):
-                arglist.append([a,b,c,d,e,f,g,h])
-               #arglist.append(sub_tmpf,sub_enexp,sub_prefac,sub_akb,sub_omegakb,sub_wkb,sub_eqpkb,sub_imkb)
+            for a,b in zip(sub_tmpf,sub_enexp):
+                arglist.append((a,b,prefac,akb,omegakb,wkb,eqpkb,imkb))
+           #    a = f2py_calc_spf_mpole_extinf(a,b,c,d,e,f,g,h) #,np.size(enexp),npoles)
             print("len(sub_enexp), length of chunks:", len(sub_enexp), [x.size for x in sub_enexp])
             print("len(sub_tmpf), length of chunks:", len(sub_tmpf), [x.size for x in sub_tmpf])
             # This determines the number of threads
            #pool = mp.Pool(ncpu)
            #pool.map(f2py_calc_spf_mpole_extinf,arglist)
+            print(np.array(list(arglist[0])).shape)
+            print(arglist[0])
+            sub_tmpf[0] = f2py_calc_spf_mpole_extinf(arglist[0])
+           #sys.exit()
+            output = mp.Queue()
             processes = [mp.Process(target = f2py_calc_spf_mpole_extinf, args = arglist[i]) for i in range(ncpu)]
             for p in processes:
                 print("Starting process")
                 p.start()
             for p in processes:
+                print("Joining process")
                 p.join()
-            sys.exit()
+            print("ALL GOOD SO FAR")
+            results = [output.get() for p in processes]
+            print(results)
             tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
