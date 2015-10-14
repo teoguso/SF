@@ -369,6 +369,7 @@ def calc_pdos(var_dct,res=None):
     Calculates projected DOS for all bands contained in the
     sigma file. 
     """
+    import numpy as np
     penergy = var_dct['penergy']
     sfac =  float(var_dct['sfactor'])
     pfac =  float(var_dct['pfactor'])
@@ -531,6 +532,7 @@ def write_spfkb(vardct, newen, allkb):
     """
     Does what it says. For the GW spectral function. 
     """
+    import numpy as np
     print("write_spfkb :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -598,7 +600,7 @@ def find_eqp_resigma(en, resigma, efermi):
         params = curve_fit(fit_func, en, resigma)
         [a, b] = params[0]
         if -b/a < en[-1]:
-            print("WTF!!!")
+            print("WTF!!! BYE!")
             sys.exit()
         tmpeqp = -b/a
         zeros.append(tmpeqp)
@@ -610,6 +612,7 @@ def write_eqp_imeqp(eqp,imeqp):
     """
     Does what it says.
     """
+    import numpy as np
     print("write_eqp_imeqp :: ")
     outname = "eqp.dat"
     outfile2 = open(outname,'w')
@@ -741,6 +744,7 @@ def read_sf(vardct, pdos, approx):
     spf_gw- or spf_exp- and returns their sum, 
     according to minband, maxband and minkpt, maxkpt. 
     """
+    import numpy as np
     print("read_sf :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -840,6 +844,8 @@ def write_sfkb_c(vardct,en,sfkb):
     Does what it says. For the cumulant spectral function. 
     """
     import numpy as np
+    import matplotlib.pylab as plt
+    sfkb = np.array(sfkb)
     print("write_sfkb_c :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -848,42 +854,37 @@ def write_sfkb_c(vardct,en,sfkb):
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
     bdgw = map(int, vardct['sig_bdgw'])
-    bdrange = range(minband - 1,maxband)
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
     extinf = int(vardct['extinf'])
     npoles = int(vardct['npoles'])
     penergy = int(vardct['penergy'])
+   #plt.plot(en,sfkb[0,4])
+   #plt.show()
     if extinf == 1: 
         str_exi = "_extinf"
     else:
         str_exi = ""
-    #spfkb = allkb[0]
-   #reskb = allkb[1]
-   #rdenkb = allkb[2]
-   #imskb = allkb[3]
-   #for ik in range(nkpt):
-   #print("WTF1",type(sfkb))
-   #print("WTF2",sfkb.shape)
-           #import matplotlib.pylab as plt
-           #plt.plot(en,sfkb[ik,ib])
-           #plt.show()
     for ik in kptrange:
         #print(" k point = %02d " % (ikeff+1))
        #ikeff = minkpt + ik 
         ikeff = ik + 1
         for ib in bdrange:
            #ibeff = minband + ib
-            ibeff = ib + 1
+            ibeff = ib + bdgw[0] 
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            print("ik,ib: ",ik,ib)
+            print(" Writing on file : ", outnamekb)
             with open(outnamekb,'w') as ofkb:
                 for ien in range(en.size):
-                    ofkb.write("%8.4f %12.8f\n" % (en[ien], sfkb[ik,ib,ien]))
+                    ofkb.write("%9.4f %15.8f\n" % (en[ien], sfkb[ik,ib,ien]))
     print("write_sfkb_c :: Done.")
 
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     Meta-function that calls serial or para version.
     """
+    import numpy as np
     npoles = int(vardct['npoles'])
    #if npoles == 0 or npoles == 1 or npoles == 999: 
     while True:
@@ -902,6 +903,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     Separate function that calculates the frequencies and amplitudes
     of ImSigma using the multipole model. 
     """
+    import numpy as np
     from multipole import fit_multipole_fast #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
@@ -976,6 +978,7 @@ def calc_extinf(vardct, ampole, omegampole):
     """
     # Extrinsic and interference contribution
     """
+    import numpy as np
     penergy = int(vardct['penergy'])
     origdir = vardct['origdir']
     extinfname = "a_wp."+str(penergy)
@@ -1094,7 +1097,6 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             print(np.array(list(arglist[0])).shape)
             print(arglist[0])
             sub_tmpf[0] = f2py_calc_spf_mpole_extinf(arglist[0])
-           #sys.exit()
             output = mp.Queue()
             processes = [mp.Process(target = f2py_calc_spf_mpole_extinf, args = arglist[i]) for i in range(ncpu)]
             for p in processes:
@@ -1118,6 +1120,7 @@ def write_sftot_c(vardct, enexp, ftot):
     Just a small piece of code that writes two numpy arrays 
     (frequencies, spectral function) to disk.
     """
+    import numpy as np
     print(" write_sf_c ::")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -1298,7 +1301,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #plt.plot(en3,im3)
                    #plt.legend()
                    #plt.show()
-                   #sys.exit()
                     # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                     # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                     if npoles > omegai.size:

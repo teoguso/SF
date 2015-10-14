@@ -282,6 +282,7 @@ else:
         print("="*40)
         print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
         # Writing out sfkb
+        print("TEST: sfkb.shape:", sfkb.shape)
         thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
         thread.start()
     
