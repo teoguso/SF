@@ -259,9 +259,10 @@ def read_sigfile(invar_dict):
         print("numcols:",num_cols)
         print("numcols2:",num_cols2)
         if num_cols != num_cols2: 
-            print("WARNING: newlines in _SIG file.")
-            print("Reshaping _SIG file structure...")
-            print("_SIG file length (rows):", len(filelines))
+            print()
+            print(" WARNING: newlines in _SIG file.")
+            print(" Reshaping _SIG file structure...")
+            print(" _SIG file length (rows):", len(filelines))
             new_list = []
             nline = 0
             a = []
@@ -415,7 +416,7 @@ def read_band_type_sym(sfac,pfac,nband):
         s = np.array(s)
         print("Done.")
     else : 
-        print
+        print()
         print(" WARNING: File for orbital character not found (s.dat). S character will be 1 for all bands. ")
         s = np.ones(nband)
     print(" Reading p bands file... ",)
@@ -432,7 +433,7 @@ def read_band_type_sym(sfac,pfac,nband):
         podd = np.array(podd)
         print("Done.")
     else : 
-        print
+        print()
         print(" WARNING: File for orbital character not found (p_even.dat/p_odd.dat). P character will be 1 for all bands. ")
         peven = np.ones(nband)
         podd = np.ones(nband)
@@ -593,6 +594,7 @@ def find_eqp_resigma(en, resigma, efermi):
     if tmpeqp>efermi: 
         tmpeqp=zeros[0]
     if nzeros==0 : 
+        print()
         print(" WARNING: No eqp found! ")
         def fit_func(x, a, b): 
             return a*x + b
@@ -605,6 +607,7 @@ def find_eqp_resigma(en, resigma, efermi):
         tmpeqp = -b/a
         zeros.append(tmpeqp)
     elif nzeros>1 : 
+        print()
         print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
 
@@ -652,6 +655,7 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
             # New method to overcome plasmaron problem
             eqp[ik,ib], nzeros = find_eqp_resigma(en,temparray,efermi)
             if nzeros==0: 
+                print()
                 print(" WARNING: ik "+str(ik)+" ib "+str(ib)+". No eqp found!!!")
             if (eqp[ik,ib] > en[0]) and (eqp[ik,ib] < en[-1]): 
                 #print(en[0], eqp[ik,ib], en[-1])
@@ -660,6 +664,7 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
                 imeqp[ik,ib] = interp(eqp[ik,ib], en, ims[ik,ib])
             ## Warning if imaginary part of sigma < 0 (Convergence problems?)
             if imeqp[ik,ib] <= 0 : 
+                print()
                 print(" WARNING: im(Sigma(eps_k)) <= 0 !!! ik ib eps_k im(Sigma(eps_k)) = ", ik, ib, eqp[ik,ib], imeqp[ik,ib])
     return eqp, imeqp
 
@@ -724,14 +729,16 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
             try: 
                 w_extinf[ik,ib] = interpwidth(omegampole[ik,ib]) # Numpy array
             except ValueError:
-                print("WARNING: A value for omega_p is beyond what contained in a_wp.x.")
+                print()
+                print(" WARNING: A value for omega_p is beyond what contained in a_wp.x.")
                 print(" The last available value is taken. ")
                 print("ik, ib, omegampole: ", ik, ib, omegampole[ik,ib])
                 w_extinf[ik,ib] = np.interp(omegampole[ik,ib],newen_ei,newwmod)
             try: 
                 tmpextinf = interpextinf(omegampole[ik,ib]) # 
             except ValueError:
-                print("WARNING: A value for omega_p is beyond what contained in a_wp.x.")
+                print()
+                print(" WARNING: A value for omega_p is beyond what contained in a_wp.x.")
                 tmpextinf = np.interp(omegampole[ik,ib],newen_ei, newa_ei/newa_int)
             # Mod following discussion with Josh
             #amp_exinf[ik,ib] += ampole[ik,ib] * tmpextinf
@@ -900,7 +907,7 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
 
 def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     """
-    Separate function that calculates the frequencies and amplitudes
+    Function that calculates frequencies and amplitudes
     of ImSigma using the multipole model. 
     """
     import numpy as np
@@ -931,7 +938,8 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
                     en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
                     im3 = abs(imskb[ik,ib][newen<=eqp[ik,ib]]/np.pi) # This is what should be fitted
                 if en3.size == 0:
-                    print("WARNING: QP energy is outside of given energy range!\n"+\
+                    print()
+                    print(" WARNING: QP energy is outside of given energy range!\n"+\
                             " This state will be skipped!\n"+\
                             "You might want to modify enmin/enmax.")
                     print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
@@ -946,9 +954,10 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
                 if npoles > omegai.size:
                     omegampole[ik,ib][:omegai.size] = omegai 
                     ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
-                    print("WARNING: npoles used ("+str(npoles)+") is larger"+\
+                    print()
+                    print(" WARNING: npoles used ("+str(npoles)+") is larger"+\
                             " than x data array ("+str(omegai.size)+").")
-                    print("WARNING: Reduce npoles. You are wasting resources!!!")
+                    print(" Reduce npoles. You are wasting resources!!!")
                 else:
                     omegampole[ik,ib] = omegai 
                     ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
@@ -1148,6 +1157,23 @@ def write_sftot_c(vardct, enexp, ftot):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
     print(" write_sf_c :: Done.")
 
+def array_doublefill(en_in):
+    """
+    Just doubles the array size and fills the gaps 
+    with linear interpolation. 
+    """
+    import numpy as np
+    en_out = np.zeros((2*en_in.size-1))
+    j = 0
+    for i in range(en_in.size - 1):
+        en_out[j] = en_in[i]
+        j += 1
+        en_out[j] = (en_in[i+1] + en_in[i]) / 2
+        j += 1
+    i += 1
+    en_out[j] = en_in[i]
+    return en_out
+
 def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
@@ -1269,7 +1295,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                     #en3 = en[en<=efermi]
                     if en3.size == 0:
-                        print("WARNING: QP energy is outside of given energy range!\n"+\
+                        print()
+                        print(" WARNING: QP energy is outside of given energy range!\n"+\
                                 " This state will be skipped!\n"+\
                                 "You might want to modify enmin/enmax.")
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
@@ -1279,36 +1306,37 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     if eqp[ik,ib] <= 0:
                         en3 = -en3[::-1] 
                         im3 = im3[::-1]
-                   #with open('mytest.dat','w') as outf:
-                   #    outf.write(" npoles sum(lamba_i) sum(lamba_i/omega_i**2)"+\
-                   #            " first_moment fst_inv_moment sum(omegai)/npoles"+\
-                   #            " sum(omegai**2)/npoles int(ImSigma)/sum(omegai**2)*npoles\n")  
-                   #    for ip in [1,10,20,40,60,100,200,400,1000]:
-                   #        omegai, lambdai, deltai = fit_multipole(en3,im3,ip,0)
-                   #        outf.write(8*"%12.5f" % \
-                   #                (ip, np.sum(lambdai), \
-                   #                np.sum(np.true_divide(lambdai,(np.square(omegai)))), \
-                   #                np.trapz(im3*en3,en3), np.trapz(im3/en3,en3), \
-                   #                np.sum(omegai)/ip, np.sum(np.square(omegai))/ip, \
-                   #                np.trapz(im3,en3)/np.sum(np.square(omegai))*ip))
-                   #        outf.write("\n")
-                   #omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,0)
-                   #print(omegai, lambdai, deltai)
-                   #plt.plot(omegai,lambdai,'o',label='m1')
                     omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
-                   #print("omegai, lambdai, deltai:\n", omegai, lambdai, deltai)
-                   #plt.plot(omegai,lambdai,'o',label='m1_fast')
-                   #plt.plot(en3,im3)
-                   #plt.legend()
-                   #plt.show()
                     # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                     # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                     if npoles > omegai.size:
                         omegampole[ik,ib][:omegai.size] = omegai 
                         ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
-                        print("WARNING: npoles used ("+str(npoles)+") is larger"+\
-                                " than x data array ("+str(omegai.size)+").")
-                        print("WARNING: Reduce npoles. You are wasting resources!!!")
+                        print()
+                        print(" WARNING: npoles used ("+str(npoles)+") is larger"+\
+                                " than poles x data array can give ("+str(omegai.size)+").")
+                       #print("WARNING: Reduce npoles. You are wasting resources!!!")
+                        print(" Im(Sigma) will be interpolated to obtain the desired number of poles.")
+                        current_size = omegai.size
+                        counter = 0
+                        while npoles > current_size:
+                            counter += 1
+                            print()
+                            print(" WARNING: Arrays are too coarse.")
+                            print(" npoles, omegai.size:", npoles, omegai.size)
+                            print(" Filling arrays with interpolated values...")
+                            en1 = array_doublefill(en3)
+                            im1 = array_doublefill(im3)
+                            en3 = en1
+                            im3 = im1
+                            omegai, lambdai, deltai = fit_multipole_fast(en1,im1,npoles)
+                            current_size = omegai.size
+                            if counter > 4:
+                                print(60*"=")
+                                print(" WARNING: You are trying too hard with too few points.")
+                                print(" Maybe use less poles or calculate more points for Sigma?")
+                                print(60*"=")
+                #   im1 = fit_double(im3)
                     else:
                         omegampole[ik,ib] = omegai 
                         ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))

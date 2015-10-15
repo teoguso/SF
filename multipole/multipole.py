@@ -190,7 +190,7 @@ def fit_multipole_fast(preen,predata,nbin):
         # in the multipole model, equal to gi*omegai
         gi = np.array(gi)
         gi = np.pi/2*gi*omegai
-    print "TEST GI:", gi
+   #print "TEST GI:", gi
     omegai = np.array(omegai)
     # Here we restore the correct x axis removing safe_shift
     omegai = omegai - safe_shift
@@ -209,7 +209,7 @@ def fit_multipole_fast(preen,predata,nbin):
     else: print "(OK)"
     #intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
     intcheck = np.sum(gi)
-    print "gi:", gi
+   #print "gi:", gi
     print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
     if abs((intcheck - totalint) / intcheck) > 1E-02: 
         print
