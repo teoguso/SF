@@ -348,19 +348,22 @@ def read_cross_sections(penergy):
     """
     import numpy as np;
     print(" ### Reading cross sections...  ")
-    csfilename = "cs"+str(penergy)+".dat"
-    if isfile(csfilename):
-        print(" Photon energy:", penergy,"eV")
+    if int(penergy) == 0:
+        cs = np.array([0.1,0.1])
     else:
-        penergy = raw_input(" File "+csfilename+" not found. Photon energy (eV): ")
         csfilename = "cs"+str(penergy)+".dat"
-    cs = []
-    print(" csfilename:",csfilename)
-    csfile = open(csfilename,'r')
-    for line in csfile.readlines():
-        cs.append((float(line)));
-    csfile.close()
-    cs = np.array(cs)
+        if isfile(csfilename):
+            print(" Photon energy:", penergy,"eV")
+        else:
+            penergy = raw_input(" File "+csfilename+" not found. Photon energy (eV): ")
+            csfilename = "cs"+str(penergy)+".dat"
+        cs = []
+        print(" csfilename:",csfilename)
+        csfile = open(csfilename,'r')
+        for line in csfile.readlines():
+            cs.append((float(line)));
+        csfile.close()
+        cs = np.array(cs)
     #print("cs:",cs.shape,cs)
     #print("cs:",np.transpose(cs),cs.shape)
     return cs
