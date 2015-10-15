@@ -374,7 +374,7 @@ def calc_pdos(var_dct,res=None):
     sigma file. 
     """
     import numpy as np
-    penergy = var_dct['penergy']
+    penergy = float(var_dct['penergy'])
     sfac =  float(var_dct['sfactor'])
     pfac =  float(var_dct['pfactor'])
     #nband = int(var_dct['nband'])
