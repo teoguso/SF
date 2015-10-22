@@ -136,8 +136,8 @@ with open('hartree.dat','w') as of:
         of.write("\n")
 ### ================================= ###
 ### ===== GW SPECTRAL FUNCTION ====== ###
-t_part1 = time.time() - start_time
-print(" --- Time spent so far: {} seconds. ---".format(t_part1))
+t_pregw = time.time() 
+#print(" --- Time spent so far: {} seconds. ---".format(t_part1))
 sfac = dict_c['sfactor']
 pfac = dict_c['pfactor']
 penergy = dict_c['penergy']
@@ -243,8 +243,8 @@ else:
         print(" A(\omega)_GW written in", outname)
         plt.plot(newen,spftot,label="ftot_gw");
     
-    print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
-    print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
+   #print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
+   #print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
     # ============================= ###
     
     ### ===================================== ###
@@ -252,11 +252,11 @@ else:
     if int(dict_c['calc_exp']) == 1:
         # Time section
         #import time
-        e0=time.time()
-        c0=time.clock()
-        elaps1=time.time() - e0
-        cpu1=time.clock() - c0
-        print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
+       #e0=time.time()
+       #c0=time.clock()
+       #elaps1=time.time() - e0
+       #cpu1=time.clock() - c0
+       #print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
         print(" ### Calculation of exponential A ### ")
         ### ==== Finding zero in res --> Eqp ===== ###
         print(" Finding zeros in real parts...")
@@ -288,13 +288,32 @@ else:
     
     
         ### TODO: fix all below ###
-        plt.plot(enexp, ftot, label="ftot")
+        mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
+        plt.plot(enexp, ftot, label = mylabel)
     
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
+end_time = time.time()
+print(start_time, start_time/3600)
+t2 = t_pregw - start_time
+t3 = end_time - start_time
+#print(t2, t2/60, t2/3600)
+#print(" --- Time spent for GW: {} seconds. ---".format(time.time() - t_part1))
+#print(" --- Time spent so far: {} seconds. ---".format(time.time() - start_time))
 #title = 'Spectral function '+ 'A (' + r'$\omega $ ' + ') - '+r'$ h\nu = $'+str(penergy)+' eV'
 #plt.title(title)
 plt.legend(loc=2)
 plt.show()
+print(t3, t3/60, t3/3600)
+t4 = t3
+t5 = t3
+if int(t3/3600) >= 1: 
+    t4 = t3 - int(t3/3600)*3600
+if int(t4/60) >= 1: 
+    t5 = t4 - int(t4/60)*60
+print(t3,t4,t5)
+print(" Calculation lasted "+str(int(t3/3600))+" Hours, "+str(int(t4/60))+" Minutes and "+str(float(t5))+" Seconds")
+print(" "+30*"-")
 print(" End of program reached.")
+print(" "+30*"-")

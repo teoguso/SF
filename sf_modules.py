@@ -351,7 +351,7 @@ def read_cross_sections(penergy):
     if int(penergy) == 0:
         cs = np.array([0.1,0.1])
     else:
-        csfilename = "cs"+str(penergy)+".dat"
+        csfilename = "cs"+str(int(penergy))+".dat"
         if isfile(csfilename):
             print(" Photon energy:", penergy,"eV")
         else:
