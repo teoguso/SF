@@ -305,14 +305,12 @@ t3 = end_time - start_time
 #plt.title(title)
 plt.legend(loc=2)
 plt.show()
-print(t3, t3/60, t3/3600)
 t4 = t3
 t5 = t3
 if int(t3/3600) >= 1: 
     t4 = t3 - int(t3/3600)*3600
 if int(t4/60) >= 1: 
     t5 = t4 - int(t4/60)*60
-print(t3,t4,t5)
 print(" Calculation lasted "+str(int(t3/3600))+" Hours, "+str(int(t4/60))+" Minutes and "+str(float(t5))+" Seconds")
 print(" "+30*"-")
 print(" End of program reached.")
