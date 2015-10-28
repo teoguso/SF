@@ -311,7 +311,7 @@ if int(t3/3600) >= 1:
     t4 = t3 - int(t3/3600)*3600
 if int(t4/60) >= 1: 
     t5 = t4 - int(t4/60)*60
-print(" Calculation lasted "+str(int(t3/3600))+" Hours, "+str(int(t4/60))+" Minutes and "+str(float(t5))+" Seconds")
+print(" Calculation lasted "+str(int(t3/3600))+" Hours, "+str(int(t4/60))+" Minutes and "+str(int(t5))+" Seconds")
 print(" "+30*"-")
 print(" End of program reached.")
 print(" "+30*"-")
