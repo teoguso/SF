@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys
 import time
 import numpy as np
@@ -11,14 +12,14 @@ def gbroaden(x,f,sigma):
 	f = np.asarray(f)
 	xsize = np.size(x)
 	broadf = np.zeros(f.size)
-	print "gbroaden() called, x.size:", x.size
+	print("gbroaden() called, x.size:", x.size)
 	#dx =  x[1] - x[0] 
         dx =  ( x[-1] - x[0] ) / float(xsize - 1)
-	print "gbroaden() called, gaussian window size (4 x sigma):", 4*sigma
+	print("gbroaden() called, gaussian window size (4 x sigma):", 4*sigma)
 	for n in xrange(xsize):
 		if  abs( x[n] - x[0] ) > 4*sigma : 
 			nrange = n
-			print "gbroaden() called, gaussian window size (4 x sigma) in x units (e.g. eV?):", x[nrange] - x[0]
+			print("gbroaden() called, gaussian window size (4 x sigma) in x units (e.g. eV?):", x[nrange] - x[0])
 			break
 	if 4*sigma < dx*xsize/2 :
 		# First chunk (beginning)
@@ -61,54 +62,48 @@ def gbroaden(x,f,sigma):
 #	print af, abf
 #	broadf = broadf * af / abf
 	return broadf
+def broad_file(filename):
+    """
+    Takes the name of a file and gives two broadened versions of it.
+    """
+    import numpy as np
+   #infilename = sys.argv[-1]
+    print("broad_file :: ")
+    print("Filename: ", filename)
+    infilename = filename
+    file1 = open(infilename,'r')
+    x = []; y = []
+    for line in file1:
+    	if line[0] != "#" : # Remove commented lines
+    		data = line.split()
+    		x.append(float(data[0]))
+    		y.append(float(data[1]))
+    x = np.array(x)
+    y = np.array(y)
+    
+    yb = gbroaden(x,y,sigma)
+    yb2 = gbroaden(x,y,2*sigma)
+   #plt.plot(x,yb,label='broad f(x)')
+   #plt.plot(x,yb2,label='2*broad f(x)')
+    outfilename1 = infilename+"."+str(sigma)+".gbr"
+    outfilename2 = infilename+"."+str(2*sigma)+".gbr"
+    outfile1 = open(outfilename1,'w')
+    outfile2 = open(outfilename2,'w')
+    for (en, br1, br2) in zip(x,yb,yb2) :
+    	outfile1.write("%7.4f%15.6f\n" % (en, br1))
+    	outfile2.write("%7.4f%15.6f\n" % (en, br2))
+    outfile1.close()
+    outfile2.close()
+    return 0
 
 if __name__ == '__main__':
 	# ASK FOR A BROAD VALUE IF NOT ALREADY GIVEN IN COMMAND LINE
 	if  len(sys.argv) == 2:
 		sigma = float(raw_input("Gaussian broadening needed: "))
-		print "What I read:", sigma
+		print("What I read:", sigma)
 	else: sigma = float(sys.argv[1])
-	
-        infilename = sys.argv[-1]
-	file1 = open(infilename,'r')
-	x = []; y = []
-	for line in file1:
-		if line[0] != "#" : # Remove commented lines
-			data = line.split()
-			x.append(float(data[0]))
-			y.append(float(data[1]))
-	#	print line,
-	x = np.array(x)
-#	y = np.array(y)
-	
-#	# Random test function
-	#yrand = random.rand(np.size(x));
-	
-	# DEFINING A GAUSSIAN
-	#def gauss(x,sigma):
-	#	gauss = np.exp(-x**2/2/sigma**2)/np.sqrt(2*np.pi)/sigma
-	#	norm = np.trapz(gauss)
-	#	gauss = gauss / norm
-#	#	return gauss
-	### UNCOMMENT IF PLOTTING IS NEEDED
-#	#plt.plot(x,yrand,label='yrand')
-	#broady2 = gbroaden(x,yrand,sigma)
-	#plt.plot(x,broady2,label='broad2 rand f(x)')
-	#plt.plot(x,y,label='f(x)')
-	yb = gbroaden(x,y,sigma)
-	yb2 = gbroaden(x,y,2*sigma)
-	plt.plot(x,yb,label='broad f(x)')
-	plt.plot(x,yb2,label='2*broad f(x)')
-	outfilename1 = infilename+"."+str(sigma)+".gbr"
-	outfile1 = open(outfilename1,'w')
-	outfilename2 = infilename+"."+str(2*sigma)+".gbr"
-	outfile2 = open(outfilename2,'w')
-	for (en, br1, br2) in zip(x,yb,yb2) :
-		outfile1.write("%7.4f%15.6f\n" % (en, br1))
-		outfile2.write("%7.4f%15.6f\n" % (en, br2))
-	#	outfile1.write("%7.4f%15.6f%15.6f%15.6f\n" % (en, br1, br2, y))
-	outfile1.close()
-	outfile2.close()
+        for item in sys.argv[2:]:
+            broad_file(item)
 	
 	### UNCOMMENT IF PLOTTING IS NEEDED
 	#plt.legend()

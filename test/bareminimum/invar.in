@@ -5,7 +5,7 @@ spo_DS3_SIG # sigmafile
 1           # minband
 4           # maxband
 -80          # enmin
-5            # enmax
+7            # enmax
 6.77 # efermi
 1.0         # sfactor
 1.0         # pfactor
