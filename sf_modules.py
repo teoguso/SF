@@ -1337,6 +1337,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                             if counter > 4:
                                 print(60*"=")
                                 print(" WARNING: You are trying too hard with too few points.")
+                                print(" The array has been interpolated more than 4 times.")
                                 print(" Maybe use less poles or calculate more points for Sigma?")
                                 print(60*"=")
                 #   im1 = fit_double(im3)
