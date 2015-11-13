@@ -295,7 +295,7 @@ else:
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)
 end_time = time.time()
-print(start_time, start_time/3600)
+print()
 t2 = t_pregw - start_time
 t3 = end_time - start_time
 #print(t2, t2/60, t2/3600)

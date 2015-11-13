@@ -4,6 +4,8 @@
 ### A.D. MMXIV (2014)       ###
 Multipole fit module. It is callable as a stand-alone script. 
 """
+from __future__ import print_function
+import numpy as np
 
 
 def getdata_file(infilename,wantedcol=1):
@@ -21,10 +23,10 @@ def getdata_file(infilename,wantedcol=1):
     predata = []
     ncol = wantedcol 
     for lines in infile : 
-        #print lines[0]
+        #print(lines[0]
         if lines[0] != "#" :
             line = map(float,lines.split())
-            #print line
+            #print(line
             preen.append(line[0])
             predata.append(line[ncol])
     infile.close()
@@ -48,7 +50,7 @@ def first_inverse_moment(preen,predata):
             tmpen[i] += dx/1000
             #izero = i
             #tmpdata[i] = 0
-            #print " Avoiding zero:", preen[i], predata[i] 
+            #print(" Avoiding zero:", preen[i], predata[i] 
             break
     #tmpen[tmpen == 0] += dx/1000
     fxonx = tmpdata / tmpen
@@ -64,10 +66,10 @@ def resize_en(preen, nbin) :
     import numpy as np
     nbin = int(nbin)
     if np.size(preen) < float( 2 * nbin ) :
-        #print " X-axis grid is too coarse for so many poles."
-        print " Refining grid..."
+        #print(" X-axis grid is too coarse for so many poles."
+        print(" Refining grid...")
         nx = 2*nbin+1
-        print " Old dx = %g, new dx = %g." % (abs(preen[-1]-preen[0])/(np.size(preen)-1),abs(preen[-1]-preen[0])/nx)
+        print(" Old dx = %g, new dx = %g." % (abs(preen[-1]-preen[0])/(np.size(preen)-1),abs(preen[-1]-preen[0])/nx))
         en = np.linspace(preen[0], preen[-1], nx)
     else :
         en = preen
@@ -98,10 +100,10 @@ def fit_multipole_fast(preen,predata,nbin):
     preen = preen + safe_shift
     totalint = np.trapz(predata,preen)
     totdeltax = abs( preen[-1] - preen[0] )
-    print " Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
-    print " Number of poles (nbin):", nbin
-    print " Total integral:", totalint 
-    print " Total integral / nbin:", totalint / float(nbin)
+    print(" Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 ))
+    print(" Number of poles (nbin):", nbin)
+    print(" Total integral:", totalint )
+    print(" Total integral / nbin:", totalint / float(nbin))
     # This is the supposed integral within a single interval
     partint = totalint / float(nbin)
     # First moment
@@ -131,7 +133,7 @@ def fit_multipole_fast(preen,predata,nbin):
     x1 = x0
     # Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
     ngaussint = 20
-    print " Getting poles...",
+    print(" Getting poles...",)
     # CASE NPOLES == 1
     if int(nbin) == 1:
         gi.append(totalint)
@@ -148,7 +150,7 @@ def fit_multipole_fast(preen,predata,nbin):
             tmpint = np.trapz(predata[istart:i],en[istart:i])
            #print(tmpint, partint)
             if tmpint > partint :
-               #print " Bound found. ibound, en, tmpint:", ibound, en[i], tmpint
+               #print(" Bound found. ibound, en, tmpint:", ibound, en[i], tmpint)
                 bounds.append(en[i] )
                 # Formula to calculate g_i
                 #gi.append(float( 2. / np.pi * tmpint2))
@@ -161,7 +163,7 @@ def fit_multipole_fast(preen,predata,nbin):
                 tmpint = np.trapz(xfx[istart:i],en[istart:i])
                 tmpomegai = np.sqrt( 2./np.pi * tmpint / tmpgi ) 
                 omegai.append( tmpomegai )
-                #print " gi, omegai:", tmpgi, tmpomegai # Test print
+                #print(" gi, omegai:", tmpgi, tmpomegai # Test print)
                 # Reset variables
                 istart = i - 1
                 ibound += 1
@@ -174,11 +176,11 @@ def fit_multipole_fast(preen,predata,nbin):
         tmpomegai = np.sqrt( 2/np.pi * tmpint / tmpgi ) 
         omegai.append( tmpomegai )
         ibound += 1
-        print "Done."
+        print("Done.")
         # Add last value as the upper bound
-        print " ibound       = %4i (should be %g) " % (ibound, nbin)
-        print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-        print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+        print(" ibound       = %4i (should be %g) " % (ibound, nbin))
+        print(" Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1))
+        print(" Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin))
         if ibound < nbin:
             print("WARNING: too few bins! Adding a fictitious one.")
             gi.append(0.0)
@@ -190,35 +192,35 @@ def fit_multipole_fast(preen,predata,nbin):
         # in the multipole model, equal to gi*omegai
         gi = np.array(gi)
         gi = np.pi/2*gi*omegai
-   #print "TEST GI:", gi
+   #print("TEST GI:", gi)
     omegai = np.array(omegai)
     # Here we restore the correct x axis removing safe_shift
     omegai = omegai - safe_shift
     deltai = []
     sumcheck = 0
-    print " Calculating deltai..."
+    print(" Calculating deltai...")
     for i in xrange(1,np.size(bounds)) :
         deltai.append(bounds[i]-bounds[i-1])
         sumcheck += abs(bounds[i]-bounds[i-1])
     deltai = np.array(deltai)
     print(" Check if sum of deltai gives the original length: ", sumcheck)
     if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-02: 
-        print
-        print en[-1] - en[0]
-        print "WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck)
-    else: print "(OK)"
+        print()
+        print(en[-1] - en[0])
+        print("WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck))
+    else: print("(OK)")
     #intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
     intcheck = np.sum(gi)
-   #print "gi:", gi
-    print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
+   #print("gi:", gi)
+    print(" Check if sum of gi gives the original total integral (origint): ", intcheck, totalint)
     if abs((intcheck - totalint) / intcheck) > 1E-02: 
-        print
-        print "WARNING: the difference is", abs((intcheck - totalint) / intcheck)
-    else: print "(OK)"
-    print " ibound       = %4i (should be %g) " % (ibound, nbin)
-    print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-    print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
-    print " Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin)
+        print()
+        print("WARNING: the difference is", abs((intcheck - totalint) / intcheck))
+    else: print("(OK)")
+    print(" ibound       = %4i (should be %g) " % (ibound, nbin))
+    print(" Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1))
+    print(" Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin))
+    print(" Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin))
     return omegai, gi, deltai
 
 def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
@@ -246,10 +248,10 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     preen = preen + safe_shift
     totalint = np.trapz(predata,preen)
     totdeltax = abs( preen[-1] - preen[0] )
-    print " Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
-    print " Number of poles (nbin):", nbin
-    print " Total integral:", totalint 
-    print " Total integral / nbin:", totalint / float(nbin)
+    print(" Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 )
+    print(" Number of poles (nbin):", nbin
+    print(" Total integral:", totalint 
+    print(" Total integral / nbin:", totalint / float(nbin)
     # This is the supposed integral within a single interval
     partint = totalint / float(nbin)
     interpdata = interp1d(preen, predata[:], kind = 'linear', axis = -1)
@@ -273,8 +275,8 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     bdensity = 1
     iboundcheck = 1
     while iboundcheck == 1:
-        #print " ### ========================= ###"
-        #print " ###   Calculating Delta_i     ###"
+        #print(" ### ========================= ###"
+        #print(" ###   Calculating Delta_i     ###"
         bounds = []
         ibound = 0
         gi = []
@@ -286,7 +288,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
         x1 = x0
         # Number of gaussians used in the integration (40 is safe, lower values are not tested too well)
         ngaussint = 20
-        print " Getting poles...",
+        print(" Getting poles...",
         for i in xrange(1,np.size(en)) : 
             x2 = en[i]
             x3 = ( x1 + x2 ) / 2
@@ -301,7 +303,7 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
                         x2 = x3
                         x3 = ( x1 + x3 ) / 2
                     (tmpint,dummy) = fixed_quad(interpdata, x0, x3,(), ngaussint)
-                #print " Bound found. ibound, en, tmpint:", ibound, x3, tmpint
+                #print(" Bound found. ibound, en, tmpint:", ibound, x3, tmpint
                 bounds.append( x3 )
                 # Formula to calculate g_i
                 tmpint2, dummy = fixed_quad(interpfxonx, x0, x3,(), ngaussint)
@@ -313,24 +315,24 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
                 tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
                 tmpomegai = np.sqrt( 2/np.pi * tmpint / tmpgi ) 
                 omegai.append( tmpomegai )
-                #print " gi, omegai:", tmpgi, tmpomegai # Test print
+                #print(" gi, omegai:", tmpgi, tmpomegai # Test print
                 # Reset variables
                 x0 = x3
                 istart = i
                 ibound += 1
-        print "Done."
+        print("Done."
         # Add last value as the upper bound
-        print " ibound       = %4i (should be %g) " % (ibound, nbin)
-        print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-        print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+        print(" ibound       = %4i (should be %g) " % (ibound, nbin)
+        print(" Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+        print(" Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
         if ibound == nbin : # i.e. if it is as it is supposed to be
-            print " ibound == nbin, Fixing last value"
+            print(" ibound == nbin, Fixing last value"
             bounds[-1] = en[-1]
             bounds = np.array(bounds)
             iboundcheck = 0
         # Prevent approximate integration to miss g_i and omega_i for last interval
         elif ibound == nbin - 1 :  # i.e. supposedly there is one bound missing ( ibound == nbin -1 )
-            print " ibound == nbin - 1. Calculating parameters for last bin..."
+            print(" ibound == nbin - 1. Calculating parameters for last bin..."
             bounds.append(en[-1])
             bounds = np.array(bounds)
             x0 = bounds[-2]
@@ -343,14 +345,14 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
             tmpint, dummy = fixed_quad(interpxfx, x0, x3,(), ngaussint)
             tmpomegai = np.sqrt( tmpint / tmpint2 ) 
             omegai.append( tmpomegai )
-            print " gi, omegai:", tmpgi, tmpomegai 
+            print(" gi, omegai:", tmpgi, tmpomegai 
             ibound += 1
             iboundcheck = 0
         else :
-            print " ibound has a non-compliant value. ibound:", ibound
+            print(" ibound has a non-compliant value. ibound:", ibound
             iboundcheck = 1
             bdensity*=2
-            print " Will retry with a higher bdensity:", bdensity
+            print(" Will retry with a higher bdensity:", bdensity
             en = resize_en(preen, bdensity*nbin)
             #sys.exit(1)
     omegai = np.array(omegai)
@@ -363,36 +365,36 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
     omegai = omegai - safe_shift
     # Uncomment to change weights to single delta function
     # gi = gi / abs(omegai)
-    #print " bounds[-5:]:", bounds[-5:]
-    #print " omegai[-5:]:", omegai[-5:]
-    #print " Bounds:", bounds
-    #print " Omegai:", omegai
+    #print(" bounds[-5:]:", bounds[-5:]
+    #print(" omegai[-5:]:", omegai[-5:]
+    #print(" Bounds:", bounds
+    #print(" Omegai:", omegai
     deltai = []
     sumcheck = 0
-    print " Calculating deltai..."
+    print(" Calculating deltai..."
     for i in xrange(1,np.size(bounds)) :
         deltai.append(bounds[i]-bounds[i-1])
         sumcheck += abs(bounds[i]-bounds[i-1])
     deltai = np.array(deltai)
-    print " Check if sum of deltai gives the original length: ", sumcheck,
+    print(" Check if sum of deltai gives the original length: ", sumcheck,
     if abs((sumcheck - abs(en[-1] - en[0])) / sumcheck) > 1E-02: 
         print
-        print en[-1] - en[0]
-        print "WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck)
-    else: print "(OK)"
+        print(en[-1] - en[0]
+        print("WARNING: the difference is", abs((sumcheck - abs(en[-1] - en[0])) / sumcheck)
+    else: print("(OK)"
     #intcheck = np.pi/2*np.sum(gi[:]*omegai[:])
     intcheck = np.sum(gi)
-    print " Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
+    print(" Check if sum of gi gives the original total integral (origint): ", intcheck, totalint
     if abs((intcheck - totalint) / intcheck) > 1E-02: 
         print
-        print "WARNING: the difference is", abs((intcheck - totalint) / intcheck)
-    else: print "(OK)"
+        print("WARNING: the difference is", abs((intcheck - totalint) / intcheck)
+    else: print("(OK)"
     #if np.isnan(intcheck): sys.exit(1)
     #if np.isnan(omegai): sys.exit(1)
-    print " ibound       = %4i (should be %g) " % (ibound, nbin)
-    print " Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
-    print " Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
-    print " Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin)
+    print(" ibound       = %4i (should be %g) " % (ibound, nbin)
+    print(" Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1)
+    print(" Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin)
+    print(" Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin)
     if ifilewrite == 1:
         # Print a file like Josh output
         # omega_i  gamma_i  g_i    delta_i
@@ -401,13 +403,13 @@ def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
         #    .        .       .       .
         outname = "poles."+str(nbin)+".dat"
         outfile = open(outname,'w')
-        # print 2-line header
+        # print(2-line header
         outfile.write("### number of poles: %g\n" % (nbin))
         outfile.write("### omega_i  gamma_i  g_i    delta_i \n")
         for j in xrange(np.size(omegai)) :
             outfile.write("%12.8f %12.8f %12.8f %12.8f\n" % (omegai[j], eta, gi[j], deltai[j]))
         outfile.close()
-        print " Parameters written in file", outname
+        print(" Parameters written in file", outname
     return omegai, gi, deltai
 
 def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
@@ -432,7 +434,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     from scipy.integrate import fixed_quad,quad, simps
     for i in range(x.size):
         if x[i]<0:
-            print "UONOBNOBOOBUOBUOB some energy <<< 0 in multipole "
+            print("UONOBNOBOOBUOBUOB some energy <<< 0 in multipole "
             sys.exit()
     nbin = int(nbin)
     eta = 0.005 # This is the Lorentzian broadening that would be used???
@@ -444,7 +446,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     fxonx = first_inverse_moment(x,y)
     interpxfx = interp1d(x, xfx, kind = 'linear', axis = -1)
     interpfxonx = interp1d(x, fxonx, kind = 'linear', axis = -1)
-    print " Totdeltax, np.size(x), dx:", totdx, np.size(x), ( x[-1] - x[0] ) / float( np.size(x) - 1 )
+    print(" Totdeltax, np.size(x), dx:", totdx, np.size(x), ( x[-1] - x[0] ) / float( np.size(x) - 1 )
     #for n in range(nbin):
     #    gi[n] = np.trapz(y[n:n+1],x[n:n+1])
     gi = []
@@ -454,7 +456,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     mysum = []
     step = x.size/nbin
     myrange = range(0,x.size,x.size/nbin)
-    #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
+    #print("--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
     if (len(myrange) > nbin):
         myrange = myrange[:nbin]
     #for i in range(0,x.size,x.size/nbin):
@@ -464,7 +466,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         myint.append(totint)
         lambdai = np.array(gi)
         omegai = np.array(omegai)
-     #  print omegai
+     #  print(omegai
      #  sys.exit()
     else:
         for i in myrange:
@@ -483,10 +485,10 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
         omegai = np.array(omegai)
         lambdai = np.sqrt(gi*first_i)
         dint = (myint - lambdai)
-        #print "--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
-        print "--- multipole 2 np.size(gi):", gi.size
+        #print("--- multipole 2 nbin, len(myrange):", nbin, len(myrange)
+        print("--- multipole 2 np.size(gi):", gi.size
         #if gi.size > nbin:
-        #    print " WARNING: One bin too much created! Correcting..."
+        #    print(" WARNING: One bin too much created! Correcting..."
         #    gi = gi[:-1]
         #    omegai = omegai[:-1]
         xrest =  x.size - int(x.size/nbin)*nbin
@@ -494,21 +496,21 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
             intrest  = 0.
         else:
             intrest  = np.trapz(y[-xrest:],x[-xrest:])
-        print "--- x.size, nbin:", x.size, nbin
-        print "--- Size of one bin:", x.size/nbin
-        print "--- Remaining unused bin size:", xrest 
-        print "--- Integral of neglected part:", intrest 
+        print("--- x.size, nbin:", x.size, nbin
+        print("--- Size of one bin:", x.size/nbin
+        print("--- Remaining unused bin size:", xrest 
+        print("--- Integral of neglected part:", intrest 
         myint = np.array(myint)
         #mysum = np.array(mysum)
-        print "--- multipole:: np.np.trapz(ims):", totint 
-        print "--- multipole:: np.np.trapz(fxonx):", np.trapz(fxonx,x)
-        print "--- multipole:: np.sum(lambdai):", np.sum(lambdai)
-        print "--- multipole:: np.sum(lambdai+dint):", np.sum(lambdai+dint)
-        print "--- multipole:: np.sum(myint):", np.sum(myint)
-        #print "--- multipole:: np.sum(mysum):", np.sum(mysum)
-        print "--- multipole:: np.trapz(myint)-np.sum(lambdai):", (np.sum(lambdai) - np.sum(myint))/np.sum(myint)
+        print("--- multipole:: np.np.trapz(ims):", totint 
+        print("--- multipole:: np.np.trapz(fxonx):", np.trapz(fxonx,x)
+        print("--- multipole:: np.sum(lambdai):", np.sum(lambdai)
+        print("--- multipole:: np.sum(lambdai+dint):", np.sum(lambdai+dint)
+        print("--- multipole:: np.sum(myint):", np.sum(myint)
+        #print("--- multipole:: np.sum(mysum):", np.sum(mysum)
+        print("--- multipole:: np.trapz(myint)-np.sum(lambdai):", (np.sum(lambdai) - np.sum(myint))/np.sum(myint)
         lambdai = lambdai + dint
-        print "--- multipole:: np.sum(sqrt(dint**2)/totint):", np.sum(np.sqrt(dint**2)/totint)
+        print("--- multipole:: np.sum(sqrt(dint**2)/totint):", np.sum(np.sqrt(dint**2)/totint)
     deltai = np.ones(lambdai.size)*totdx/nbin
     return omegai, lambdai, deltai
 
@@ -546,13 +548,13 @@ def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
     if ifilewrite == 1:
         oname = "mpfit."+str(np.size(gi))+".dat"
         ofile = open(oname,'w')
-        # print 2-line header
+        # print(2-line header
         ofile.write("### Function reconstructed following many-pole fit. \n")
         ofile.write("### x   f(x) = \sum_i^N | \omega_i | \eta / ( ( \omega - \omega_i )^2 + \eta^2 ) \n")
         for j in xrange(np.size(en)):
             ofile.write("%15.8f %15.8f %15.8f\n" % (en[j], f[j], f1[j]))
         ofile.close()
-        print " Sum of poles written in file", oname
+        print(" Sum of poles written in file", oname
     return en, f
 
 if __name__ == '__main__':
@@ -563,7 +565,7 @@ if __name__ == '__main__':
         nbin = sys.argv[1]
         ifilewrite = 1
     except:
-        print usage
+        print(usage
         sys.exit(1)
     preen, predata = getdata_file(infilename)
     omegai, gi, deltai = fit_multipole(preen,predata,nbin,ifilewrite)
