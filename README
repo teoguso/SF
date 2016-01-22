@@ -14,3 +14,7 @@
 # files created during compilation, linking and 
 # testing, reverting to a clean source 
 # (a.k.a. poor's man 'make distclean').
+-- QUICK HOWTO --
+Gather your input files (self-energy, invar.in, ...)
+ -- look in the test directory for examples --
+in a single directory and run 'sf.py' from there.
