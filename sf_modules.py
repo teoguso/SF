@@ -43,7 +43,8 @@ def read_invar(infile='invar.in'):
      'spin': 0, Spin calculation (0, 1)
      'is_sc': 0, Self-consistent calculation (0, 1)
      'restart': 0, Will not calculate anything, but simply use the single spf files already calculated (0, 1)
-     'add_wtk': 1 Include k-point weights (0, 1)
+     'add_wtk': 1, Include k-point weights (0, 1)
+     'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
     """
     var_defaults = { 
             'sigmafile': None,   
@@ -69,7 +70,8 @@ def read_invar(infile='invar.in'):
             'spin': 0,
             'is_sc': 0,
             'restart': 0,
-            'add_wtk': 1
+            'add_wtk': 1,
+            'coarse': 0
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -479,7 +481,11 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
    #kptrange = range(minkpt - 1, maxkpt)
     #maxband - minband + 1
-    newdx = 0.005
+    coarse = int(vardct['coarse'])
+    if coarse == 0: 
+        newdx = 0.2
+    else:
+        newdx = 0.005
     enmin = float(vardct['enmin'])
     enmax = float(vardct['enmax'])
     if enmin < en[0] and enmax >= en[-1]:  
