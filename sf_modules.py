@@ -34,6 +34,7 @@ def read_invar(infile='invar.in'):
      'npoles': 1, Number of poles for multipole fit
      'calc_gw': 1, Enables output of GW spectral function
      'calc_exp': 0, Enables output of cumulant spectral function
+     'calc_crc': 0, Enables output of constrained retarded cumulant spectral function
      'extinf': 0, Includes extrinsic and interference effects (0, 1)
      'efermi': 0.0, Fermi energy
      'omega_p':0.0, Arbitrary plasmon frequency (used only in the case npoles=999)
@@ -61,6 +62,7 @@ def read_invar(infile='invar.in'):
             'npoles': 1,
             'calc_gw': 1,
             'calc_exp': 0,
+            'calc_crc': 0,
             'extinf': 0,
             'efermi': 0.0,
             'omega_p':0.0,
@@ -899,6 +901,7 @@ def write_sfkb_c(vardct,en,sfkb):
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     Meta-function that calls serial or para version.
+    Still wishful thinking ATM, as it just calls the serial version. 
     """
     import numpy as np
     npoles = int(vardct['npoles'])
@@ -1312,6 +1315,13 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
                     en3 = en3 - eqp[ik,ib]
+                    ### TESTING ###
+                    print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+                    import matplotlib.pylab as plt
+                    plt.plot(newen, imskb[ik,ib],"-")
+                    plt.show()
+                    sys.exit()
+                    ### END TESTING ###
                     if eqp[ik,ib] <= 0:
                         en3 = -en3[::-1] 
                         im3 = im3[::-1]
