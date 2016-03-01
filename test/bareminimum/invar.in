@@ -2,10 +2,10 @@ spo_DS3_SIG # sigmafile
 19          # minkpt
 19          # maxkpt
 19          # nkpt
-1           # minband
+4           # minband
 4           # maxband
 -80          # enmin
-7            # enmax
+80           # enmax
 6.77 # efermi
 1.0         # sfactor
 1.0         # pfactor
@@ -13,6 +13,6 @@ spo_DS3_SIG # sigmafile
 0           # plasmon2
 0.6         # a_extinf
 0           # extinf
-1             # npoles
-1  #  calc_gw
+10           # npoles
+0  #  calc_gw
 1  #  calc_exp

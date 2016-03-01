@@ -34,6 +34,7 @@ def read_invar(infile='invar.in'):
      'npoles': 1, Number of poles for multipole fit
      'calc_gw': 1, Enables output of GW spectral function
      'calc_exp': 0, Enables output of cumulant spectral function
+     'calc_crc': 0, Enables output of constrained retarded cumulant spectral function
      'extinf': 0, Includes extrinsic and interference effects (0, 1)
      'efermi': 0.0, Fermi energy
      'omega_p':0.0, Arbitrary plasmon frequency (used only in the case npoles=999)
@@ -61,6 +62,7 @@ def read_invar(infile='invar.in'):
             'npoles': 1,
             'calc_gw': 1,
             'calc_exp': 0,
+            'calc_crc': 0,
             'extinf': 0,
             'efermi': 0.0,
             'omega_p':0.0,
@@ -899,6 +901,7 @@ def write_sfkb_c(vardct,en,sfkb):
 def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     Meta-function that calls serial or para version.
+    Still wishful thinking ATM, as it just calls the serial version. 
     """
     import numpy as np
     npoles = int(vardct['npoles'])
