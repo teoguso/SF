@@ -34,6 +34,7 @@ import time
 ###  ==  PROGRAM BEGINS HERE  ==  ###
 ### ============================= ###
 start_time = time.time()
+
 # ======== READING INPUT VARIABLES ======= #
 for i in range(52): print('=',end='')
 print()
@@ -76,11 +77,17 @@ print(gwout)
     #print(s)
     print(s.format(*x), end='\n')
 """
+# ---------------------------------- #
+
 # ======== READING _SIG FILE ======= #
 en, res, ims, sig_bdgw = read_sigfile(dict_c)
 dict_c['sig_bdgw'] = sig_bdgw
+# ---------------------------------- #
+
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
+# ---------------------------------- #
+
 # ======== READING WTK ======= #
 if 'add_wtk' in dict_c and int(dict_c['add_wtk']) == 0:
     print("K-point weights are neglected, i.e. all equal to 1.")
@@ -91,6 +98,8 @@ elif dict_c['gwcode']=='abinit' and gwout.nversion <= 5 \
     dict_c['wtk'] = wtk
 elif not 'wtk' in dict_c:
     dict_c['wtk'] = gwout.var_dict['wtk']
+# ---------------------------------- #
+
 # Reset wrt efermi
 efermi =  float(dict_c['efermi'])
 enmin = float(dict_c['enmin'])
@@ -98,6 +107,8 @@ enmax = float(dict_c['enmax'])
 en = en - efermi
 res[:,:] = res[:,:] - efermi
 print(" en[0], en[-1], enmin, enmax \n", en[0], en[-1], enmin, enmax)
+# ---------------------------------- #
+
 # TODO: This part is broken (it would work if only en was in hartree, but not all the other quantities)
 # Rescale energy if in hartree
 #print(invar_dict['enhartree'])
@@ -120,6 +131,8 @@ print(" Size(pdos):",np.size(pdos))
 #TODO: Check if consistent use of numpy arrays. 
 ### ===================================================== ###
 print(" # ------------------------------------------------ # ")
+# ---------------------------------- #
+
 # Here we move to a subdirectory to avoid flooding-up the current directory
 newdirname = "Spfunctions"
 origdir = getcwd() # remember where we are
@@ -128,12 +141,16 @@ print(" Moving into output directory:\n ", newdir)
 if not isdir(newdir) :
     mkdir(newdir)
 chdir(newdir)
+# ---------------------------------- #
+
 ### WRITING OUT HARTREE ###
 with open('hartree.dat','w') as of:
     for ik in range(len(hartree)):
         for ib in range(len(hartree[0])):
             of.write("%14.5f" % (hartree[ik][ib]))
         of.write("\n")
+# ---------------------------------- #
+
 ### ================================= ###
 ### ===== GW SPECTRAL FUNCTION ====== ###
 t_pregw = time.time() 
@@ -217,6 +234,8 @@ if int(dict_c['restart']) == 1:
                 fout.write("%8.4f %12.8f\n" % (enexp[i], ftot_b[i]))
     ### ==== WRITING OUT GW SPECTRAL FUNCTION === ###
     #newen = newen-efermi
+# ---------------------------------- #
+
 else:
 #if int(dict_c['restart']) == 0:  
     newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
