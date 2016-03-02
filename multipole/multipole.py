@@ -514,7 +514,7 @@ def fit_multipole2(x,y,nbin,ifilewrite=0,binmode=0):
     deltai = np.ones(lambdai.size)*totdx/nbin
     return omegai, lambdai, deltai
 
-def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
+def write_f_as_sum_of_poles(preen,omegai,gi,deltai, eta = 0.001, ifilewrite = 0):
     """
     An attempt to rewrite the original function given the set of poles and weights
     """
@@ -529,12 +529,10 @@ def write_f_as_sum_of_poles(preen,omegai,gi,deltai,ifilewrite):
         from numpy import pi
         florentz = b / pi / ((x - a)**2 + b**2)
         return florentz
-    eta = 0.001
     #for eni in preen
     #interpdata = interp1d(preen, predata[:], kind = 'linear', axis = -1)
     # Mh... Here I used a rule-of-thumb procedure.
     # TODO: think of a consistent and robust way of defining the x grid.
-    eta = 0.05
     nbin = 8*np.size(omegai)/eta/100
     en = resize_en(preen, nbin)
     f = np.zeros(np.size(en))

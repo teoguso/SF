@@ -1478,6 +1478,27 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #sys.exit()
                    #### END TESTING ###
                     omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                   ## TESTING THE MULTIPOLE REPRESENTATION
+                   #from multipole import write_f_as_sum_of_poles
+                   #import matplotlib.pylab as plt
+                   #import pylab
+                   #eta = 0.01
+                   #for eta in [0.01, 0.1, 0.5]:
+                   #    for npoles in [1,10,20,100]:
+                   #        omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                   #        print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+                   #        print(omegai, lambdai, deltai)
+                   #        enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+                   #        plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+                   #        plt.plot(en3,im3,"-",label="ImS(e-w)")
+                   #        plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+                   #        plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+                   #        plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+                   #        plt.legend()
+                   #        pylab.savefig('imS_test_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'_eta'+str(eta)+'.pdf')
+                   #        plt.show()
+                   ## END TESTING THE MULTIPOLE REPRESENTATION 
+                   #sys.exit()
                     # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                     # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                     if npoles > omegai.size:
