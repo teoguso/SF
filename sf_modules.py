@@ -46,6 +46,7 @@ def read_invar(infile='invar.in'):
      'is_sc': 0, Self-consistent calculation (0, 1)
      'restart': 0, Will not calculate anything, but simply use the single spf files already calculated (0, 1)
      'add_wtk': 1, Include k-point weights (0, 1)
+     'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
     """
     var_defaults = { 
@@ -75,6 +76,7 @@ def read_invar(infile='invar.in'):
             'is_sc': 0,
             'restart': 0,
             'add_wtk': 1,
+            'plot_fit': 0, 
             'coarse': 0
             }
 #    varlist = list((
@@ -1545,12 +1547,12 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #sys.exit()
                    #### END TESTING ###
                     omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
-                    plot_fit = 0
+                    plot_fit = int(vardct['plot_fit'])
                     if plot_fit == 1:
                         from multipole import write_f_as_sum_of_poles
                         import matplotlib.pylab as plt
                         import pylab
-                        eta = 0.1
+                        eta = 0.5
                         enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
                         plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
                         plt.plot(en3,im3,"-",label="ImS(e-w)")
@@ -1560,7 +1562,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         plt.legend()
                         pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'.pdf')
                         plt.close()
-                    sys.exit()
                    ## TESTING THE MULTIPOLE REPRESENTATION
                    #from multipole import write_f_as_sum_of_poles
                    #import matplotlib.pylab as plt
