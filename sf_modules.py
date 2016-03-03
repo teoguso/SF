@@ -1560,7 +1560,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         plt.legend()
                         pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'.pdf')
                         plt.close()
-                    sys.exit()
                    ## TESTING THE MULTIPOLE REPRESENTATION
                    #from multipole import write_f_as_sum_of_poles
                    #import matplotlib.pylab as plt
