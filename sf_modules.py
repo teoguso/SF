@@ -488,7 +488,7 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #kptrange = range(minkpt - 1, maxkpt)
     #maxband - minband + 1
     coarse = int(vardct['coarse'])
-    if coarse == 0: 
+    if coarse == 1: 
         newdx = 0.2
     else:
         newdx = 0.005
