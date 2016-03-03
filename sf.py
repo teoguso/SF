@@ -195,6 +195,7 @@ dict_c['bdrange'] = range(minband - 1,maxband)
 dict_c['kptrange'] = range(minkpt - 1, maxkpt)
 
 ### RESTART??? ###
+plt.figure(1) # This is the figure for the plot at the end of the calculation
 if int(dict_c['restart']) == 1:  
     print("### RESTART: READING SPECTRAL FUNCTIONS ###")
 #if int(dict_c['restart']) == 1:
