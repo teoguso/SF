@@ -2,7 +2,7 @@
 """
 ### Written by Matteo Guzzo ###
 ### A.D. MMXV (2015)       ###
-New version, trying to give it a more c++/object-orented feel.
+New version, trying to give it a more c++/object-oriented feel.
 List of files needed:
 - invar.in with input variables.
 - Output file from GW calculation for wtk, hartree, eqp and whatnot.
@@ -248,6 +248,7 @@ else:
     print(" GB size: ", float((newen.nbytes + spftot.nbytes + dummy)) / 1000000000)
     print("="*40)
     if int(dict_c['calc_gw']) == 1:
+        print()
         print(" ### Writing out A(\omega)_GW...  ")
         # Start a new thread
         #write_spfkb(invar_dict,newen,allkb)
@@ -276,6 +277,7 @@ else:
        #elaps1=time.time() - e0
        #cpu1=time.clock() - c0
        #print(str(" Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1)))
+        print()
         print(" ### Calculation of exponential A ### ")
         ### ==== Finding zero in res --> Eqp ===== ###
         print(" Finding zeros in real parts...")
@@ -287,6 +289,11 @@ else:
         thread.start()
         dict_c['origdir'] = origdir
         enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        if int(dict_c['calc_crc']) == 1:
+            print()
+            print(" ### Calculation of constrained retarded cumulant ### ")
+            B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
+            sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, newen, allkb)
        ## TEST!!!!
        #dict_c['npoles'] = 1  
        #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
