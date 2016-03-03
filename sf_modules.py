@@ -1636,8 +1636,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
      #          for ib in bdrange:
             for ik in range(imskb[:,0,0].size):
                 for ib in range(imskb[0,:,0].size):
-                    outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-                    outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+                    outfile.write("%15.7e"  % (ampole[ik,ib,ipole]))
+                    outfile2.write("%15.7e" % (omegampole[ik,ib,ipole]))
+                   #outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+                   #outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
                 outfile.write("\n")
                 outfile2.write("\n")
             outfile.write("\n")
