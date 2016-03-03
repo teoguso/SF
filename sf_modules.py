@@ -1552,6 +1552,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         from multipole import write_f_as_sum_of_poles
                         import matplotlib.pylab as plt
                         import pylab
+                        plt.figure(2)
                         eta = 0.5
                         enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
                         plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
