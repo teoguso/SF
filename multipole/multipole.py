@@ -143,7 +143,7 @@ def fit_multipole_const(preen,predata,nbin):
             #x3 = ( x1 + x2 ) / 2
             tmpint = np.trapz(predata[istart:i],en[istart:i])
            #print(tmpint, partint)
-            if x2 > x1 + delta:
+            if x2 >= x1 + delta:
                #print(" Bound found. ibound, en, tmpint:", ibound, en[i], tmpint)
                 bounds.append(en[i] )
                 # Formula to calculate omega_i
@@ -702,6 +702,6 @@ if __name__ == '__main__':
         print(usage)
         sys.exit(1)
     preen, predata = getdata_file(infilename)
-    omegai, gi, deltai = fit_multipole(preen,predata,nbin,ifilewrite)
+    omegai, gi, deltai = fit_multipole_const(preen,predata,nbin,ifilewrite)
     write_f_as_sum_of_poles(preen,omegai,gi,deltai,1)
 #

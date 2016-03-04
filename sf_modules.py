@@ -927,7 +927,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     of ImSigma using the multipole model. 
     """
     import numpy as np
-    from multipole import fit_multipole_fast #, write_f_as_sum_of_poles
+    from multipole import fit_multipole_const #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -964,7 +964,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
                 if eqp[ik,ib] <= 0:
                     en3 = -en3[::-1] 
                     im3 = im3[::-1]
-                omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
                 # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                 # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                 if npoles > omegai.size:
@@ -1213,7 +1213,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
     npoles = int(vardct['np_crc'])
     imskb = allkb[3]
     B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
-    from multipole import fit_multipole, fit_multipole_fast, getdata_file #, write_f_as_sum_of_poles
+    from multipole import fit_multipole, fit_multipole_const, getdata_file #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -1275,7 +1275,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
                #plt.show()
                #sys.exit()
                #### END TESTING ###
-                omegai, lambdai, deltai = fit_multipole_fast(en3,im3,npoles)
+                omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
                 # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                 # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                 if npoles > omegai.size:
@@ -1298,7 +1298,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
                         im1 = array_doublefill(im3)
                         en3 = en1
                         im3 = im1
-                        omegai, lambdai, deltai = fit_multipole_fast(en1,im1,npoles)
+                        omegai, lambdai, deltai = fit_multipole_const(en1,im1,npoles)
                         current_size = omegai.size
                         if counter > 4:
                             print(60*"=")
@@ -1636,8 +1636,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
      #          for ib in bdrange:
             for ik in range(imskb[:,0,0].size):
                 for ib in range(imskb[0,:,0].size):
-                    outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-                    outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+                    outfile.write("%15.7e"  % (ampole[ik,ib,ipole]))
+                    outfile2.write("%15.7e" % (omegampole[ik,ib,ipole]))
+                   #outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+                   #outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
                 outfile.write("\n")
                 outfile2.write("\n")
             outfile.write("\n")
