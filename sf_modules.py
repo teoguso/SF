@@ -1340,7 +1340,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
     outfile2.close()
     return B_crc_kb
 
-def calc_sf_crc(dict_c, B_crc_kb, newen, allkb):
+def calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb):
     """
     Calculation of the CRC part of the spectral function and of the
     total CRC spectral function. 

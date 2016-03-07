@@ -294,7 +294,7 @@ else:
             print()
             print(" ### Calculation of constrained retarded cumulant ### ")
             B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
-            sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, newen, allkb)
+            sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
        ## TEST!!!!
        #dict_c['npoles'] = 1  
        #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
