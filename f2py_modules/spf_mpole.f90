@@ -72,7 +72,7 @@
        tmpf4 = 0.0d0
        do i=0,npoles-1
         tmpf2 = 0.0d0
-        do j=i,npoles-1
+        do j=i+1,npoles-1
 !        do k=0,npoles-1
 !         tmpomp = omegapkb(i)+omegapkb(j)+omegapkb(k)
 !         tmpf3 = tmpf3 + 1.0d0/3.0d0*akb(k)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
