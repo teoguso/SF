@@ -407,14 +407,14 @@ if flag_calc_exp == 1:
    #    imskb = allkb[3]
    #B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
     B_crc_kb =  np.zeros((nkpt,nband))
-    from multipole import fit_multipole, fit_multipole_const, getdata_file #, write_f_as_sum_of_poles
+    from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
     print " ### ================== ###" 
     print " ###    Multipole fit   ###" 
     print " Number of poles:", npoles 
    #omegampole =  np.zeros((nkpt,nband,npoles))
    #ampole =  np.zeros((nkpt,nband,npoles))
-    omegampole =  np.zeros((nkpt,nband,npoles))
-    ampole     =  np.zeros((nkpt,nband,npoles))
+    omegampole_crc =  np.zeros((nkpt,nband,npoles))
+    ampole_crc     =  np.zeros((nkpt,nband,npoles))
     #for ik in range(nkpt):
     #    ikeff=minkpt+ik-1
     #bdrange = vardct['bdrange']
@@ -479,8 +479,8 @@ if flag_calc_exp == 1:
             # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
             # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
             if npoles > omegai.size:
-                omegampole[ik,ib][:omegai.size] = omegai 
-                ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                omegampole_crc[ik,ib][:omegai.size] = omegai 
+                ampole_crc[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
                 print  
                 print " WARNING: npoles used ("+str(npoles)+") is larger"+\
                         " than poles x data array can give ("+str(omegai.size)+")."
@@ -508,14 +508,14 @@ if flag_calc_exp == 1:
                         print 60*"=" 
         #   im1 = fit_double(im3)
             else:
-                omegampole[ik,ib] = omegai 
-                ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
-            B_crc_kb[ik,ib] = np.sum(ampole[ik,ib])
+                omegampole_crc[ik,ib] = omegai 
+                ampole_crc[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+            B_crc_kb[ik,ib] = np.sum(ampole_crc[ik,ib])
            #ampole[ik,ib] = gi
             print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j." 
             print " 1/pi*\int\Sigma   =", np.trapz(im3,en3) 
             print " \sum_j^N\lambda_j =", np.sum(lambdai) 
-            print "b_j:", ampole[ik,ib] 
+            print "b_j:", ampole_crc[ik,ib] 
             #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
             #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
     # Writing out a_j e omega_j
@@ -530,8 +530,8 @@ if flag_calc_exp == 1:
  #          for ib in bdrange:
         for ik in range(ims[:,0,0].size):
             for ib in range(ims[0,:,0].size):
-                outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-                outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+                outfile.write("%10.5f"  % (ampole_crc[ik,ib,ipole]))
+                outfile2.write("%10.5f" % (omegampole_crc[ik,ib,ipole]))
             outfile.write("\n")
             outfile2.write("\n")
         outfile.write("\n")
@@ -557,14 +557,14 @@ if flag_calc_exp == 1:
             #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
             # Experimental fix for npoles dependence
             tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-            prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
+            prefac=np.exp(-np.sum(ampole_crc[ik,ib]))*tmp
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
            #print "\n === Normalization test === " 
            #print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
            #print " Exponent:", np.sum(ampole[ik,ib]) 
            #print " Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n" 
-            akb=ampole[ik,ib] # This is a numpy array (slice)
-            omegakb=omegampole[ik,ib] # This is a numpy array (slice)
+            akb=ampole_crc[ik,ib] # This is a numpy array (slice)
+            omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
             eqpkb=eqp[ik,ib]
             imkb=imeqp[ik,ib]
             #tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
