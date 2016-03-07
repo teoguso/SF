@@ -406,7 +406,7 @@ if flag_calc_exp == 1:
    #B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
    #    imskb = allkb[3]
    #B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
-    B_crc_kb =  np.zeros((nkpt,nband,npoles))
+    B_crc_kb =  np.zeros((nkpt,nband))
     from multipole import fit_multipole, fit_multipole_const, getdata_file #, write_f_as_sum_of_poles
     print " ### ================== ###" 
     print " ###    Multipole fit   ###" 
@@ -475,7 +475,7 @@ if flag_calc_exp == 1:
            #plt.show()
            #sys.exit()
            #### END TESTING ###
-            omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+            omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
             # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
             # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
             if npoles > omegai.size:
@@ -498,7 +498,7 @@ if flag_calc_exp == 1:
                     im1 = array_doublefill(im3)
                     en3 = en1
                     im3 = im1
-                    omegai, lambdai, deltai = fit_multipole_const(en1,im1,npoles)
+                    omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
                     current_size = omegai.size
                     if counter > 4:
                         print 60*"=" 
@@ -510,7 +510,7 @@ if flag_calc_exp == 1:
             else:
                 omegampole[ik,ib] = omegai 
                 ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
-            B_crc_kb[ik,ib] = ampole[ik,ib]
+            B_crc_kb[ik,ib] = np.sum(ampole[ik,ib])
            #ampole[ik,ib] = gi
             print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j." 
             print " 1/pi*\int\Sigma   =", np.trapz(im3,en3) 
@@ -540,7 +540,57 @@ if flag_calc_exp == 1:
     outfile2.close()
    #return B_crc_kb
     ### Calculation of the CRC spectral function ###
-    sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, enexp, allkb)
+   #sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, enexp, allkb)
+   #ftot=np.zeros((nenexp))
+   #f=np.zeros((nkpt,nband,nenexp))
+    ftot2=np.zeros((np.size(enexp)),order='Fortran')
+    from extmod_spf_mpole import f2py_calc_crc_mpole
+    for ik in xrange(nkpt):
+        ikeff=minkpt+ik-1
+        for ib in xrange(nband):
+            ibeff=minband+ib-1
+   #for ik in kptrange:
+   #    ikeff = ik + 1
+   #    for ib in bdrange:
+   #        ibeff = ib + 1
+            print " ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff 
+            #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+            # Experimental fix for npoles dependence
+            tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+            prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
+            #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
+           #print "\n === Normalization test === " 
+           #print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
+           #print " Exponent:", np.sum(ampole[ik,ib]) 
+           #print " Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n" 
+            akb=ampole[ik,ib] # This is a numpy array (slice)
+            omegakb=omegampole[ik,ib] # This is a numpy array (slice)
+            eqpkb=eqp[ik,ib]
+            imkb=imeqp[ik,ib]
+            #tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+            #print nen, np.size(enexp) 
+            #tmpf = 0.0*tmpf
+            if eqpkb < 0.0:
+                pass
+            else:
+                print " This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1 
+                #print "omegakb", omegakb 
+                omegakb=-omegakb
+                #print "-omegakb", omegakb 
+            tmpf = np.zeros((nenexp), order='Fortran')
+            tmpf = f2py_calc_crc_mpole(tmpf,enexp,prefac,B_crc_kb,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+                #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+            #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
+            #outfilekb = open(outnamekb,'w')
+            #for ien in xrange(nenexp):
+            #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+            #outfilekb.close()
+           #sfkb_c[ik,ib] = tmpf
+            ftot2 = ftot2 + tmpf
+     #  return ftot, sfkb_c
+    plt.plot(enexp,ftot2)
+    ftot_crc = ftot + ftot2
+    plt.plot(enexp, ftot_crc, label='ftot_crc')
 
     elaps2 = time.time() - elaps1 - e0
     cpu2 = time.clock() - cpu1 - c0
@@ -560,7 +610,13 @@ if flag_calc_exp == 1:
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
+        outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc.dat"
+        outfile = open(outname2,'w')
+        for i in xrange(nenexp):
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot2[i])) # Dump string representations of arrays
+        outfile.close()
     print " A(\omega)_exp written in", outname
+    print " A(\omega)_CRC written in", outname2
     plt.plot(enexp,ftot,label="ftot");
 # Now go back to original directory
 print " Moving back to parent directory:\n", origdir
