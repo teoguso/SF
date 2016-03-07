@@ -1521,7 +1521,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     #if eqp[ik,ib] <= efermi:
                     if eqp[ik,ib] <= 0:
                         #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
-                        en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                       #en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                        en3 = newen[newen<0.] # So as to avoid negative omegampole
                     else:
                         en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
@@ -1534,6 +1535,13 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
+                    zcut = 3.0
+                    for i in range(en3.size):
+                        if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
+                            im3[i] = 0.
+                   #import matplotlib.pylab as plt
+                   #plt.plot(en3,im3,'-')
+                   #plt.show()
                     en3 = en3 - eqp[ik,ib]
                     if eqp[ik,ib] <= 0:
                         en3 = -en3[::-1] 
@@ -1734,10 +1742,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
                 #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
-               #print("\n === Normalization test === ")
-               #print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
-               #print(" Exponent:", np.sum(ampole[ik,ib]))
-               #print(" Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n")
+                print("\n === Normalization test === ")
+                print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
+                print(" Exponent:", np.sum(ampole[ik,ib]))
+                print(" Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n")
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]
