@@ -630,6 +630,7 @@ if flag_calc_exp == 1:
      #  return ftot, sfkb_c
     plt.plot(enexp,ftot2)
     ftot_crc = ftot_crc_occ + ftot2
+    plt.plot(enexp, ftot_crc_occ, label='ftot_crc_occ')
     plt.plot(enexp, ftot_crc, label='ftot_crc')
 
     elaps2 = time.time() - elaps1 - e0
@@ -649,6 +650,11 @@ if flag_calc_exp == 1:
         outfile = open(outname,'w')
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
+        outfile.close()
+        outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc_occ.dat"
+        outfile = open(outname2,'w')
+        for i in xrange(nenexp):
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot_crc_occ[i])) # Dump string representations of arrays
         outfile.close()
         outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc.dat"
         outfile = open(outname2,'w')
