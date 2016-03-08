@@ -19,6 +19,7 @@ for the orbital character and symmetries.
 from spectral_modules import *
 import numpy as np;
 import matplotlib.pylab as plt;
+plt.figure(1)
 #from scipy.interpolate import interp1d
 #from scipy import optimize
 import sys
@@ -375,6 +376,13 @@ if flag_calc_exp == 1:
                 ibeff=minband+ib-1
                 print " ik, ib, ikeff, ibeff", ik, ib, ikeff+1, ibeff+1
                 prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
+                print
+                print "\n === Normalization test === " 
+                print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
+                print " Exponent:", np.sum(ampole[ik,ib]) 
+                print " Exponent/npoles:", np.sum(ampole[ik,ib])/npoles
+                print
+                print
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]
@@ -513,6 +521,23 @@ if flag_calc_exp == 1:
                 omegampole_crc[ik,ib] = omegai 
                 ampole_crc[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
             B_crc_kb[ik,ib] = np.sum(ampole_crc[ik,ib])
+            ### Test plot for the fit ###
+           #from multipole import write_f_as_sum_of_poles
+          ##import matplotlib.pylab as plt
+           #import pylab
+           #plt.figure(2)
+           #eta = 0.5
+           #enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+           #plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+           #plt.plot(en3,im3,"-",label="ImS(e-w)")
+           #plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+           #plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+           #plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+           #plt.legend()
+           #pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'_CRC.pdf')
+           #plt.close(2)
+           #### END - Test plot for the fit ###
+            from multipole import write_f_as_sum_of_poles
            #ampole[ik,ib] = gi
             print
             print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j." 
@@ -564,10 +589,13 @@ if flag_calc_exp == 1:
             tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
             prefac=np.exp(-np.sum(ampole_crc[ik,ib])-np.sum(ampole[ik,ib]))*tmp
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
-           #print "\n === Normalization test === " 
-           #print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
-           #print " Exponent:", np.sum(ampole[ik,ib]) 
-           #print " Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n" 
+            print
+            print "\n === Normalization test === " 
+            print " Prefactor:", np.exp(-np.sum(ampole_crc[ik,ib])) 
+            print " Exponent:", np.sum(ampole_crc[ik,ib]) 
+            print " Exponent/npoles:", np.sum(ampole_crc[ik,ib])/npoles
+            print
+            print
             akb=ampole_crc[ik,ib] # This is a numpy array (slice)
             omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
             eqpkb=eqp[ik,ib]
