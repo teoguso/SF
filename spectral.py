@@ -403,7 +403,7 @@ if flag_calc_exp == 1:
                 fkb[ik,ib] = tmpf
                 ftot = ftot + tmpf  
                 #print ftot[0], tmpf[0]
-    print()
+    print
     print(" ### Calculation of constrained retarded cumulant ### ")
    #B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
    #    imskb = allkb[3]
@@ -514,13 +514,15 @@ if flag_calc_exp == 1:
                 ampole_crc[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
             B_crc_kb[ik,ib] = np.sum(ampole_crc[ik,ib])
            #ampole[ik,ib] = gi
+            print
             print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j." 
             print " 1/pi*\int\Sigma   =", np.trapz(im3,en3) 
             print " \sum_j^N\lambda_j =", np.sum(lambdai) 
-            print "b_j:", ampole_crc[ik,ib] 
+            print " b_j:", ampole_crc[ik,ib] 
             #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
             #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
     # Writing out a_j e omega_j
+    print
     print " ### Writing out a_j and omega_j..." 
     outname = "a_j_np"+str(npoles)+"_crc.dat"
     outfile = open(outname,'w')
@@ -625,6 +627,7 @@ if flag_calc_exp == 1:
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot_crc[i])) # Dump string representations of arrays
         outfile.close()
+    print
     print " A(\omega)_exp written in", outname
     print " A(\omega)_CRC written in", outname2
     plt.plot(enexp,ftot,label="ftot");
