@@ -339,7 +339,8 @@ if flag_calc_exp == 1:
     enexp=np.arange(enmin,enmax,dxexp)
     nenexp=np.size(enexp)
     ftot=np.zeros((nenexp))
-    f=np.zeros((nkpt,nband,nenexp))
+    fkb = np.zeros((nkpt,nband,nenexp))
+   #f=np.zeros((nkpt,nband,nenexp))
     ftot=np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
     # With extrinsic effects
@@ -399,7 +400,8 @@ if flag_calc_exp == 1:
                 for ien in xrange(nenexp):
                     outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
                 outfilekb.close()
-                ftot = ftot + tmpf
+                fkb[ik,ib] = tmpf
+                ftot = ftot + tmpf  
                 #print ftot[0], tmpf[0]
     print()
     print(" ### Calculation of constrained retarded cumulant ### ")
@@ -520,9 +522,9 @@ if flag_calc_exp == 1:
             #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
     # Writing out a_j e omega_j
     print " ### Writing out a_j and omega_j..." 
-    outname = "a_j_np_crc"+str(npoles)+".dat"
+    outname = "a_j_np"+str(npoles)+"_crc.dat"
     outfile = open(outname,'w')
-    outname = "omega_j_np_crc"+str(npoles)+".dat"
+    outname = "omega_j_np"+str(npoles)+"_crc.dat"
     outfile2 = open(outname,'w')
     for ipole in xrange(npoles):
  #      for ik in kptrange:
@@ -543,6 +545,7 @@ if flag_calc_exp == 1:
    #sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, enexp, allkb)
    #ftot=np.zeros((nenexp))
    #f=np.zeros((nkpt,nband,nenexp))
+    ftot_crc_occ=np.zeros((np.size(enexp)),order='Fortran')
     ftot2=np.zeros((np.size(enexp)),order='Fortran')
     from extmod_spf_mpole import f2py_calc_crc_mpole
     for ik in xrange(nkpt):
@@ -557,7 +560,7 @@ if flag_calc_exp == 1:
             #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
             # Experimental fix for npoles dependence
             tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-            prefac=np.exp(-np.sum(ampole_crc[ik,ib]))*tmp
+            prefac=np.exp(-np.sum(ampole_crc[ik,ib])-np.sum(ampole[ik,ib]))*tmp
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
            #print "\n === Normalization test === " 
            #print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
@@ -580,16 +583,23 @@ if flag_calc_exp == 1:
             tmpf = np.zeros((nenexp), order='Fortran')
             tmpf = f2py_calc_crc_mpole(tmpf,enexp,prefac,B_crc_kb,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-            #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
-            #outfilekb = open(outnamekb,'w')
-            #for ien in xrange(nenexp):
-            #    outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
-            #outfilekb.close()
+            fkb *= np.exp(-np.sum(ampole_crc[ik,ib]))
+            outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc."+str(penergy)
+            outfilekb = open(outnamekb,'w')
+            for ien in xrange(nenexp):
+                outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
+            outfilekb.close()
+            outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc_unocc."+str(penergy)
+            outfilekb = open(outnamekb,'w')
+            for ien in xrange(nenexp):
+                outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+            outfilekb.close()
            #sfkb_c[ik,ib] = tmpf
+            ftot_crc_occ = np.sum(np.sum(fkb,0),0)
             ftot2 = ftot2 + tmpf
      #  return ftot, sfkb_c
     plt.plot(enexp,ftot2)
-    ftot_crc = ftot + ftot2
+    ftot_crc = ftot_crc_occ + ftot2
     plt.plot(enexp, ftot_crc, label='ftot_crc')
 
     elaps2 = time.time() - elaps1 - e0
@@ -613,7 +623,7 @@ if flag_calc_exp == 1:
         outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc.dat"
         outfile = open(outname2,'w')
         for i in xrange(nenexp):
-            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot2[i])) # Dump string representations of arrays
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot_crc[i])) # Dump string representations of arrays
         outfile.close()
     print " A(\omega)_exp written in", outname
     print " A(\omega)_CRC written in", outname2
