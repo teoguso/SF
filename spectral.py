@@ -473,6 +473,9 @@ if flag_calc_exp == 1:
                 continue
             im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
             en3 = en3 - eqp[ik,ib]
+            if eqp[ik,ib] > 0:
+                en3 = -en3[::-1] 
+                im3 = im3[::-1]
            #if eqp[ik,ib] <= 0:
            #    en3 = -en3[::-1] 
            #    im3 = im3[::-1]
