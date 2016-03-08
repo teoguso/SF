@@ -63,13 +63,14 @@
 !Cf2py	depend(npoles) omegapkb
       !spf = 0.0d0
       integer :: ien,i,j
-      double precision :: tmpf1, tmpf2, tmpf3, tmpf4, tmpomp 
+      double precision :: tmpf1, tmpf2, tmpf3, tmpf4, tmpf5, tmpomp 
       tmpomp = 0.0d0
       spf(:) = 0.0d0
       do ien=0,nen-1
        tmpf1 = 0.0d0
        tmpf3 = 0.0d0
        tmpf4 = 0.0d0
+       tmpf5 = 0.0d0
        do i=0,npoles-1
         tmpf2 = 0.0d0
         do j=i+1,npoles-1
@@ -77,8 +78,10 @@
 !         tmpomp = omegapkb(i)+omegapkb(j)+omegapkb(k)
 !         tmpf3 = tmpf3 + 1.0d0/3.0d0*akb(k)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
 !        end do
+         tmpomp = omegapkb(i)+omegapkb(j)
+         tmpf5 = B_crc_kb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
          tmpomp = 2*omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 + 1.0d0*((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         end do
         tmpomp = 3*omegapkb(i)
         tmpf4 = 1.0d0/6.0d0*((akb(i)+B_crc_kb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
