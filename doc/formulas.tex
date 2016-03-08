@@ -1,0 +1,67 @@
+\documentclass[a4paper,12pt]{article}
+%%% Written by Matteo Guzzo
+%%% A.D. MMXIV (2014)   
+%%%
+%%%
+%\usepackage[T1]{fontenc}
+ \usepackage{palatino}
+ \linespread{1.05}
+% \usepackage{hypen}`
+ \usepackage{graphicx,amsmath,amssymb,amsfonts}
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\dd{\mbox{d}}
+
+\renewcommand{\Re}{\,\mathrm{Re}}
+\renewcommand{\Im}{\,\mathrm{Im}}
+
+\title{Formulas in the code}
+\author{Matteo Guzzo}
+\date{\today}
+
+%\pagestyle{empty}
+
+\hyphenation{SPEC-TRO-SCO-PY}
+\hyphenation{EN-ER-GY}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{The CRC approximation}
+
+The formula is currently implemented to the third order, but omitting one term. 
+Here's the formula in an easily readable version (including the term that will be neglected):
+\begin{multline}
+ A_{k,b}(\omega) = Z_{k,b} \Gamma_{k,b} \Biggl\{ 
+  \sum_i^{N^<} \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac12 \sum_{i\neq j}^{N^<} 
+\frac{(\beta_{k,b}^>)^2}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ + \sum_i^{N^<} \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac16 \sum_i^{N^<} \frac{(a_i + \beta_{k,b}^>)^3 - a_i^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ + \frac12 \sum_{i\neq j}^{N^<} \frac{\bigl[(a_i + \beta_{k,b}^>)^2 - a_i^2\bigr] \beta_{k,b} }
+  {(\omega - \epsilon_{k,b} + 2\tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac16 \sum_{i\neq j\neq k}^{N^<} 
+\frac{(\beta_{k,b}^>)^3}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^< + \tilde\omega_k^<)^2 + \Gamma_{k,b}^2}
+\Biggr\}
+\end{multline}
+and here it's how it's rewritten in the code. Again, the last term ($i\neq j\neq k$) is for now \emph{neglected}: 
+\begin{multline}
+ A_{k,b}(\omega) = Z_{k,b} \Gamma_{k,b}  \sum_i^{N^<} \Biggl( \beta_{k,b}^> \biggl\{
+ \frac1{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2}  \\ 
+  + \sum_{j=i+1}^{N^<} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ \biggr] \biggr\} \\
+ + \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ + \frac16 \frac{(a_i + \beta_{k,b}^>)^3 - a_i^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ \Biggl)
+\end{multline}
+
+
+\end{document}
