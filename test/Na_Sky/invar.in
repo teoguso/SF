@@ -2,8 +2,9 @@ SIG # sigmafile
 1           # minkpt
 145           # maxkpt
 145           # nkpt
-1           # minband
-4           # maxband
+5           # minband
+5           # maxband
+nband 5
 -30        # enmin
 12         # enmax
 1.333320    # efermi
@@ -14,7 +15,7 @@ SIG # sigmafile
 0.6         # a_extinf
 0           # extinf
 1             # npoles
-1  #  calc_gw
+0  #  calc_gw
 1  #  calc_exp
 1    plot_fit
 1   #  calc_crc
