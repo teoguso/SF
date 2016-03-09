@@ -594,6 +594,7 @@ if flag_calc_exp == 1:
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
             print
             print "\n === Normalization test === " 
+            print " Prefactor*wtk*pdos*Gamma/pi:", prefac
             print " Prefactor:", np.exp(-np.sum(ampole_crc[ik,ib])) 
             print " Exponent:", np.sum(ampole_crc[ik,ib]) 
             print " Exponent/npoles:", np.sum(ampole_crc[ik,ib])/npoles
@@ -614,7 +615,7 @@ if flag_calc_exp == 1:
                 omegakb=-omegakb
                 #print "-omegakb", omegakb 
             tmpf = np.zeros((nenexp), order='Fortran')
-            tmpf = f2py_calc_crc_mpole(tmpf,enexp,prefac,B_crc_kb,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            tmpf = f2py_calc_crc_mpole(tmpf,enexp,B_crc_kb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
             fkb *= np.exp(-np.sum(ampole_crc[ik,ib]))
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc."+str(penergy)

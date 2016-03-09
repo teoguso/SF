@@ -1,11 +1,11 @@
 SIG # sigmafile
 1           # minkpt
-1             # maxkpt
+145           # maxkpt
 145           # nkpt
 1           # minband
-5           # maxband
+4           # maxband
 -30        # enmin
-15         # enmax
+12         # enmax
 1.333320    # efermi
 1.0         # sfactor
 0.0         # pfactor
