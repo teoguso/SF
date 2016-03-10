@@ -6,7 +6,7 @@ SIG # sigmafile
 5           # maxband
 nband 5
 -30        # enmin
-12         # enmax
+15         # enmax
 1.333320    # efermi
 1.0         # sfactor
 0.0         # pfactor

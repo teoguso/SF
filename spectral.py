@@ -579,9 +579,9 @@ if flag_calc_exp == 1:
     ftot2=np.zeros((np.size(enexp)),order='Fortran')
     from extmod_spf_mpole import f2py_calc_crc_mpole
     for ik in xrange(nkpt):
-        ikeff=minkpt+ik-1
+        ikeff=minkpt+ik
         for ib in xrange(nband):
-            ibeff=minband+ib-1
+            ibeff=minband+ib
    #for ik in kptrange:
    #    ikeff = ik + 1
    #    for ib in bdrange:
@@ -590,14 +590,15 @@ if flag_calc_exp == 1:
             #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
             # Experimental fix for npoles dependence
             tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
-            prefac=np.exp(-np.sum(ampole_crc[ik,ib])-np.sum(ampole[ik,ib]))*tmp
+            exponent = - np.sum(ampole[ik,ib]) - np.sum(ampole_crc[ik,ib])
+            prefac = np.exp(exponent)*tmp
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
             print
             print "\n === Normalization test === " 
             print " Prefactor*wtk*pdos*Gamma/pi:", prefac
-            print " Prefactor:", np.exp(-np.sum(ampole_crc[ik,ib])) 
-            print " Exponent:", np.sum(ampole_crc[ik,ib]) 
-            print " Exponent/npoles:", np.sum(ampole_crc[ik,ib])/npoles
+            print " Prefactor:", prefac/tmp
+            print " Exponent:", exponent 
+            print " Exponent/npoles:", exponent/npoles
             print
             print
             akb=ampole_crc[ik,ib] # This is a numpy array (slice)
