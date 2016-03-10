@@ -86,7 +86,8 @@
         tmpomp = 3*omegapkb(i)
         tmpf4 = 1.0d0/6.0d0*((akb(i)+B_crc_kb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         tmpomp = 2*omegapkb(i)
-        tmpf3 = ((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpf3 = 1.0d0/2.0d0*((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+	! Sky has put 1/2 in the tmpf3
         tmpf1 = tmpf1 + 1.0d0*B_crc_kb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2) + tmpf3 + tmpf4
        end do
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)

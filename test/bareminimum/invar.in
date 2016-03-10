@@ -13,8 +13,8 @@ spo_DS3_SIG # sigmafile
 0           # plasmon2
 0.6         # a_extinf
 0           # extinf
-10             # npoles
-0  #  calc_gw
+1             # npoles
+1  #  calc_gw
 1  #  calc_exp
 1    plot_fit 
 1   #  calc_crc
