@@ -618,7 +618,7 @@ if flag_calc_exp == 1:
             tmpf = np.zeros((nenexp), order='Fortran')
             tmpf = f2py_calc_crc_mpole(tmpf,enexp,B_crc_kb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-            fkb *= np.exp(-np.sum(ampole_crc[ik,ib]))
+            fkb = fkb * np.exp(-np.sum(ampole_crc[ik,ib]))
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc."+str(penergy)
             outfilekb = open(outnamekb,'w')
             for ien in xrange(nenexp):
