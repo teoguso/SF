@@ -422,12 +422,12 @@ if flag_calc_exp == 1:
     print " ### ================== ###" 
     print " ###    Multipole fit   ###" 
     print " Number of poles:", npoles 
-    print " Number of poles is FIXED TO 1"
-    npoles = 1
+    print " Number of poles_crc is FIXED TO 1"
+    npoles_crc = 1
    #omegampole =  np.zeros((nkpt,nband,npoles))
    #ampole =  np.zeros((nkpt,nband,npoles))
-    omegampole_crc =  np.zeros((nkpt,nband,npoles))
-    ampole_crc     =  np.zeros((nkpt,nband,npoles))
+    omegampole_crc =  np.zeros((nkpt,nband,npoles_crc))
+    ampole_crc     =  np.zeros((nkpt,nband,npoles_crc))
     #for ik in range(nkpt):
     #    ikeff=minkpt+ik-1
     #bdrange = vardct['bdrange']
@@ -491,30 +491,30 @@ if flag_calc_exp == 1:
            #plt.show()
            #sys.exit()
            #### END TESTING ###
-            omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
+            omegai, lambdai, deltai = fit_multipole(en3,im3,npoles_crc)
             # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
             # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
-            if npoles > omegai.size:
+            if npoles_crc > omegai.size:
                 omegampole_crc[ik,ib][:omegai.size] = omegai 
                 ampole_crc[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
                 print  
-                print " WARNING: npoles used ("+str(npoles)+") is larger"+\
+                print " WARNING: npoles used ("+str(npoles_crc)+") is larger"+\
                         " than poles x data array can give ("+str(omegai.size)+")."
                #print "WARNING: Reduce npoles. You are wasting resources!!!" 
                 print " Im(Sigma) will be interpolated to obtain the desired number of poles." 
                 current_size = omegai.size
                 counter = 0
-                while npoles > current_size:
+                while npoles_crc > current_size:
                     counter += 1
                     print  
                     print " WARNING: Arrays are too coarse." 
-                    print " npoles, omegai.size:", npoles, omegai.size 
+                    print " npoles, omegai.size:", npoles_crc, omegai.size 
                     print " Filling arrays with interpolated values..." 
                     en1 = array_doublefill(en3)
                     im1 = array_doublefill(im3)
                     en3 = en1
                     im3 = im1
-                    omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
+                    omegai, lambdai, deltai = fit_multipole(en1,im1,npoles_crc)
                     current_size = omegai.size
                     if counter > 4:
                         print 60*"=" 
@@ -555,11 +555,11 @@ if flag_calc_exp == 1:
     # Writing out a_j e omega_j
     print
     print " ### Writing out a_j and omega_j..." 
-    outname = "a_j_np"+str(npoles)+"_crc.dat"
+    outname = "a_j_np"+str(npoles_crc)+"_crc.dat"
     outfile = open(outname,'w')
-    outname = "omega_j_np"+str(npoles)+"_crc.dat"
+    outname = "omega_j_np"+str(npoles_crc)+"_crc.dat"
     outfile2 = open(outname,'w')
-    for ipole in xrange(npoles):
+    for ipole in xrange(npoles_crc):
  #      for ik in kptrange:
  #          #for ib in range(nband):
  #          for ib in bdrange:
@@ -604,7 +604,7 @@ if flag_calc_exp == 1:
             print " Exponent/npoles:", exponent/npoles
             print
             print
-            akb=ampole_crc[ik,ib] # This is a numpy array (slice)
+            akb=ampole[ik,ib] # This is a numpy array (slice)
             omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
             eqpkb=eqp[ik,ib]
             imkb=imeqp[ik,ib]
