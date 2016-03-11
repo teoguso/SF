@@ -406,6 +406,7 @@ if flag_calc_exp == 1:
                 outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
                 outfilekb = open(outnamekb,'w')
                 for ien in xrange(nenexp):
+                    #outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
                     outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
                 outfilekb.close()
                 fkb[ik,ib] = tmpf
@@ -579,9 +580,9 @@ if flag_calc_exp == 1:
     ftot2=np.zeros((np.size(enexp)),order='Fortran')
     from extmod_spf_mpole import f2py_calc_crc_mpole
     for ik in xrange(nkpt):
-        ikeff=minkpt+ik
+        ikeff=minkpt+ik-1
         for ib in xrange(nband):
-            ibeff=minband+ib
+            ibeff=minband+ib-1
    #for ik in kptrange:
    #    ikeff = ik + 1
    #    for ib in bdrange:
@@ -618,10 +619,19 @@ if flag_calc_exp == 1:
             tmpf = np.zeros((nenexp), order='Fortran')
             tmpf = f2py_calc_crc_mpole(tmpf,enexp,B_crc_kb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
-            fkb = fkb * np.exp(-np.sum(ampole_crc[ik,ib]))
+            #if ikeff == 24:
+             # outnamekb = "before" 
+             # outfilekb = open(outnamekb,'w')
+             # for ien in xrange(nenexp):
+             #   outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
+             # outfilekb.close()
+            fkb[ik,ib] = fkb[ik,ib] * np.exp(-np.sum(ampole_crc[ik,ib]))
+            #ss = str(np.exp(-np.sum(ampole_crc[ik,ib])))
+            #print "BBB\t"+ss+"\n"
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc."+str(penergy)
             outfilekb = open(outnamekb,'w')
             for ien in xrange(nenexp):
+                #outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
                 outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
             outfilekb.close()
             outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc_unocc."+str(penergy)
@@ -630,7 +640,8 @@ if flag_calc_exp == 1:
                 outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
             outfilekb.close()
            #sfkb_c[ik,ib] = tmpf
-            ftot_crc_occ = np.sum(np.sum(fkb,0),0)
+            #ftot_crc_occ = np.sum(np.sum(fkb,0),0)
+            ftot_crc_occ = np.sum(np.sum(fkb[ik,ib],0),0)
             ftot2 = ftot2 + tmpf
      #  return ftot, sfkb_c
     plt.plot(enexp,ftot2, label='ftot_crc_unocc')
