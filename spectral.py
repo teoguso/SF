@@ -646,7 +646,7 @@ if flag_calc_exp == 1:
             #ftot_crc_occ = np.sum(np.sum(fkb,0),0)
            #ftot_crc_occ = np.sum(np.sum(fkb[ik,ib],0),0)
      #  return ftot, sfkb_c
-    ftot_crc_occ = np.sum(np.sum(fkb[ik,ib],0),0)
+    ftot_crc_occ = np.sum(np.sum(fkb,0),0)
     plt.plot(enexp,ftot2, label='ftot_crc_unocc')
     ftot_crc = ftot_crc_occ + ftot2
     plt.plot(enexp, ftot_crc_occ, label='ftot_crc_occ')
