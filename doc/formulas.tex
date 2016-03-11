@@ -74,13 +74,13 @@ and how the occupied spectral function is defined:
 The TOC spectral function is the old version from PRL 107. 
 The total $A^\textnormal{CRC}(\omega)$ is 
 \begin{equation}
-   A_\textnormal{TOT}^\textnormal{CRC}(\omega) = \sum_k \left[ A_{k,b}^\textnormal{occ}(\omega) + A_{k,b}^\textnormal{unocc}(\omega) \right]
+   A_\textnormal{TOT}^\textnormal{CRC}(\omega) = \sum_k^\textnormal{occ} \left[ A_{k,b}^\textnormal{occ}(\omega) + A_{k,b}^\textnormal{unocc}(\omega) \right]
 \end{equation}
 
 \subsection{Parameter $\beta$ for the unoccupied part of the self-energy}
 
 \begin{equation}
- \beta_{k,b}^>  = \sum_i^{N^>} \frac{\lambda_{i,(k,b)}^{N^>}}{\tilde\omega_{i,(k,b)}^{N^>}} = \sum_i^{N^>} b_{i,(k,b)}
+	\beta_{k,b}^>  = \sum_i \frac{\lambda_{i,(k,b)}^>}{(\tilde\omega_{i,(k,b)}^>)^2} = \sum_i b_{i,(k,b)}
 \end{equation}
 
 
