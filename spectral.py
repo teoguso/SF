@@ -422,6 +422,8 @@ if flag_calc_exp == 1:
     print " ### ================== ###" 
     print " ###    Multipole fit   ###" 
     print " Number of poles:", npoles 
+    print " Number of poles is FIXED TO 1"
+    npoles = 1
    #omegampole =  np.zeros((nkpt,nband,npoles))
    #ampole =  np.zeros((nkpt,nband,npoles))
     omegampole_crc =  np.zeros((nkpt,nband,npoles))
