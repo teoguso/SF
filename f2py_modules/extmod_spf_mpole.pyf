@@ -16,12 +16,12 @@ python module extmod_spf_mpole ! in
             double precision,intent(in) :: eqp
             double precision,intent(in) :: imeqp
         end subroutine f2py_calc_spf_mpole
-        subroutine f2py_calc_crc_mpole(spf,en,nen,B_crc_kb,prefac,akb,omegapkb,eqp,imeqp,npoles) ! in :extmod_spf_mpole:spf_mpole.f90
+        subroutine f2py_calc_crc_mpole(spf,en,nen,bkb,prefac,akb,omegapkb,eqp,imeqp,npoles) ! in :extmod_spf_mpole:spf_mpole.f90
             double precision dimension(nen),depend(nen),intent(in,out) :: spf
             double precision dimension(nen),intent(in) :: en
             integer optional,check(len(en)==nen),depend(en),intent(in) :: nen=len(en)
             !integer optional check(len(en)==nen),depend(en),intent(in) :: nen
-            double precision,intent(in) :: B_crc_kb
+            double precision,intent(in) :: bkb
             double precision,intent(in) :: prefac
             double precision dimension(npoles),intent(in) :: akb
             double precision dimension(npoles),intent(in) :: omegapkb

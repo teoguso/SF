@@ -44,14 +44,14 @@
       !return spf
       end subroutine f2py_calc_spf_mpole
 
-      subroutine f2py_calc_crc_mpole(spf,en,nen,B_crc_kb,prefac,akb,omegapkb,eqp,imeqp,npoles)
+      subroutine f2py_calc_crc_mpole(spf,en,nen,bkb,prefac,akb,omegapkb,eqp,imeqp,npoles)
       implicit none
       !integer nen,npoles
       !real*8 enexp(0:nen-1),akb(0:npoles-1),omegap(0:npoles-1)
       integer :: nen,npoles
       double precision, dimension (0:nen-1) :: en,spf
       double precision, dimension (0:npoles-1) :: akb,omegapkb
-      double precision :: B_crc_kb,prefac,eqp,imeqp
+      double precision :: bkb,prefac,eqp,imeqp
 !Cf2py	intent (in) :: nen
 !Cf2py	intent (in) :: en
 !Cf2py	intent (in) :: akb
@@ -79,19 +79,19 @@
 !         tmpf3 = tmpf3 + 1.0d0/3.0d0*akb(k)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
 !        end do
          tmpomp = omegapkb(i)+omegapkb(j)
-         tmpf5 = B_crc_kb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
          tmpomp = 2*omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         end do
         tmpomp = 3*omegapkb(i)
-        tmpf4 = 1.0d0/6.0d0*((akb(i)+B_crc_kb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpf4 = 1.0d0/6.0d0*((akb(i)+bkb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         tmpomp = 2*omegapkb(i)
-        tmpf3 = 1.0d0/2.0d0*((akb(i)+B_crc_kb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpf3 = 1.0d0/2.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
 ! Sky has put 1/2 in the tmpf3
-        tmpf1 = tmpf1 + 1.0d0*B_crc_kb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2) + tmpf3 + tmpf4
+        tmpf1 = tmpf1 + 1.0d0*bkb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2) + tmpf3 + tmpf4
        end do
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
-       spf(ien) = spf(ien) + exp(-B_crc_kb)*prefac*tmpf1
+       spf(ien) = spf(ien) + exp(-bkb)*prefac*tmpf1
       end do 
       !return spf
       end subroutine f2py_calc_crc_mpole
