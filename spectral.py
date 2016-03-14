@@ -592,7 +592,7 @@ if flag_calc_exp == 1:
             print " ik, ib, ikeff, ibeff", ik, ib, ikeff + 1, ibeff + 1
             #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
             # Experimental fix for npoles dependence
-            tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+            tmp = 1/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
             exponent = - np.sum(ampole[ik,ib]) - np.sum(ampole_crc[ik,ib])
             prefac = np.exp(exponent)*tmp
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
