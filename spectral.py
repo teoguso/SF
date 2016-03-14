@@ -604,7 +604,8 @@ if flag_calc_exp == 1:
             print " Exponent/npoles:", exponent/npoles
             print
             print
-            akb=ampole[ik,ib] # This is a numpy array (slice)
+            akb=ampole[ik,ib] # This is a numpy array (slice) of npoles length
+            bkb =  B_crc_kb[ik,ib] # This is a number
             omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
             eqpkb=eqp[ik,ib]
             imkb=imeqp[ik,ib]
@@ -619,7 +620,7 @@ if flag_calc_exp == 1:
                 omegakb=-omegakb
                 #print "-omegakb", omegakb 
             tmpf = np.zeros((nenexp), order='Fortran')
-            tmpf = f2py_calc_crc_mpole(tmpf,enexp,B_crc_kb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+            tmpf = f2py_calc_crc_mpole(tmpf,enexp,bkb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                 #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
             #if ikeff == 24:
              # outnamekb = "before" 
