@@ -91,7 +91,8 @@
         tmpf1 = tmpf1 + 1.0d0*bkb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2) + tmpf3 + tmpf4
        end do
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
-       spf(ien) = spf(ien) + exp(-bkb)*prefac*tmpf1
+       !spf(ien) = spf(ien) + exp(-bkb)*prefac*tmpf1
+       spf(ien) = spf(ien) + prefac*tmpf1
       end do 
       !return spf
       end subroutine f2py_calc_crc_mpole

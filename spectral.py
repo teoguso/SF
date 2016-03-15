@@ -595,6 +595,12 @@ if flag_calc_exp == 1:
             tmp = 1/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
             exponent = - np.sum(ampole[ik,ib]) - np.sum(ampole_crc[ik,ib])
             prefac = np.exp(exponent)*tmp
+            #ss1=str(np.exp( - np.sum(ampole[ik,ib])))
+            #print "BBB1\t"+ss1+"\n"
+            #ss2=str(np.exp( - np.sum(ampole_crc[ik,ib])))
+            #print "BBB2\t"+ss2+"\n"
+            #ss3=str(np.exp(exponent))
+            #print "BBB3\t"+ss3+"\n"
             #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
             print
             print "\n === Normalization test === " 
