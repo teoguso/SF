@@ -54,7 +54,10 @@ and here it's how it's rewritten in the code. Again, the last term ($i\neq j\neq
 \begin{multline}
  A_{k,b}^\textnormal{unocc}(\omega) = Z_{k,b}^\textnormal{CRC} \Gamma_{k,b}  \sum_i^{N^<} \Biggl( \beta_{k,b}^> \biggl\{
  \frac1{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2}  \\ 
-  + \sum_{j=i+1}^{N^<} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  + \frac12 \sum_{j=0}^{i-1} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}  \biggr] \\ 
+  + \frac12 \sum_{j=i+1}^{N^<} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
   {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
  + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
  \biggr] \biggr\} \\
