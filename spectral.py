@@ -611,7 +611,7 @@ if flag_calc_exp == 1:
             print
             print
             akb=ampole[ik,ib] # This is a numpy array (slice) of npoles length
-            bkb =  B_crc_kb[ik,ib] # This is a number
+            bkb =  B_crc_kb[ik,ib]/npoles # This is a number
             omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
             eqpkb=eqp[ik,ib]
             imkb=imeqp[ik,ib]

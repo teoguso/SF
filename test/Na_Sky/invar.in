@@ -1,6 +1,6 @@
 SIG # sigmafile
 1           # minkpt
-145           # maxkpt
+8             # maxkpt
 145           # nkpt
 5           # minband
 5           # maxband
@@ -14,7 +14,7 @@ nband 5
 0           # plasmon2
 0.6         # a_extinf
 0           # extinf
-1             # npoles
+50            # npoles
 0  #  calc_gw
 1  #  calc_exp
 1    plot_fit
