@@ -75,34 +75,34 @@
        i = 0
        do j=i+1,npoles-1
 !All the comments below are to be removed after testing!!!
-!       tmpomp = omegapkb(i)+omegapkb(j)
-!       tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
-!       tmpomp = 2*omegapkb(i)+omegapkb(j)
-!       tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpomp = omegapkb(i)+omegapkb(j)
+        tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpomp = 2*omegapkb(i)+omegapkb(j)
+        tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
        end do
-!      tmpomp = 3*omegapkb(i)
-!      tmpf4 = 1.0d0/6.0d0*((akb(i)+bkb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
-!      tmpomp = 2*omegapkb(i)
-!      tmpf3 = 1.0d0/2.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+       tmpomp = 3*omegapkb(i)
+       tmpf4 = 1.0d0/6.0d0*((akb(i)+bkb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+       tmpomp = 2*omegapkb(i)
+       tmpf3 = 1.0d0/2.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
        tmpf1 = tmpf1 + 1.0d0*bkb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2/2.0d0) + tmpf3 + tmpf4
        do i=1,npoles-1
         tmpf2 = 0.0d0
         do j=0,i-1
-!        tmpomp = omegapkb(i)+omegapkb(j)
-!        tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
-!        tmpomp = 2*omegapkb(i)+omegapkb(j)
-!        tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpomp = omegapkb(i)+omegapkb(j)
+         tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpomp = 2*omegapkb(i)+omegapkb(j)
+         tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         end do
         do j=i+1,npoles-1
-!        tmpomp = omegapkb(i)+omegapkb(j)
-!        tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
-!        tmpomp = 2*omegapkb(i)+omegapkb(j)
-!        tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpomp = omegapkb(i)+omegapkb(j)
+         tmpf5 = bkb/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+         tmpomp = 2*omegapkb(i)+omegapkb(j)
+         tmpf2 = tmpf2 + tmpf5 + 1.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         end do
-!       tmpomp = 3*omegapkb(i)
-!       tmpf4 = 1.0d0/6.0d0*((akb(i)+bkb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
-!       tmpomp = 2*omegapkb(i)
-!       tmpf3 = 1.0d0/2.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpomp = 3*omegapkb(i)
+        tmpf4 = 1.0d0/6.0d0*((akb(i)+bkb)**3-akb(i)**3)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+        tmpomp = 2*omegapkb(i)
+        tmpf3 = 1.0d0/2.0d0*((akb(i)+bkb)**2-akb(i)**2)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
         tmpf1 = tmpf1 + 1.0d0*bkb*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2/2.0d0) + tmpf3 + tmpf4
        end do
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
