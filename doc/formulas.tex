@@ -108,9 +108,11 @@ The total $A^\textnormal{CRC}(\omega)$ is
 
 \subsection{Parameter $\beta$ for the unoccupied part of the self-energy}
 
+When $\beta_k$ is calculated using only one pole, i.e. $N^>=1$, (other cases were not tested) it has to be normalized with the number of poles $N^<$: 
 \begin{equation}
-	\beta_{k,b}^>  = \sum_i \frac{\lambda_{i,(k,b)}^>}{(\tilde\omega_{i,(k,b)}^>)^2} = \sum_i b_{i,(k,b)}
+	\beta_{k,b}^>  = \frac1{N^<} \sum_i^{N^>} \frac{\lambda_{i,(k,b)}^>}{(\tilde\omega_{i,(k,b)}^>)^2} = \frac1{N^<} \sum_i b_{i,(k,b)}.
 \end{equation}
-
+However, it is not divided by $N^<$ when used in the definition of $Z^\textnormal{CRC}$. 
+The consistency of this expression should be clarified in Sky's PhD thesis. 
 
 \end{document}
