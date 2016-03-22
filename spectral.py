@@ -34,8 +34,12 @@ from os import getcwd, pardir, mkdir, chdir
 # ======== READING INPUT VARIABLES ======= #
 print " Reading invar file... ",
 invar = {}
-if isfile("invar.in"):
-    infile = open("invar.in")
+if len(sys.argv)>1: 
+    infname = sys.argv[1]
+else: 
+    infname = "invar.in"
+if isfile(infname):
+    infile = open(infname)
     for line in infile.readlines():
         word = line.split()
         invar[word[-1]] = word[0];
@@ -115,7 +119,7 @@ if isfile("invar.in"):
     else:
         enhartree = None
 else : 
-    print "Invar file not found (invar.in). Impossible to continue."
+    print "Invar file not found ('"+str(infname)+"'). Impossible to continue."
     sys.exit(1)
 print "Done."
 print " minband =", minband;
