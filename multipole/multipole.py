@@ -83,7 +83,7 @@ def fit_multipole(preen,predata,nbin, version='const', ifilewrite=0):
     """
     if version == 'const':
         omegai, gi, deltai = fit_multipole_const(preen,predata,nbin, ifilewrite)
-    else if version == 'fast':
+    elif version == 'fast':
         omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin, ifilewrite)
     return omegai, gi, deltai
 
