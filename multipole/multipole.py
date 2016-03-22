@@ -75,15 +75,15 @@ def resize_en(preen, nbin) :
         en = preen
     return en
 
-def fit_multipole(preen,predata,nbin, version='const', ifilewrite=0):
+def fit_multipole(preen,predata,nbin, method='const', ifilewrite=0):
     """
     Wrapper function to speed-up selection of fit method.
     _const is with uniformly-spaced binning method (newer).
     _fast is with equal-area binning method (legacy).
     """
-    if version == 'const':
+    if method == 'const':
         omegai, gi, deltai = fit_multipole_const(preen,predata,nbin, ifilewrite)
-    elif version == 'fast':
+    elif method == 'fast':
         omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin, ifilewrite)
     return omegai, gi, deltai
 
