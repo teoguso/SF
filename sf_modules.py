@@ -1521,8 +1521,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     #if eqp[ik,ib] <= efermi:
                     if eqp[ik,ib] <= 0:
                         #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
-                       #en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
-                        en3 = newen[newen<0.] # So as to avoid negative omegampole
+                        en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                       #en3 = newen[newen<0.] # So as to avoid negative omegampole
                     else:
                         en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
@@ -1535,10 +1535,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
-                    zcut = 3.0
-                    for i in range(en3.size):
-                        if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
-                            im3[i] = 0.
+                   #zcut = 3.0
+                   #for i in range(en3.size):
+                   #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
+                   #        im3[i] = 0.
                    #import matplotlib.pylab as plt
                    #plt.plot(en3,im3,'-')
                    #plt.show()
