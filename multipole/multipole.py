@@ -81,11 +81,32 @@ def fit_multipole(preen,predata,nbin, method='const', ifilewrite=0):
     _const is with uniformly-spaced binning method (newer).
     _fast is with equal-area binning method (legacy).
     """
+    #method = 'fast'
     if method == 'const':
         omegai, gi, deltai = fit_multipole_const(preen,predata,nbin, ifilewrite)
     elif method == 'fast':
-        omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin, ifilewrite)
+        omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin)
     return omegai, gi, deltai
+
+def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
+    """
+    VERSION WITH EQUIDISTANT Delta_i!
+    Hopefully improved version.
+    This function fits a curve given by some dataset (preen,predata) 
+    with a given number of poles (nbin).
+    It returns omegai, lambai, deltai.
+    """
+    import numpy as np
+    import sys
+    from scipy.interpolate import interp1d
+    print("fit_multipole_const2 :: ")
+    nbin = int(nbin)
+    dx = preen/nbin/10
+    x = np.linspace(preen[0],preen[-1],nbin*10)
+    print(preen.shape,preen.size)
+    print("nbin:",nbin)
+    print(x.shape,x.size)
+    sys.exit()
 
 def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
     """
@@ -266,8 +287,8 @@ def fit_multipole_fast(preen,predata,nbin):
     print("fit_multipole_fast :: ")
     nbin = int(nbin)
     eta = 0.005 # This is the Lorentzian broadening that would be used???
-    safe_shift = 10. # This is a little trick to avoid x=zero which introduces errors. 
-    preen = preen + safe_shift
+   #safe_shift = 10. # This is a little trick to avoid x=zero which introduces errors. 
+   #preen = preen + safe_shift
     totalint = np.trapz(predata,preen)
     totdeltax = abs( preen[-1] - preen[0] )
     print(" Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 ))
@@ -364,8 +385,8 @@ def fit_multipole_fast(preen,predata,nbin):
         gi = np.pi/2*gi*omegai
    #print("TEST GI:", gi)
     omegai = np.array(omegai)
-    # Here we restore the correct x axis removing safe_shift
-    omegai = omegai - safe_shift
+   ## Here we restore the correct x axis removing safe_shift
+   #omegai = omegai - safe_shift
     deltai = []
     sumcheck = 0
     print(" Calculating deltai...")
