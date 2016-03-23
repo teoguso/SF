@@ -75,6 +75,18 @@ def resize_en(preen, nbin) :
         en = preen
     return en
 
+def fit_multipole(preen,predata,nbin, method='const', ifilewrite=0):
+    """
+    Wrapper function to speed-up selection of fit method.
+    _const is with uniformly-spaced binning method (newer).
+    _fast is with equal-area binning method (legacy).
+    """
+    if method == 'const':
+        omegai, gi, deltai = fit_multipole_const(preen,predata,nbin, ifilewrite)
+    elif method == 'fast':
+        omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin, ifilewrite)
+    return omegai, gi, deltai
+
 def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
     """
     VERSION WITH EQUIDISTANT Delta_i!
@@ -381,7 +393,7 @@ def fit_multipole_fast(preen,predata,nbin):
     print(" Size(deltai) = %4i (should be %g) " % (np.size(deltai), nbin))
     return omegai, gi, deltai
 
-def fit_multipole(preen,predata,nbin,ifilewrite=0,binmode=0):
+def fit_multipole_old(preen,predata,nbin,ifilewrite=0,binmode=0):
     """
     This function fits a curve given by some dataset (preen,predata) 
     with a given number of poles (nbin).

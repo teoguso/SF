@@ -41,7 +41,11 @@ print()
 print( " SF :: START")
 for i in range(52): print('=',end='')
 print()
-invar_dict = read_invar()
+if len(sys.argv) > 1: 
+    fname = sys.argv[1]
+    invar_dict = read_invar(fname)
+else:
+    invar_dict = read_invar()
 dict_c = invar_dict # So as not to change invar_dict
 #print(('%12s, %9.4f' % invar_dict.keys(), invar_dict.values()))
 print(" "+"===="+" Input variables "+"====")
@@ -56,8 +60,8 @@ print((" SF :: END"))
 for i in range(52): print('=',end='')
 print()
 #print(52*"=")
-if len(sys.argv) > 1:
-    out_file = sys.argv[1]
+if len(sys.argv) > 2:
+    out_file = sys.argv[2]
 else:
     out_file = None
 # TODO: remove the debugging prints here below

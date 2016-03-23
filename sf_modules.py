@@ -927,7 +927,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     of ImSigma using the multipole model. 
     """
     import numpy as np
-    from multipole import fit_multipole_const #, write_f_as_sum_of_poles
+    from multipole import fit_multipole #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -964,7 +964,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
                 if eqp[ik,ib] <= 0:
                     en3 = -en3[::-1] 
                     im3 = im3[::-1]
-                omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+                omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
                 # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                 # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                 if npoles > omegai.size:
@@ -1213,7 +1213,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
     npoles = int(vardct['np_crc'])
     imskb = allkb[3]
     B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
-    from multipole import fit_multipole, fit_multipole_const, getdata_file #, write_f_as_sum_of_poles
+    from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -1275,7 +1275,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
                #plt.show()
                #sys.exit()
                #### END TESTING ###
-                omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+                omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
                 # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
                 # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
                 if npoles > omegai.size:
@@ -1298,7 +1298,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
                         im1 = array_doublefill(im3)
                         en3 = en1
                         im3 = im1
-                        omegai, lambdai, deltai = fit_multipole_const(en1,im1,npoles)
+                        omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
                         current_size = omegai.size
                         if counter > 4:
                             print(60*"=")
@@ -1484,7 +1484,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         #ampole = ampole/omega_p**2
                 #ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
     elif npoles != 0:
-        from multipole import fit_multipole, fit_multipole_const, getdata_file #, write_f_as_sum_of_poles
+        from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
         print(" ### ================== ###")
         print(" ###    Multipole fit   ###")
         print(" Number of poles:", npoles)
@@ -1521,8 +1521,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     #if eqp[ik,ib] <= efermi:
                     if eqp[ik,ib] <= 0:
                         #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
-                       #en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
-                        en3 = newen[newen<0.] # So as to avoid negative omegampole
+                        en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                       #en3 = newen[newen<0.] # So as to avoid negative omegampole
                     else:
                         en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
                         #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
@@ -1535,10 +1535,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
-                    zcut = 3.0
-                    for i in range(en3.size):
-                        if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
-                            im3[i] = 0.
+                   #zcut = 3.0
+                   #for i in range(en3.size):
+                   #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
+                   #        im3[i] = 0.
                    #import matplotlib.pylab as plt
                    #plt.plot(en3,im3,'-')
                    #plt.show()
@@ -1554,7 +1554,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #plt.show()
                    #sys.exit()
                    #### END TESTING ###
-                    omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
                     plot_fit = int(vardct['plot_fit'])
                     if plot_fit == 1:
                         from multipole import write_f_as_sum_of_poles
@@ -1614,7 +1614,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                             im1 = array_doublefill(im3)
                             en3 = en1
                             im3 = im1
-                            omegai, lambdai, deltai = fit_multipole_const(en1,im1,npoles)
+                            omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
                             current_size = omegai.size
                             if counter > 4:
                                 print(60*"=")
