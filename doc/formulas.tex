@@ -1,0 +1,118 @@
+\documentclass[a4paper,12pt]{article}
+%%% Written by Matteo Guzzo
+%%% A.D. MMXIV (2014)   
+%%%
+%%%
+%\usepackage[T1]{fontenc}
+ \usepackage{palatino}
+ \linespread{1.05}
+% \usepackage{hypen}`
+ \usepackage{graphicx,amsmath,amssymb,amsfonts}
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\dd{\mbox{d}}
+
+\renewcommand{\Re}{\,\mathrm{Re}}
+\renewcommand{\Im}{\,\mathrm{Im}}
+
+\title{Formulas in the code}
+\author{Matteo Guzzo}
+\date{\today}
+
+%\pagestyle{empty}
+
+\hyphenation{SPEC-TRO-SCO-PY}
+\hyphenation{EN-ER-GY}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{The CRC approximation}
+
+The formula is currently implemented to the third order, but omitting one term. 
+Here's the formula in an easily readable version (including the term that will be neglected):
+\begin{multline}
+ A_{k,b}^\textnormal{unocc}(\omega) = Z_{k,b}^\textnormal{CRC} \Gamma_{k,b} \Biggl\{ 
+  \sum_i^{N^<} \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac12 \sum_{i\neq j}^{N^<} 
+\frac{(\beta_{k,b}^>)^2}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ + \frac12 \sum_i^{N^<} \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac16 \sum_i^{N^<} \frac{(a_i + \beta_{k,b}^>)^3 - a_i^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ + \frac12 \sum_{i\neq j}^{N^<} \frac{\bigl[(a_i + \beta_{k,b}^>)^2 - a_i^2\bigr] \beta_{k,b} }
+  {(\omega - \epsilon_{k,b} + 2\tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} \\
+ + \frac16 \sum_{i\neq j\neq k}^{N^<} 
+\frac{(\beta_{k,b}^>)^3}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^< + \tilde\omega_k^<)^2 + \Gamma_{k,b}^2}
+\Biggr\}
+\end{multline}
+and here it's how it's rewritten in the code. Again, the last term ($i\neq j\neq k$) is for now \emph{neglected}: 
+\begin{multline}
+ A_{k,b}^\textnormal{unocc}(\omega) = Z_{k,b}^\textnormal{CRC} \Gamma_{k,b}  \sum_i^{N^<} \Biggl( \beta_{k,b}^> \biggl\{
+ \frac1{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2}  \\ 
+  + \frac12 \sum_{j=0}^{i-1} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}  \biggr] \\ 
+  + \frac12 \sum_{j=i+1}^{N^<} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ \biggr] \biggr\} \\
+ + \frac12 \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ + \frac16 \frac{(a_i + \beta_{k,b}^>)^3 - a_i^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ \Biggl) . 
+\end{multline}
+The case $i=0$ is actually ill-defined, because of the $j= i-1$ sum. Therefore we will rewrite it as
+\begin{multline}
+ A_{k,b}^\textnormal{unocc}(\omega) = Z_{k,b}^\textnormal{CRC} \Gamma_{k,b} \Biggl[ 
+   \Biggl( \beta_{k,b}^> \biggl\{
+ \frac1{(\omega - \epsilon_{k,b} + \tilde\omega_0^<)^2 + \Gamma_{k,b}^2}  \\ 
+  + \frac12 \sum_{j=1}^{N^<} \biggl[ \frac{(a_0 + \beta_{k,b}^>)^2 - a_0^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_0^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_0^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ \biggr] \biggr\} \\
+ + \frac12 \frac{(a_0 + \beta_{k,b}^>)^2 - a_0^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_0^<)^2 + \Gamma_{k,b}^2} 
+ + \frac16 \frac{(a_0 + \beta_{k,b}^>)^3 - a_0^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_0^<)^2 + \Gamma_{k,b}^2} 
+ \Biggr) \\
+ + \sum_{i=1}^{N^<} \Biggl( \beta_{k,b}^> \biggl\{
+ \frac1{(\omega - \epsilon_{k,b} + \tilde\omega_i^<)^2 + \Gamma_{k,b}^2}  \\ 
+  + \frac12 \sum_{j=0}^{i-1} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}  \biggr] \\ 
+  + \frac12 \sum_{j=i+1}^{N^<} \biggl[ \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2 }
+  {(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2} 
+ + \frac{\beta_{k,b}^>}{(\omega - \epsilon_{k,b} + \tilde\omega_i^< + \tilde\omega_j^<)^2 + \Gamma_{k,b}^2}
+ \biggr] \biggr\} \\
+ + \frac12 \frac{(a_i + \beta_{k,b}^>)^2 - a_i^2}{(\omega - \epsilon_{k,b} + 2 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ + \frac16 \frac{(a_i + \beta_{k,b}^>)^3 - a_i^3}{(\omega - \epsilon_{k,b} + 3 \tilde\omega_i^<)^2 + \Gamma_{k,b}^2} 
+ \Biggr) \Biggr]
+\end{multline}
+
+
+This is how the normalization factor is defined: 
+\begin{equation}
+  Z_{k,b}^\textnormal{CRC} = Z_{k,b}^\textnormal{TOC} e^{ - \beta_{k,b}^> } =  e^{ - \sum_i a_i }  e^{ - \beta_{k,b}^> } 
+\end{equation}
+and how the occupied spectral function is defined:
+\begin{equation}
+  A_{k,b}^\textnormal{occ}(\omega) = e^{ - \beta_{k,b}^> } A_{k,b}^\textnormal{TOC}(\omega) .
+\end{equation}
+The TOC spectral function is the old version from PRL 107. 
+The total $A^\textnormal{CRC}(\omega)$ is 
+\begin{equation}
+   A_\textnormal{TOT}^\textnormal{CRC}(\omega) = \sum_k^\textnormal{occ} \left[ A_{k,b}^\textnormal{occ}(\omega) + A_{k,b}^\textnormal{unocc}(\omega) \right]
+\end{equation}
+
+\subsection{Parameter $\beta$ for the unoccupied part of the self-energy}
+
+When $\beta_k$ is calculated using only one pole, i.e. $N^>=1$, (other cases were not tested) it has to be normalized with the number of poles $N^<$: 
+\begin{equation}
+	\beta_{k,b}^>  = \frac1{N^<} \sum_i^{N^>} \frac{\lambda_{i,(k,b)}^>}{(\tilde\omega_{i,(k,b)}^>)^2} = \frac1{N^<} \sum_i b_{i,(k,b)}.
+\end{equation}
+However, it is not divided by $N^<$ when used in the definition of $Z^\textnormal{CRC}$. 
+The consistency of this expression should be clarified in Sky's PhD thesis. 
+
+\end{document}
