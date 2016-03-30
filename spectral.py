@@ -19,6 +19,7 @@ for the orbital character and symmetries.
 from spectral_modules import *
 import numpy as np;
 import matplotlib.pylab as plt;
+plt.figure(1)
 #from scipy.interpolate import interp1d
 #from scipy import optimize
 import sys
@@ -33,8 +34,12 @@ from os import getcwd, pardir, mkdir, chdir
 # ======== READING INPUT VARIABLES ======= #
 print " Reading invar file... ",
 invar = {}
-if isfile("invar.in"):
-    infile = open("invar.in")
+if len(sys.argv)>1: 
+    infname = sys.argv[1]
+else: 
+    infname = "invar.in"
+if isfile(infname):
+    infile = open(infname)
     for line in infile.readlines():
         word = line.split()
         invar[word[-1]] = word[0];
@@ -114,7 +119,7 @@ if isfile("invar.in"):
     else:
         enhartree = None
 else : 
-    print "Invar file not found (invar.in). Impossible to continue."
+    print "Invar file not found ('"+str(infname)+"'). Impossible to continue."
     sys.exit(1)
 print "Done."
 print " minband =", minband;
@@ -339,7 +344,8 @@ if flag_calc_exp == 1:
     enexp=np.arange(enmin,enmax,dxexp)
     nenexp=np.size(enexp)
     ftot=np.zeros((nenexp))
-    f=np.zeros((nkpt,nband,nenexp))
+    fkb = np.zeros((nkpt,nband,nenexp))
+   #f=np.zeros((nkpt,nband,nenexp))
     ftot=np.zeros((np.size(enexp)),order='Fortran')
     nen = np.size(enexp)
     # With extrinsic effects
@@ -374,6 +380,13 @@ if flag_calc_exp == 1:
                 ibeff=minband+ib-1
                 print " ik, ib, ikeff, ibeff", ik, ib, ikeff+1, ibeff+1
                 prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
+                print
+                print "\n === Normalization test === " 
+                print " Prefactor:", np.exp(-np.sum(ampole[ik,ib])) 
+                print " Exponent:", np.sum(ampole[ik,ib]) 
+                print " Exponent/npoles:", np.sum(ampole[ik,ib])/npoles
+                print
+                print
                 akb=ampole[ik,ib] # This is a numpy array (slice)
                 omegakb=omegampole[ik,ib] # This is a numpy array (slice)
                 eqpkb=eqp[ik,ib]
@@ -397,10 +410,259 @@ if flag_calc_exp == 1:
                 outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
                 outfilekb = open(outnamekb,'w')
                 for ien in xrange(nenexp):
+                    #outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
                     outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
                 outfilekb.close()
-                ftot = ftot + tmpf
+                fkb[ik,ib] = tmpf
+                ftot = ftot + tmpf  
                 #print ftot[0], tmpf[0]
+    print
+    print(" ### Calculation of constrained retarded cumulant ### ")
+   #B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
+   #    imskb = allkb[3]
+   #B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    B_crc_kb =  np.zeros((nkpt,nband))
+    from multipole import fit_multipole, getdata_file #, write_f_as_sum_of_poles
+    print " ### ================== ###" 
+    print " ###    Multipole fit   ###" 
+    print " Number of poles:", npoles 
+    print " Number of poles_crc is FIXED TO 1"
+    npoles_crc = 1
+   #omegampole =  np.zeros((nkpt,nband,npoles))
+   #ampole =  np.zeros((nkpt,nband,npoles))
+    omegampole_crc =  np.zeros((nkpt,nband,npoles_crc))
+    ampole_crc     =  np.zeros((nkpt,nband,npoles_crc))
+    #for ik in range(nkpt):
+    #    ikeff=minkpt+ik-1
+    #bdrange = vardct['bdrange']
+    #kptrange = vardct['kptrange']
+    #print "kptrange, bdrange ", kptrange, bdrange 
+   #for ik in kptrange:
+   #    for ib in bdrange:
+    for ik in xrange(nkpt):
+        ikeff=minkpt+ik-1
+        for ib in xrange(nband):
+            ibeff=minband+ib-1
+   #for ik in range(imskb[:,0,0].size):
+        #for ib in range(nband):
+   #    for ib in range(imskb[0,:,0].size):
+           #if eqp[ik,ib] < newen[npoles]:
+           ##if eqp[ik,ib] > newen[-1]:
+           #    omegampole[ik,ib] = omegampole[ik,ib-1]
+           #    ampole[ik,ib] = ampole[ik,ib-1]
+           #    print " Eqp beyond available energy range. Values from lower band are taken." 
+           #    continue
+           #else:
+            print " ik, ib", ik, ib 
+            #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+            #print newen.shape, imskb.shape 
+           #print ims[ik,ib], enexp
+           #sys.exit()
+            interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+            # Here we take the curve starting from efermi and then we invert it
+            # so as to have it defined on the positive x axis
+            # and so that the positive direction is in the 
+            # increasing direction of the array index
+            #if eqp[ik,ib] <= efermi:
+            if eqp[ik,ib] <= 0:
+                #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+                en3 = enexp[enexp >= 0] # So as to avoid negative omegampole and ambiguity btween eqp and efermi
+            else:
+                en3 = enexp[enexp<0] # So as to avoid negative omegampole
+                #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
+            #en3 = en[en<=efermi]
+            if en3.size == 0:
+                print  
+                print " WARNING: QP energy is outside of given energy range!\n"+\
+                        " This state will be skipped!\n"+\
+                        "You might want to modify enmin/enmax."
+                print " eqp[ik,ib], newen[-1]", eqp[ik,ib] , enexp[-1] 
+                continue
+            im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
+            en3 = en3 - eqp[ik,ib]
+            if eqp[ik,ib] > 0:
+                en3 = -en3[::-1] 
+                im3 = im3[::-1]
+           #if eqp[ik,ib] <= 0:
+           #    en3 = -en3[::-1] 
+           #    im3 = im3[::-1]
+           #### TESTING ###
+           #print "ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1] 
+           #import matplotlib.pylab as plt
+           #plt.plot(newen, imskb[ik,ib]/np.pi,"-")
+           #plt.plot(en3+eqp[ik,ib], im3,"x")
+           #plt.plot(en3, im3,"o")
+           #plt.show()
+           #sys.exit()
+           #### END TESTING ###
+            omegai, lambdai, deltai = fit_multipole(en3,im3,npoles_crc)
+            # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
+            # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
+            if npoles_crc > omegai.size:
+                omegampole_crc[ik,ib][:omegai.size] = omegai 
+                ampole_crc[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                print  
+                print " WARNING: npoles used ("+str(npoles_crc)+") is larger"+\
+                        " than poles x data array can give ("+str(omegai.size)+")."
+               #print "WARNING: Reduce npoles. You are wasting resources!!!" 
+                print " Im(Sigma) will be interpolated to obtain the desired number of poles." 
+                current_size = omegai.size
+                counter = 0
+                while npoles_crc > current_size:
+                    counter += 1
+                    print  
+                    print " WARNING: Arrays are too coarse." 
+                    print " npoles, omegai.size:", npoles_crc, omegai.size 
+                    print " Filling arrays with interpolated values..." 
+                    en1 = array_doublefill(en3)
+                    im1 = array_doublefill(im3)
+                    en3 = en1
+                    im3 = im1
+                    omegai, lambdai, deltai = fit_multipole(en1,im1,npoles_crc)
+                    current_size = omegai.size
+                    if counter > 4:
+                        print 60*"=" 
+                        print " WARNING: You are trying too hard with too few points." 
+                        print " The array has been interpolated more than 4 times." 
+                        print " Maybe use less poles or calculate more points for Sigma?" 
+                        print 60*"=" 
+        #   im1 = fit_double(im3)
+            else:
+                omegampole_crc[ik,ib] = omegai 
+                ampole_crc[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+            B_crc_kb[ik,ib] = np.sum(ampole_crc[ik,ib])
+            ### Test plot for the fit ###
+           #from multipole import write_f_as_sum_of_poles
+          ##import matplotlib.pylab as plt
+           #import pylab
+           #plt.figure(2)
+           #eta = 0.5
+           #enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+           #plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+           #plt.plot(en3,im3,"-",label="ImS(e-w)")
+           #plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+           #plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+           #plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+           #plt.legend()
+           #pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'_CRC.pdf')
+           #plt.close(2)
+           #### END - Test plot for the fit ###
+            from multipole import write_f_as_sum_of_poles
+           #ampole[ik,ib] = gi
+            print
+            print " Integral test. Compare \int\Sigma and \sum_j^N\lambda_j." 
+            print " 1/pi*\int\Sigma   =", np.trapz(im3,en3) 
+            print " \sum_j^N\lambda_j =", np.sum(lambdai) 
+            print " b_j:", ampole_crc[ik,ib] 
+            #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
+            #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
+    # Writing out a_j e omega_j
+    print
+    print " ### Writing out a_j and omega_j..." 
+    outname = "a_j_np"+str(npoles_crc)+"_crc.dat"
+    outfile = open(outname,'w')
+    outname = "omega_j_np"+str(npoles_crc)+"_crc.dat"
+    outfile2 = open(outname,'w')
+    for ipole in xrange(npoles_crc):
+ #      for ik in kptrange:
+ #          #for ib in range(nband):
+ #          for ib in bdrange:
+        for ik in range(ims[:,0,0].size):
+            for ib in range(ims[0,:,0].size):
+                outfile.write("%10.5f"  % (ampole_crc[ik,ib,ipole]))
+                outfile2.write("%10.5f" % (omegampole_crc[ik,ib,ipole]))
+            outfile.write("\n")
+            outfile2.write("\n")
+        outfile.write("\n")
+        outfile2.write("\n")
+    outfile.close()
+    outfile2.close()
+   #return B_crc_kb
+    ### Calculation of the CRC spectral function ###
+   #sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, enexp, allkb)
+   #ftot=np.zeros((nenexp))
+   #f=np.zeros((nkpt,nband,nenexp))
+    ftot_crc_occ=np.zeros((np.size(enexp)),order='Fortran')
+    ftot2=np.zeros((np.size(enexp)),order='Fortran')
+    from extmod_spf_mpole import f2py_calc_crc_mpole
+    for ik in xrange(nkpt):
+        ikeff=minkpt+ik-1
+        for ib in xrange(nband):
+            ibeff=minband+ib-1
+   #for ik in kptrange:
+   #    ikeff = ik + 1
+   #    for ib in bdrange:
+   #        ibeff = ib + 1
+            print " ik, ib, ikeff, ibeff", ik, ib, ikeff + 1, ibeff + 1
+            #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+            # Experimental fix for npoles dependence
+            tmp = 1/np.pi*wtk[ikeff]*pdos[ib]*abs(imeqp[ik,ib])
+            exponent = - np.sum(ampole[ik,ib]) - np.sum(ampole_crc[ik,ib])
+            prefac = np.exp(exponent)*tmp
+            #ss1=str(np.exp( - np.sum(ampole[ik,ib])))
+            #print "BBB1\t"+ss1+"\n"
+            #ss2=str(np.exp( - np.sum(ampole_crc[ik,ib])))
+            #print "BBB2\t"+ss2+"\n"
+            #ss3=str(np.exp(exponent))
+            #print "BBB3\t"+ss3+"\n"
+            #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
+            print
+            print "\n === Normalization test === " 
+            print " Prefactor*wtk*pdos*Gamma/pi:", prefac
+            print " Prefactor:", prefac/tmp
+            print " Exponent:", exponent 
+            print " Exponent/npoles:", exponent/npoles
+            print
+            print
+            akb=ampole[ik,ib] # This is a numpy array (slice) of npoles length
+            bkb =  B_crc_kb[ik,ib]/npoles # This is a number
+            omegakb=omegampole[ik,ib] # NOT THE CRC ONES! IMPORTANT!!!
+            eqpkb=eqp[ik,ib]
+            imkb=imeqp[ik,ib]
+            #tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+            #print nen, np.size(enexp) 
+            #tmpf = 0.0*tmpf
+            if eqpkb < 0.0:
+                pass
+            else:
+                print " This state is empty! eqpkb ik ib:",eqpkb, ikeff+1, ibeff+1 
+                #print "omegakb", omegakb 
+                omegakb=-omegakb
+                #print "-omegakb", omegakb 
+            tmpf = np.zeros((nenexp), order='Fortran')
+            tmpf = f2py_calc_crc_mpole(tmpf,enexp,bkb,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
+                #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
+            #if ikeff == 24:
+             # outnamekb = "before" 
+             # outfilekb = open(outnamekb,'w')
+             # for ien in xrange(nenexp):
+             #   outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
+             # outfilekb.close()
+            fkb[ik,ib] = fkb[ik,ib] * np.exp(-np.sum(ampole_crc[ik,ib]))
+            #ss = str(np.exp(-np.sum(ampole_crc[ik,ib])))
+            #print "BBB\t"+ss+"\n"
+            outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc."+str(penergy)
+            outfilekb = open(outnamekb,'w')
+            for ien in xrange(nenexp):
+                #outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
+                outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], fkb[ik,ib,ien]))
+            outfilekb.close()
+            outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"_crc_unocc."+str(penergy)
+            outfilekb = open(outnamekb,'w')
+            for ien in xrange(nenexp):
+                outfilekb.write("%8.4f %12.8f\n" % (enexp[ien], tmpf[ien]))
+            outfilekb.close()
+            ftot2 = ftot2 + tmpf
+           #sfkb_c[ik,ib] = tmpf
+            #ftot_crc_occ = np.sum(np.sum(fkb,0),0)
+           #ftot_crc_occ = np.sum(np.sum(fkb[ik,ib],0),0)
+     #  return ftot, sfkb_c
+    ftot_crc_occ = np.sum(np.sum(fkb,0),0)
+    plt.plot(enexp,ftot2, label='ftot_crc_unocc')
+    ftot_crc = ftot_crc_occ + ftot2
+    plt.plot(enexp, ftot_crc_occ, label='ftot_crc_occ')
+    plt.plot(enexp, ftot_crc, label='ftot_crc')
+
     elaps2 = time.time() - elaps1 - e0
     cpu2 = time.clock() - cpu1 - c0
     #print elaps2, cpu2
@@ -419,7 +681,19 @@ if flag_calc_exp == 1:
         for i in xrange(nenexp):
             outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot[i])) # Dump string representations of arrays
         outfile.close()
+        outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc_occ.dat"
+        outfile = open(outname2,'w')
+        for i in xrange(nenexp):
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot_crc_occ[i])) # Dump string representations of arrays
+        outfile.close()
+        outname2 = "spftot_exp"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_crc.dat"
+        outfile = open(outname2,'w')
+        for i in xrange(nenexp):
+            outfile.write("%7.4f   %15.10e\n"% (enexp[i],ftot_crc[i])) # Dump string representations of arrays
+        outfile.close()
+    print
     print " A(\omega)_exp written in", outname
+    print " A(\omega)_CRC written in", outname2
     plt.plot(enexp,ftot,label="ftot");
 # Now go back to original directory
 print " Moving back to parent directory:\n", origdir
