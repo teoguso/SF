@@ -146,7 +146,45 @@ Expanding the exponential one gets
     \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right) 
   + \frac12 \left[ \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right)  \right]^2  \right. \\
   \left.  + \frac16  \left[ \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right)  \right]^3  
-  + \ldots  \right\} .
+  + \ldots  \right\} \\
+ =   i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 + 
+    \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right) 
+   + \frac12 \sum_{ij}^N a_i a_j \left[  e^{i (\tilde\omega_i + \tilde\omega_j) \tau } 
+   - 2 e^{i \tilde\omega_i \tau} + 1   \right]  \right. \\
+ \left.   + \frac16 \sum_{ijk}^N a_i a_j a_k \left[ e^{i (\tilde\omega_i + \tilde\omega_j + \tilde\omega_k) \tau } 
+  - 3  e^{i (\tilde\omega_i + \tilde\omega_j) \tau } 
+   + 3 e^{i \tilde\omega_i \tau} - 1   \right] 
+  + \ldots  \right\} \\
+\end{multline}
+The spectral function will be
+\begin{multline}
+ A(\omega) = \frac1\pi \Biggl\{ \delta(\omega-E^\textnormal{QP}) 
+ + \sum_i^N a_i \left[ \delta(\omega-E^\textnormal{QP}+\omega_i) 
+  - \delta(\omega-E^\textnormal{QP}) \right] \\
+  + \frac12 \sum_{ij}^N a_i a_j \left[ \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j) 
+ - 2 \delta(\omega-E^\textnormal{QP}+\omega_i) + \delta(\omega-E^\textnormal{QP}) \right] \\
+  + \frac16 \sum_{ijk}^N a_i a_j a_k 
+   \left[ \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j + \omega_k) 
+  - 3 \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j) \right. \\ 
+   \left. + 3 \delta(\omega-E^\textnormal{QP}+\omega_i) 
+   - \delta(\omega-E^\textnormal{QP}) \right] \Biggr\} .
+\end{multline}
+Using a complex QP energy $E=\epsilon+\Gamma$, one gets
+\begin{multline}
+ A(\omega) = \frac{\Gamma}\pi \Biggl\{ \frac1{(\omega-\epsilon)^2+\Gamma^2} \\
+ + \sum_i^N a_i \left[ \frac1{(\omega- \epsilon + \omega_i)^2 + \Gamma^2} 
+  - \frac1{(\omega-\epsilon)^2+\Gamma^2} \right] \\
+  + \frac12 \sum_{ij}^N a_i a_j \left[ 
+   \frac1{(\omega - \epsilon + \omega_i + \omega_j)^2 + \Gamma^2 } \right. \\ 
+ \left. - \frac2{(\omega- \epsilon + \omega_i)^2 + \Gamma^2} 
+  + \frac1{(\omega-\epsilon)^2+\Gamma^2} \right] \\ 
+  + \frac16 \sum_{ijk}^N a_i a_j a_k 
+   \left[ \frac1{(\omega - \epsilon + \omega_i + \omega_j + \omega_k)^2 + \Gamma^2}  \right. \\ 
+   \left. - \frac3{(\omega - \epsilon + \omega_i + \omega_j)^2 + \Gamma^2} \right. \\ 
+   \left.  + \frac3{(\omega - \epsilon + \omega_i)^2 + \Gamma^2 } 
+   - \frac1{(\omega-\epsilon)^2+\Gamma^2}  \right] \Biggr\} .
 \end{multline}
 
 
