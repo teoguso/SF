@@ -1,0 +1,83 @@
+\documentclass[a4paper,12pt]{article}
+%%% Written by Matteo Guzzo
+%%% A.D. MMXIV (2014)   
+%%%
+%%%
+%\usepackage[T1]{fontenc}
+ \usepackage{palatino}
+ \linespread{1.05}
+\usepackage{mathpazo}
+ 
+% \usepackage{hypen}`
+ \usepackage{graphicx,amsmath,amssymb,amsfonts}
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\dd{\mbox{d}}
+
+\renewcommand{\Re}{\,\mathrm{Re}}
+\renewcommand{\Im}{\,\mathrm{Im}}
+
+\title{Update on the cumulant, renormalization and the use of $\Gamma$}
+\author{Matteo Guzzo}
+\date{\today}
+
+%\pagestyle{empty}
+
+\hyphenation{SPEC-TRO-SCO-PY}
+\hyphenation{EN-ER-GY}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{The misleading misunderstanding in Guzzo's thesis}
+
+After discussing with Andris about my thesis, we manage to uncover a couple weak 
+points in the theory, and a couple mistakes as well. 
+We can focus on equations 5.26 and 5.29. 
+Equation 5.26 is merely the $G(\tau)$ solution of the linearized decoupled EOM for $G$, only 
+rewritten using the FT of ${W}(\tau)$  
+and it reads
+\be
+ G(\tau) = G^H (\tau) \exp \left[ \frac{i}{2\pi}  \int \! d\omega \frac{ W (\omega) }{ \omega^2 } 
+   \left( e^{i\omega\tau} - i \omega \tau - 1 \right) \right] ,
+\ee 
+where $G^H$ is the Linear-response ground-state Hartree Green's function and 
+$W(\omega)$ the FT of a matrix element of the screened Coulomb interaction. 
+This equation, while being a correct result, lacked an additional comment: 
+if one assumes that $W(\omega)$ is a symmetric function (i.e.\@ an even function of $\omega$) 
+--- and this seems to be a reasonable assumption for any kind of $W$ --- 
+the equation further simplifies, since the middle term in parenthesis ($i\omega\tau$)
+produces the integral 
+\be
+  \int \! d\omega \frac{ W (\omega) }{ \omega } 
+\ee 
+(times unimportant factors) that is identical to zero. 
+This is verified because the product of an even function with an odd function is an odd function, 
+and the integral over $R$ of an odd function is always zero. 
+The formula should therefore be written as 
+\be
+ G(\tau) = G^H (\tau) \exp \left[ \frac{i}{2\pi}  \int \! d\omega \frac{ W (\omega) }{ \omega^2 } 
+   \left( e^{i\omega\tau} - 1 \right) \right] . 
+\ee 
+There is nothing wrong so far, but it is a good thing to know. 
+Let's now focus on eq.\@ 5.29. 
+The equation reads
+\be
+ G(\tau) = G^H (\tau) \exp \left[ \frac{\lambda}{\omega_p^2}  
+   \left( e^{i\omega_p\tau} - i \omega_p \tau - 1 \right) \right] . 
+\ee
+This is, again, a $G(\tau)$ but for a particular case: one can obtain this solution when a 
+single-plasmon-pole model is used for $W(\tau)$, where $\lambda$ and $\omega_p$ are 
+the weight and frequency of the plasmon, respectively. 
+\textbf{As one can see now, the second term in this formula ($-i\omega_p\tau$) is \emph{not} 
+connected to the second term in the first formula ($-i\omega\tau$) as I originally thought.}
+
+
+
+\end{document}
