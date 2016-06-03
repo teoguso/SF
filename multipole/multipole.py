@@ -75,7 +75,7 @@ def resize_en(preen, nbin) :
         en = preen
     return en
 
-def fit_multipole(preen,predata,nbin, method='const', ifilewrite=0):
+def fit_multipole(preen,predata,nbin, method='const2', ifilewrite=0):
     """
     Wrapper function to speed-up selection of fit method.
     _const is with uniformly-spaced binning method (newer).
@@ -84,6 +84,10 @@ def fit_multipole(preen,predata,nbin, method='const', ifilewrite=0):
     #method = 'fast'
     if method == 'const':
         omegai, gi, deltai = fit_multipole_const(preen,predata,nbin, ifilewrite)
+       #print(omegai, gi, deltai)
+    elif method == 'const2':
+        omegai, gi, deltai = fit_multipole_const2(preen,predata,nbin, ifilewrite)
+       #print(omegai, gi, deltai)
     elif method == 'fast':
         omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin)
     return omegai, gi, deltai
@@ -99,14 +103,37 @@ def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
     import numpy as np
     import sys
     from scipy.interpolate import interp1d
+    import matplotlib.pylab as plt
     print("fit_multipole_const2 :: ")
     nbin = int(nbin)
-    dx = preen/nbin/10
-    x = np.linspace(preen[0],preen[-1],nbin*10)
-    print(preen.shape,preen.size)
-    print("nbin:",nbin)
-    print(x.shape,x.size)
-    sys.exit()
+    dx = (preen[-1]-preen[0])/nbin
+    x = np.linspace(preen[0],preen[-1],nbin+1)
+    interp_data = interp1d(preen, predata, kind = 'linear', axis = -1)
+    y = interp_data(x)
+    totalint = np.trapz(predata,preen)
+    totdeltax = abs( preen[-1] - preen[0] )
+    print(" Totdeltax, np.size(preen), dx:", totdeltax, np.size(preen), ( preen[-1] - preen[0] ) / float( np.size(preen) - 1 ))
+    print(" Number of poles (nbin):", nbin)
+    print(" Total integral:", totalint )
+    print(" Total integral / nbin:", totalint / float(nbin))
+    lambdai = []
+    omegai = []
+    deltai = [dx for i in range(x.size-1)]
+    for i in np.arange(x.size-1):
+        oi = (x[i+1]+x[i])/2
+        omegai.append(oi)
+        tmpint = (y[i+1]+y[i])*dx/2
+        tmpgi = tmpint 
+        lambdai.append(tmpgi)
+    lambdai = np.array(lambdai)
+    omegai  = np.array(omegai)
+    deltai  = np.array(deltai)
+    print(" Size(omegai, lambdai, deltai): ",omegai.shape,lambdai.shape,deltai.shape)
+    sum_li = np.sum(lambdai)
+    print(" Sum of lambdai:", sum_li)
+    print(" Error on total integral:", (totalint-sum_li)/totalint)
+    return omegai, lambdai, deltai
+    
 
 def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
     """
@@ -146,6 +173,13 @@ def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
     # First we want the x-axis grid to be finer than the density of poles
     en = preen
     data = predata
+    if en.size < nbin:
+        print("WARNING: Interpolating the data! (should be harmless)")
+        interp_data = interp1d(preen, predata, kind = 'linear', axis = -1)
+        en = np.linspace(preen[0],preen[-1],num=nbin)
+        data = interp_data(en)
+    print("en,preen",en,preen)
+    print("data,predata",data,predata)
    #data[0:200] = 0
    #print(preen)
    #print("Removing at the beginning "+str(data[5])+" eV.")
@@ -171,7 +205,14 @@ def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
     # CASE NPOLES == 1
     if int(nbin) == 1:
         gi.append(totalint)
-        omegai.append(en[data.argmax()])
+        maxes = en[np.argwhere(data == np.amax(data))]
+       #print(np.amax(data),maxes)
+       #sys.exit()
+        if maxes.size > 1:
+            omegai.append(np.mean(maxes))
+            print(" WARNING: Multiple max points. Taking the mean value.")
+        else: 
+            omegai.append(en[data.argmax()])
         bounds.append( en[-1] )
         ibound += 1
     # CASE NPOLES > 1
@@ -209,12 +250,12 @@ def fit_multipole_const(preen,predata,nbin, ifilewrite=0):
         print(" ibound       = %4i (should be %g) " % (ibound, nbin))
         print(" Size(bounds) = %4i (should be %g) " % (np.size(bounds), nbin+1))
         print(" Size(omegai) = %4i (should be %g) " % (np.size(omegai), nbin))
-        if ibound < nbin:
-            print("WARNING: too few bins! Adding a fictitious one.")
-            gi.append(0.0)
-            omegai.append(en[-1])
-            bounds.append( en[-1] )
-            ibound += 1
+      # if ibound < nbin:
+      #     print("WARNING: too few bins! Adding a fictitious one.")
+      #     gi.append(0.0)
+      #     omegai.append(en[-1])
+      #     bounds.append( en[-1] )
+      #     ibound += 1
         # Here we assign the value as f is a sum of delta with one coefficient only (no pi/2 or else)
         # AKA: This gi is actually the pure lambda coefficient of the delta function
         # in the multipole model, equal to gi*omegai
@@ -746,19 +787,80 @@ def write_f_as_sum_of_poles(preen,omegai,gi,deltai, eta = 0.001, ifilewrite = 0)
         print(" Sum of poles written in file", oname)
     return en, f
 
+def plot_pdf(en3, im3, omegai, lambdai, deltai, npoles, ik=0, ib=0, tag = '',fname = None):
+    """
+    Produces a hard copy of the fit, using a lorentzian representation.
+    """
+    import matplotlib.pylab as plt
+    import pylab
+    plt.figure(2)
+    eta = 0.1
+    enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+    plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+    plt.plot(en3,im3,"-",label="ImS(e-w)")
+    plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+   #print("deltai",deltai)
+   #print("lambdai",lambdai)
+   #print("lambdai/deltai",lambdai/deltai)
+   #import sys
+   #sys.exit()
+    plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+    plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+    plt.legend()
+    if fname is None:
+        fname = 'imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+str(tag)+'.pdf'
+    pylab.savefig(fname)
+    plt.close(2)
+
+def check_fix_coarse(en3, im3, omegai, lambdai, deltai, npoles, ):
+    """
+    This function solves the issue of not having enough data points. 
+    Does nothing in case there is no issue.
+    """
+    if npoles > omegai.size:
+        print(" WARNING: npoles used ("+str(npoles)+") is larger"+\
+                " than poles x data array can give ("+str(omegai.size)+").")
+       #print "WARNING: Reduce npoles. You are wasting resources!!!" 
+        print(" Im(Sigma) will be interpolated to obtain the desired number of poles." )
+        current_size = omegai.size
+        counter = 0
+        while npoles > current_size:
+            counter += 1
+            print(" WARNING: Arrays are too coarse.")
+            print(" npoles, omegai.size:", npoles, omegai.size)
+            print(" Filling arrays with interpolated values...")
+            en1 = array_doublefill(en3)
+            im1 = array_doublefill(im3)
+            en3 = en1
+            im3 = im1
+            omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
+            current_size = omegai.size
+            if counter > 4:
+                print(60*"=")
+                print(" WARNING: You are trying too hard with too few points.") 
+                print(" The array has been interpolated more than 4 times.") 
+                print(" Maybe use less poles or calculate more points for Sigma?") 
+                print(60*"=")
+    return omegai2, lambdai2, deltai2
+
 if __name__ == '__main__':
     import sys
     import numpy as np
-    usage = 'Usage: %s npoles infile' % sys.argv[0]
+    usage = 'Usage: %s npoles infile method(const/fast, optional)' % sys.argv[0]
+    method = 'const'
+    print(len(sys.argv))
     try:
         infilename = sys.argv[2]
         nbin = sys.argv[1]
         ifilewrite = 1
+        if len(sys.argv) > 3:
+            method = sys.argv[3]
     except:
         print(usage)
         sys.exit(1)
     preen, predata = getdata_file(infilename)
-    omegai, gi, deltai = fit_multipole_const(preen,predata,nbin,ifilewrite)
+    omegai, lambdai, deltai = fit_multipole(preen,predata,nbin,method,ifilewrite)
+    plot_pdf(preen, predata, omegai, lambdai, deltai, nbin, ik=0, ib=0)
     print(np.sum(gi/np.square(omegai)))
     write_f_as_sum_of_poles(preen,omegai,gi,deltai,1)
 #

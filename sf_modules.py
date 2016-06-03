@@ -48,6 +48,7 @@ def read_invar(infile='invar.in'):
      'add_wtk': 1, Include k-point weights (0, 1)
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
+     'test_lorentz_W': 0, Enables the use of a Lorentzian function (for code testing)
     """
     var_defaults = { 
             'sigmafile': None,   
@@ -77,7 +78,8 @@ def read_invar(infile='invar.in'):
             'restart': 0,
             'add_wtk': 1,
             'plot_fit': 0, 
-            'coarse': 0
+            'coarse': 0,
+            'test_lorentz_W': 0
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -98,6 +100,26 @@ def read_invar(infile='invar.in'):
                 #print(var, last)
                 invar_dict[var] = line.split()[0]
     return invar_dict
+
+def imW(w,lbd=1.,w0=10.,G=1.):
+    """
+    Imaginary part of model Lorentzian W.
+    """
+    w = np.array(w)
+    return lbd*(G/((w+w0)**2+G**2)+G/((w-w0)**2+G**2))
+
+def reW(w,lbd=1.,w0=10.,G=1.):
+    """
+    Real part of model Lorentzian W.
+    """
+    w = np.array(w)
+    return lbd*((w+w0)/((w+w0)**2+G**2)+(w-w0)/((w-w0)**2+G**2))
+
+def model_W(w,lbd=1.,w0=10.,G=1.):
+    """
+    Handy shorthand when needing both reW and imW.
+    """
+    return reW(w,lbd,w0,G), imW(w,lbd,w0,G)
 
 def read_hartree():
     """
@@ -1739,17 +1761,20 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
                 #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 # Experimental fix for npoles dependence
-                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                akb=ampole[ik,ib] # This is a numpy array (slice)
+                omegakb=omegampole[ik,ib] # This is a numpy array (slice)
+                eqpkb=eqp[ik,ib]
+                imkb=imeqp[ik,ib]
+                #tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                # TEST: IMEQP IS NOW A VANISHING VALUE!!!
+               #imkb = 0.01
+                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imkb)
                 prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
                 #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
                 print("\n === Normalization test === ")
                 print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
                 print(" Exponent:", np.sum(ampole[ik,ib]))
                 print(" Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n")
-                akb=ampole[ik,ib] # This is a numpy array (slice)
-                omegakb=omegampole[ik,ib] # This is a numpy array (slice)
-                eqpkb=eqp[ik,ib]
-                imkb=imeqp[ik,ib]
                 #tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
                 #print(nen, np.size(enexp))
                 #tmpf = 0.0*tmpf

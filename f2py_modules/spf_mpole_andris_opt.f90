@@ -25,8 +25,8 @@
       double precision, dimension (0:2*npoles) :: denom2
 
       parameter (third=1d0/3d0)
-!imeqp is renormalized dividing by the number of poles (npoles)
-      imeqp2=(imeqp/npoles)**2 
+
+      imeqp2=(imeqp)**2 
       tmpomp = 0.0d0
       spf(:) = 0.0d0
 !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(tmpomp,tmpf2,tmpf3,tmpf1,k,i,j,ien,diff,denom2,denom3,offset)
@@ -49,15 +49,16 @@
          end do
 
          tmpomp = omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp2)+tmpf3)
+         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)+tmpf3)
         end do
         !tmpomp = omegapkb(i)+omegapkb(j)
-        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2)
+        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2)
        end do
 
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
        spf(ien) = spf(ien) + prefac*(1.0d0/((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
       else
+!***********
        diff=omegapkb(1)-omegapkb(0)
        do i=0,3*npoles
          denom3(i)=0.5d0*third/((en(ien)-eqp+diff*dble(i)+omegapkb(0)*3d0)**2+imeqp2)
@@ -66,25 +67,37 @@
          denom2(i)=0.5d0/((en(ien)-eqp+diff*dble(i)+omegapkb(0)*2d0)**2+imeqp2)
        enddo
 
-
        tmpf1 = 0.0d0
        do i=0,npoles-1
 
         tmpf2 = 0.0d0
-        do j=0,npoles-1
+        do j=0,i-1
          tmpf3 = 0.0d0
          offset=i+j
-         do k=0,npoles-1
+         do k=0,j-1
           tmpf3 = tmpf3 + akb(k)*denom3(offset+k)
          end do
+         tmpf3=tmpf3*6d0
 
-         tmpomp = omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 +  akb(j)*(denom2(offset)+tmpf3)
+         tmpf2 = tmpf2 + akb(j)*(tmpf3+3d0*akb(j)*denom3(offset+j))
+         tmpf2 = tmpf2 + 2d0*akb(j)*(denom2(offset))
+
         end do
-        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2)
+
+        tmpf1 = tmpf1 + akb(i)*tmpf2
+        tmpf1 = tmpf1 + akb(i)*akb(i)*akb(i)*denom3(3*i)
+        tmpf1 = tmpf1 + akb(i)*akb(i)*denom2(2*i)
+
+         offset=2*i
+         do k=0,i-1 
+          tmpf1 = tmpf1 + 3d0*akb(i)*akb(i)*akb(k)*denom3(offset+k)
+         end do
+
+         tmpf1 = tmpf1 + akb(i)/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)
+
        end do
 
-       !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
+
        spf(ien) = spf(ien) + prefac*(1.0d0/((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
 
       endif
