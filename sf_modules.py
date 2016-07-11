@@ -34,6 +34,7 @@ def read_invar(infile='invar.in'):
      'npoles': 1, Number of poles for multipole fit
      'calc_gw': 1, Enables output of GW spectral function
      'calc_exp': 0, Enables output of cumulant spectral function
+     'calc_numeric': 0, Enables full numerical calculation of the cumulant A(w) at all orders 
      'calc_crc': 0, Enables output of constrained retarded cumulant spectral function
      'np_crc': 1, Number of poles for B coefficient in constrained retarded cumulant spectral function
      'extinf': 0, Includes extrinsic and interference effects (0, 1)
@@ -64,6 +65,7 @@ def read_invar(infile='invar.in'):
             'npoles': 1,
             'calc_gw': 1,
             'calc_exp': 0,
+            'calc_numeric': 0,
             'calc_crc': 0,
             'np_crc': 1,
             'extinf': 0,
@@ -1779,5 +1781,39 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #enexp = enexp-efermi
     write_sftot_c(vardct, enexp, ftot)
     print(" calc_sf_c_serial :: Done.")
+    return enexp, ftot, sfkb_c
+
+def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    This method takes care of the calculation of the cumulant. 
+    It is a numeric approach. It calculates first G(t),
+    then G(w) = FT[G(t)], and then A(w) = ImG(w). 
+    """
+    print(" sf_c_numeric :: ")
+    import numpy as np;
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
+   #print("kptrange, bdrange ", kptrange, bdrange)
+    newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
+    penergy = int(vardct['penergy'])
+    #allkb = [spfkb,reskb, rdenkb, imskb]
+    reskb = allkb[1]
+    imskb = allkb[3]
+    write_sftot_c(vardct, enexp, ftot)
+    print(" sf_c_numeric :: Done.")
     return enexp, ftot, sfkb_c
 

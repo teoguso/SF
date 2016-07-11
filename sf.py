@@ -293,7 +293,10 @@ else:
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir
-        enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        if int(dict_c['calc_numeric']) == 1:
+            enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        else:
+            enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         if int(dict_c['calc_crc']) == 1:
             print()
             print(" ### Calculation of constrained retarded cumulant ### ")
