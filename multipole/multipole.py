@@ -847,7 +847,7 @@ if __name__ == '__main__':
     import sys
     import numpy as np
     usage = 'Usage: %s npoles infile method(const/fast, optional)' % sys.argv[0]
-    method = 'const'
+    method = 'const2'
     print(len(sys.argv))
     try:
         infilename = sys.argv[2]
