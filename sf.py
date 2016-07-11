@@ -293,6 +293,22 @@ else:
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir
+        if 'test_lorentz_W' not in dict_c:
+            print(" --- TEST: Using lorentzian form for W ---")
+            if dict_c['minkpt'] == dict_c['maxkpt'] and  dict_c['minband'] == dict_c['maxband']:
+                print(allkb[-1].shape)
+                my_im = allkb[-1][minkpt-1,minband-1]
+                lbd = np.trapz(newen[newen<eqp[minkpt-1,minband-1]],my_im[newen<eqp[minkpt-1,minband-1]])
+                print(" EQP:", eqp[minkpt-1,minband-1])
+                print(" Integral of ImS:", lbd)
+                lbd = abs(lbd)/np.pi
+               #plt.plot(newen,my_im,newen,imW(eqp[minkpt-1,minband-1]-newen,lbd = lbd, w0=17.,G=3.))
+               #plt.plot(newen[newen<eqp[minkpt-1,minband-1]],my_im[newen<eqp[minkpt-1,minband-1]])
+               #plt.show()
+                allkb[-1][minkpt-1,minband-1] = imW(eqp[minkpt-1,minband-1]-newen,lbd = lbd, w0=17.,G=1.)
+            else:
+                print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
+                sys.exit()
         if int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         else:
