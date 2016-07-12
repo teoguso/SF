@@ -1808,6 +1808,182 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     print(" calc_sf_c_serial :: Done.")
     return enexp, ftot, sfkb_c
 
+def get_mp_params():
+    """
+    FINALLY! The multipole fit lives in a separate function.
+    """
+    from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
+    print(" ### ================== ###")
+    print(" ###    Multipole fit   ###")
+    print(" Number of poles:", npoles)
+   #omegampole =  np.zeros((nkpt,nband,npoles))
+   #ampole =  np.zeros((nkpt,nband,npoles))
+    omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    #for ik in range(nkpt):
+    #    ikeff=minkpt+ik-1
+    #bdrange = vardct['bdrange']
+    #kptrange = vardct['kptrange']
+    #print("kptrange, bdrange ", kptrange, bdrange)
+    for ik in kptrange:
+        for ib in bdrange:
+   #for ik in range(imskb[:,0,0].size):
+        #for ib in range(nband):
+   #    for ib in range(imskb[0,:,0].size):
+            if eqp[ik,ib] > newen[-npoles]:
+            #if eqp[ik,ib] > newen[-1]:
+                omegampole[ik,ib] = omegampole[ik,ib-1]
+                ampole[ik,ib] = ampole[ik,ib-1]
+                print(" Eqp beyond available energy range. Values from lower band are taken.")
+                continue
+            else:
+                ibeff=minband+ib-1
+                print(" ik, ib", ik, ib)
+                #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+                #print(newen.shape, imskb.shape)
+                interpims = interp1d(newen, imskb[ik,ib], kind = 'linear', axis = -1)
+                # Here we take the curve starting from eqp and then we invert it
+                # so as to have it defined on the positive x axis
+                # and so that the positive direction is in the 
+                # increasing direction of the array index
+                #if eqp[ik,ib] <= efermi:
+                if eqp[ik,ib] <= 0:
+                    #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
+                    en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                   #en3 = newen[newen<0.] # So as to avoid negative omegampole
+                else:
+                    en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
+                    #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
+                #en3 = en[en<=efermi]
+                if en3.size == 0:
+                    print()
+                    print(" WARNING: QP energy is outside of given energy range!\n"+\
+                            " This state will be skipped!\n"+\
+                            "You might want to modify enmin/enmax.")
+                    print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
+                    continue
+                im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
+               #zcut = 3.0
+               #for i in range(en3.size):
+               #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
+               #        im3[i] = 0.
+               #import matplotlib.pylab as plt
+               #plt.plot(en3,im3,'-')
+               #plt.show()
+                en3 = en3 - eqp[ik,ib]
+                if eqp[ik,ib] <= 0:
+                    en3 = -en3[::-1] 
+                    im3 = im3[::-1]
+               #### TESTING ###
+               #print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+               #import matplotlib.pylab as plt
+               #plt.plot(newen, imskb[ik,ib]/np.pi,"-")
+               #plt.plot(en3+eqp[ik,ib], im3,"x")
+               #plt.show()
+               #sys.exit()
+               #### END TESTING ###
+                omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
+                plot_fit = int(vardct['plot_fit'])
+                if plot_fit == 1:
+                    from multipole import write_f_as_sum_of_poles
+                    import matplotlib.pylab as plt
+                    import pylab
+                    plt.figure(2)
+                    eta = 0.5
+                    enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+                    plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+                    plt.plot(en3,im3,"-",label="ImS(e-w)")
+                    plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+                    plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+                    plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+                    plt.legend()
+                    pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'.pdf')
+                    plt.close()
+               ## TESTING THE MULTIPOLE REPRESENTATION
+               #from multipole import write_f_as_sum_of_poles
+               #import matplotlib.pylab as plt
+               #import pylab
+               #eta = 0.01
+               #for eta in [0.1]: #, 0.1, 0.5]:
+               #    for npoles in [1,10,20,100]:
+               #        omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+               #        print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+               #        print(omegai, lambdai, deltai)
+               #        enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+               #        plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+               #        plt.plot(en3,im3,"-",label="ImS(e-w)")
+               #        plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+               #        plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+               #        plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+               #        plt.legend()
+               #        pylab.savefig('imS_test_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'_eta'+str(eta)+'.pdf')
+               #        plt.show()
+               #sys.exit()
+                # END TESTING THE MULTIPOLE REPRESENTATION 
+                # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
+                # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
+                if npoles > omegai.size:
+                    omegampole[ik,ib][:omegai.size] = omegai 
+                    ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                    print()
+                    print(" WARNING: npoles used ("+str(npoles)+") is larger"+\
+                            " than poles x data array can give ("+str(omegai.size)+").")
+                   #print("WARNING: Reduce npoles. You are wasting resources!!!")
+                    print(" Im(Sigma) will be interpolated to obtain the desired number of poles.")
+                    current_size = omegai.size
+                    counter = 0
+                    while npoles > current_size:
+                        counter += 1
+                        print()
+                        print(" WARNING: Arrays are too coarse.")
+                        print(" npoles, omegai.size:", npoles, omegai.size)
+                        print(" Filling arrays with interpolated values...")
+                        en1 = array_doublefill(en3)
+                        im1 = array_doublefill(im3)
+                        en3 = en1
+                        im3 = im1
+                        omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
+                        current_size = omegai.size
+                        if counter > 4:
+                            print(60*"=")
+                            print(" WARNING: You are trying too hard with too few points.")
+                            print(" The array has been interpolated more than 4 times.")
+                            print(" Maybe use less poles or calculate more points for Sigma?")
+                            print(60*"=")
+            #   im1 = fit_double(im3)
+                else:
+                    omegampole[ik,ib] = omegai 
+                    ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+               #ampole[ik,ib] = gi
+                print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
+                print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
+                print(" \sum_j^N\lambda_j =", np.sum(lambdai))
+                #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
+                #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
+    # Writing out a_j e omega_j
+    print(" ### Writing out a_j and omega_j...")
+    outname = "a_j_np"+str(npoles)+".dat"
+    outfile = open(outname,'w')
+    outname2 = "omega_j_np"+str(npoles)+".dat"
+    outfile2 = open(outname2,'w')
+    for ipole in xrange(npoles):
+ #      for ik in kptrange:
+ #          #for ib in range(nband):
+ #          for ib in bdrange:
+        for ik in range(imskb[:,0,0].size):
+            for ib in range(imskb[0,:,0].size):
+                outfile.write("%15.7e"  % (ampole[ik,ib,ipole]))
+                outfile2.write("%15.7e" % (omegampole[ik,ib,ipole]))
+               #outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
+               #outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
+            outfile.write("\n")
+            outfile2.write("\n")
+        outfile.write("\n")
+        outfile2.write("\n")
+    outfile.close()
+    outfile2.close()
+    return omegai, lambdai, deltai
+
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
@@ -1838,6 +2014,10 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #allkb = [spfkb,reskb, rdenkb, imskb]
     reskb = allkb[1]
     imskb = allkb[3]
+    omegai, lambdai, deltai = get_mp_params()
+
+    ### HERE GOES THE JUICY STUFF!!!
+    ### NUMERICAL INTEGRAL AND WHATNOT ###
     write_sftot_c(vardct, enexp, ftot)
     print(" sf_c_numeric :: Done.")
     return enexp, ftot, sfkb_c
