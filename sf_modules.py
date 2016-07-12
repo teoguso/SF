@@ -1826,7 +1826,6 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
                 print(" Eqp beyond available energy range. Values from lower band are taken.")
                 continue
             else:
-                ibeff=minband+ib-1
                 print(" ik, ib", ik, ib)
                 #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
                 #print(newen.shape, imskb.shape)
@@ -1869,7 +1868,6 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
                #sys.exit()
                #### END TESTING ###
                 omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
-                plot_fit = int(vardct['plot_fit'])
                 if plot_fit == 1:
                     from multipole import write_f_as_sum_of_poles
                     import matplotlib.pylab as plt
@@ -1961,6 +1959,24 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     outfile2.close()
     return omegai, lambdai, deltai
 
+def calc_sf_c_num(en, imskb, eqp):
+    """
+    """
+    # G(t)
+    print(en.shape, imskb.shape)
+    t = np.linspace(-100.,100.,num = 2000)
+    sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
+    ftot =  np.zeros((len(en)))
+    for ik in range(imskb[:,0,0].size):
+        ft = np.zeros((imskb[0,:,0].size,len(en)))
+        for ib in range(imskb[0,:,0].size):
+           #gt = np.trapz(en[en<=eqp[ik,ib]],imskb[ik,ib][en<=eqp[ik,ib]])
+            gt = np.trapz(en,imskb[ik,ib])
+            go = np.fft.fft
+            ft += gt
+    return ftot, sfkb
+
+
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     This method takes care of the calculation of the cumulant. 
@@ -1991,11 +2007,14 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #allkb = [spfkb,reskb, rdenkb, imskb]
     reskb = allkb[1]
     imskb = allkb[3]
-    omegai, lambdai, deltai = get_mp_params()
-
+    plot_fit = int(vardct['plot_fit'])
+    #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
+    ftot, sfkb_c = calc_sf_c_num(newen, imskb, eqp)
+    ftot = [1]
+    sfkb_c = [1]
     ### HERE GOES THE JUICY STUFF!!!
     ### NUMERICAL INTEGRAL AND WHATNOT ###
-    write_sftot_c(vardct, enexp, ftot)
+    #write_sftot_c(vardct, newen, ftot)
     print(" sf_c_numeric :: Done.")
-    return enexp, ftot, sfkb_c
+    return newen, ftot, sfkb_c
 
