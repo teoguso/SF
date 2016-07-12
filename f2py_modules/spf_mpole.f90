@@ -49,10 +49,10 @@
          end do
 
          tmpomp = omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp2)+tmpf3)
+         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp2)+tmpf3))
         end do
         !tmpomp = omegapkb(i)+omegapkb(j)
-        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2)
+        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2))
        end do
 
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
@@ -81,7 +81,7 @@
          tmpomp = omegapkb(i)+omegapkb(j)
          tmpf2 = tmpf2 +  akb(j)*(denom2(offset)+tmpf3)
         end do
-        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2)
+        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2))
        end do
 
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)

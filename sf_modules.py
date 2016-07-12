@@ -1808,7 +1808,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     print(" calc_sf_c_serial :: Done.")
     return enexp, ftot, sfkb_c
 
-def get_mp_params():
+def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     """
     FINALLY! The multipole fit lives in a separate function.
     """
@@ -1816,22 +1816,11 @@ def get_mp_params():
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
-   #omegampole =  np.zeros((nkpt,nband,npoles))
-   #ampole =  np.zeros((nkpt,nband,npoles))
     omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
     ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
-    #for ik in range(nkpt):
-    #    ikeff=minkpt+ik-1
-    #bdrange = vardct['bdrange']
-    #kptrange = vardct['kptrange']
-    #print("kptrange, bdrange ", kptrange, bdrange)
     for ik in kptrange:
         for ib in bdrange:
-   #for ik in range(imskb[:,0,0].size):
-        #for ib in range(nband):
-   #    for ib in range(imskb[0,:,0].size):
             if eqp[ik,ib] > newen[-npoles]:
-            #if eqp[ik,ib] > newen[-1]:
                 omegampole[ik,ib] = omegampole[ik,ib-1]
                 ampole[ik,ib] = ampole[ik,ib-1]
                 print(" Eqp beyond available energy range. Values from lower band are taken.")
@@ -1848,12 +1837,9 @@ def get_mp_params():
                 # increasing direction of the array index
                 #if eqp[ik,ib] <= efermi:
                 if eqp[ik,ib] <= 0:
-                    #en3 = en[en<=eqp[ik,ib]] # So as to avoid negative omegampole
                     en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
-                   #en3 = newen[newen<0.] # So as to avoid negative omegampole
                 else:
                     en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
-                    #en3 = en[en>eqp[ik,ib]] # So as to avoid negative omegampole
                 #en3 = en[en<=efermi]
                 if en3.size == 0:
                     print()
@@ -1950,16 +1936,12 @@ def get_mp_params():
                             print(" The array has been interpolated more than 4 times.")
                             print(" Maybe use less poles or calculate more points for Sigma?")
                             print(60*"=")
-            #   im1 = fit_double(im3)
                 else:
                     omegampole[ik,ib] = omegai 
                     ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
-               #ampole[ik,ib] = gi
                 print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
                 print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
                 print(" \sum_j^N\lambda_j =", np.sum(lambdai))
-                #plt.plot(en3,im3,"-"); plt.plot(omegai,np.pi/2*gi*omegai/deltai,"-o")
-                #e1,f1 = write_f_as_sum_of_poles(en3,omegai,gi,deltai,0)
     # Writing out a_j e omega_j
     print(" ### Writing out a_j and omega_j...")
     outname = "a_j_np"+str(npoles)+".dat"
@@ -1967,15 +1949,10 @@ def get_mp_params():
     outname2 = "omega_j_np"+str(npoles)+".dat"
     outfile2 = open(outname2,'w')
     for ipole in xrange(npoles):
- #      for ik in kptrange:
- #          #for ib in range(nband):
- #          for ib in bdrange:
         for ik in range(imskb[:,0,0].size):
             for ib in range(imskb[0,:,0].size):
                 outfile.write("%15.7e"  % (ampole[ik,ib,ipole]))
                 outfile2.write("%15.7e" % (omegampole[ik,ib,ipole]))
-               #outfile.write("%10.5f"  % (ampole[ik,ib,ipole]))
-               #outfile2.write("%10.5f" % (omegampole[ik,ib,ipole]))
             outfile.write("\n")
             outfile2.write("\n")
         outfile.write("\n")
