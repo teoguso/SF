@@ -309,10 +309,12 @@ else:
             else:
                 print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
                 sys.exit()
+        ### NUMERICAL INTEGRATION ###
         if int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        ### CRC FORMULA ###
         if int(dict_c['calc_crc']) == 1:
             print()
             print(" ### Calculation of constrained retarded cumulant ### ")

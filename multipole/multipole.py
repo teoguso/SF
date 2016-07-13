@@ -125,6 +125,9 @@ def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
         tmpint = (y[i+1]+y[i])*dx/2
         tmpgi = tmpint 
         lambdai.append(tmpgi)
+    if nbin == 1:
+        print(" WARNING: with 1 bin, the value of lambdai is simply the integral under the curve.")
+        lambdai = totalint
     lambdai = np.array(lambdai)
     omegai  = np.array(omegai)
     deltai  = np.array(deltai)
