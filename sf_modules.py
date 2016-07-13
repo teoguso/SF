@@ -1964,12 +1964,18 @@ def calc_sf_c_num(en, imskb, eqp):
     """
     # G(t)
     print(en.shape, imskb.shape)
-    t = np.linspace(-100.,100.,num = 2000)
+    t = np.linspace(-100.,100.,num = 20)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
     ftot =  np.zeros((len(en)))
+    corr_factor = np.zeros((t.size,en.size))
+   #corr_factor = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
     for ik in range(imskb[:,0,0].size):
-        ft = np.zeros((imskb[0,:,0].size,len(en)))
+        ft = np.zeros((imskb[0,:,0].size,len(t)))
         for ib in range(imskb[0,:,0].size):
+            for i in range(t.size):
+                corr_factor[i] = (np.exp(-1.j*en*t[i]) + 1.j*en*t[i] - 1)/en**2
+               #corr_factor[i] = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
+            integrand = abs(imskb[ik,ib])
            #gt = np.trapz(en[en<=eqp[ik,ib]],imskb[ik,ib][en<=eqp[ik,ib]])
             gt = np.trapz(en,imskb[ik,ib])
             go = np.fft.fft
