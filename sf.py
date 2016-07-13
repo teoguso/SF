@@ -90,6 +90,11 @@ dict_c['sig_bdgw'] = sig_bdgw
 
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
+dict_c['hartree'] = hartree
+# ---------------------------------- #
+# ====== READING HF ===== #
+hf = gwout.hf
+dict_c['hf'] = hf
 # ---------------------------------- #
 
 # ======== READING WTK ======= #
@@ -290,6 +295,7 @@ else:
         print(" Test imeqp:\n", imeqp)
         # Writing out eqp
         # Writing out imeqp
+        print(" Launching write_eqp_imeqp in a separate thread...")
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir

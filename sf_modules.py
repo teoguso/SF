@@ -1959,28 +1959,72 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     outfile2.close()
     return omegai, lambdai, deltai
 
-def calc_sf_c_num(en, imskb, eqp):
+def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=100, T=1.):
     """
     """
+    import matplotlib.pylab as plt
     # G(t)
-    print(en.shape, imskb.shape)
-    t = np.linspace(-100.,100.,num = 20)
+    print("en, imskb:",en.shape, imskb.shape)
+    # Number of samplepoints 
+    N = 1000 
+    # sample spacing 
+    T = 5.0 
+   #N = en.size
+    t = np.linspace(- N * T, N * T, N)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
-    ftot =  np.zeros((len(en)))
-    corr_factor = np.zeros((t.size,en.size))
+    ft =  np.zeros((len(en)))
+    corr_factor = np.zeros((t.size,en.size),'complex')
+    ct = np.zeros((t.size),'complex')
    #corr_factor = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
-    for ik in range(imskb[:,0,0].size):
-        ft = np.zeros((imskb[0,:,0].size,len(t)))
-        for ib in range(imskb[0,:,0].size):
+    # We have got to shift the imSig --> imSig(\eqp - \omega)
+    for ik in kptrange:
+        for ib in bdrange:
+            en2 = en - eqp[ik,ib]
+            en2 = -en2[::-1]
+            im2 = imskb[ik,ib,::-1]
+           #plt.plot(en,imskb[ik,ib],'-')
+           #plt.plot(en2,im2,'-')
+           #plt.plot(eqp[ik,ib],1,'o')
+           #plt.plot(0,1,'o')
+           #plt.show()
+            print(" Calculating G(t)...")
+            print(" ik, ib:",ik, ib)
             for i in range(t.size):
-                corr_factor[i] = (np.exp(-1.j*en*t[i]) + 1.j*en*t[i] - 1)/en**2
+                corr_factor[i] = im2*(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2**2
+               #plt.plot(en2,im2,'-')
+               #plt.plot(en2,corr_factor[i],'-')
+               #plt.plot(en2,(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2**2,'-')
+               #plt.show()
+               #sys.exit()
                #corr_factor[i] = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
-            integrand = abs(imskb[ik,ib])
+                ct[i] = np.trapz(corr_factor[i],en2)
+            ct = ct/np.pi/2
+            print("eqp:", eqp[ik,ib])
+            print("hf:", hf[ik,ib])
+            print("ct[:-10]",ct[:10])
+            gt = 1j*np.exp(-1j*hf[ik,ib]*t+ct)
+           #gt = 1j*np.exp(-1j*hf[ik,ib]*t)
+            print("gt[:-10]",gt[:10])
+            gt[t>0] = 0
+            print("ct:", ct.shape, type(ct))
+            print("gt:", gt.shape, type(gt))
+           #plt.plot(t,corr_factor[:,0].real,'-')
+           #plt.plot(t,corr_factor[:,0].imag,'-')
+           #plt.plot(en,imskb[ik,ib],'-')
+           #plt.plot(en+eqp[ik,ib],imskb[ik,ib],'-')
+           #plt.plot(t,gt.real,'-')
+           #plt.plot(t,gt.imag,'-')
            #gt = np.trapz(en[en<=eqp[ik,ib]],imskb[ik,ib][en<=eqp[ik,ib]])
-            gt = np.trapz(en,imskb[ik,ib])
-            go = np.fft.fft
-            ft += gt
-    return ftot, sfkb
+            print(" Performing FFT...")
+            go = np.fft.fft(gt)
+           #en3 = np.fft.fftfreq(t.size,T)
+           #print("go.shape:",go.shape)
+            plt.plot(abs(go.imag),'-')
+            plt.show()
+            sys.exit()
+            sfkb[ik,ib] = abs(go.imag)
+            ft += abs(go.imag)
+    return ft, sfkb
 
 
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
@@ -1993,6 +2037,7 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     import numpy as np;
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
+    hf = np.array(vardct['hf'])
     pdos = np.array(pdos)
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -2015,9 +2060,15 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     imskb = allkb[3]
     plot_fit = int(vardct['plot_fit'])
     #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
-    ftot, sfkb_c = calc_sf_c_num(newen, imskb, eqp)
-    ftot = [1]
-    sfkb_c = [1]
+   #ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
+    for N in [10,50,100]: 
+        print(" N =",N)
+        ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
+        plt.plot(newen,ftot)
+    plt.show()
+    sys.exit()
+   #ftot = [1]
+   #sfkb_c = [1]
     ### HERE GOES THE JUICY STUFF!!!
     ### NUMERICAL INTEGRAL AND WHATNOT ###
     #write_sftot_c(vardct, newen, ftot)
