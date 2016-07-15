@@ -9,19 +9,19 @@ if __name__ == "__main__":
     """
     print("\n ### Testing FFT with a sinusoidal curve ###\n")
     N= 2000 # Sample points
-    dt = 0.01 # t-step
-   #T = N*dt # Period
+    dt = 0.01 # Sample spacing
     print(" Sample points N:", N)
     print(" Sample spacing dt:", dt)
    #print(" Period T = N*dt:", T)
    #print(" Frequency F=1/T:", 1/T)
    #df = 1/T # Frequency step
    #dw = 2*np.pi/T # Pulse step
-    t = np.linspace(-N*dt, N*dt, N)
+    t = np.linspace(-N*dt/2, N*dt/2, N)
     #print(t)
     # Defining a functin in time
     f = lambda x: np.sin(5.0 * 2.0*np.pi*x) + 0.5*np.sin(8.0 * 2.0*np.pi*x)
     yt = f(t)
+    # Second test
     f = np.random.rand(len(t))*np.sin(2*np.pi*t*10)
     yt = f
     # Printing the function in time domain

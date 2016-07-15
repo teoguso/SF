@@ -1959,93 +1959,96 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     outfile2.close()
     return omegai, lambdai, deltai
 
-def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.001):
+def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
     """
     """
+    from scipy.fftpack import fft,fftfreq,fftshift
     import matplotlib.pylab as plt
-    print()
     print(" calc_sf_c_num :: ")
     # G(t)
-    print("en, imskb:",en.shape, imskb.shape)
+    print(" en, imskb:",en.shape, imskb.shape)
     # Number of samplepoints 
-   #N = 4000 
+    N = 10000
    ## sample spacing 
-   #dt = 0.005 
-    T = dt*N # PERIOD
-    dw = 2*np.pi/T
+    dt = 0.01 
+   #dw = 2*np.pi/dt # Is this useful?
    #N = en.size
-    t = np.linspace(- T/2, T/2, N)
+    t = np.linspace(- N*dt/2, N*dt/2, N)
     print(" Time domain length, spacing:", t.size*dt, dt)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
-    ft =  np.zeros((len(en)))
-    corr_factor = np.zeros((t.size,en.size),'complex')
+   #ft =  np.zeros((len(en)))
+   #corr_factor = np.zeros((t.size,en.size),'complex')
     ct = np.zeros((t.size),'complex')
    #corr_factor = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
     # We have got to shift the imSig --> imSig(\eqp - \omega)
     for ik in kptrange:
         for ib in bdrange:
+            print(" ik, ib:",ik, ib)
             en2 = en - eqp[ik,ib]
             en2 = -en2[::-1]
             im2 = imskb[ik,ib,::-1]
-           #plt.plot(en,imskb[ik,ib],'-')
-           #plt.plot(en2,im2,'-')
+            # Removing the part above Fermi (<0)
+            # en2 = en2[im2>=0]
+            # Not totally sure this works
+            im2[im2<0] = 0
+            plt.plot(en,imskb[ik,ib],'-')
+            plt.plot(en,im2)
+            plt.show()
+            sys.exit()
            #plt.plot(eqp[ik,ib],1,'o')
            #plt.plot(0,1,'o')
-           #plt.show()
             print(" Calculating G(t)...")
-            print(" ik, ib:",ik, ib)
+            # Performing the integral for every value of t
             for i in range(t.size):
-                corr_factor[i] = im2*(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2**2
-               #plt.plot(en2,im2,'-')
-               #plt.plot(en2,corr_factor[i],'-')
-               #plt.plot(en2,(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2**2,'-')
-               #plt.show()
-               #sys.exit()
-               #corr_factor[i] = lambda en, t: (np.exp(-1.j*en*t) + 1.j*en*t - 1)/en**2
-                ct[i] = np.trapz(corr_factor[i],en2)
+               #corr_factor[i] = im2*(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2**2
+               #ct[i] = np.trapz(corr_factor[i],en2)
+                integrand = im2*(np.exp(1j*en2*t[i]) - 1j*en2*t[i] - 1)/en2/en2
+                ct[i] = np.trapz(integrand,en2)
             ct = ct/np.pi/2
             print("eqp:", eqp[ik,ib])
             print("hf:", hf[ik,ib])
             print("ct[:-10]",ct[:10])
+            # This is our G(t):
             gt = 1j*np.exp(-1j*hf[ik,ib]*t+ct)
            #gt = 1j*np.exp(-1j*hf[ik,ib]*t)
             print("gt[:-10]",gt[:10])
+            # The time-ordered G is 0 for positive times
+            # TODO: This is for occupied states only, see how to adapt for empty states
             gt[t>0] = 0
             print("ct:", ct.shape, type(ct))
             print("gt:", gt.shape, type(gt))
-           #plt.plot(t,corr_factor[:,0].real,'-')
-           #plt.plot(t,corr_factor[:,0].imag,'-')
-           #plt.plot(en,imskb[ik,ib],'-')
-           #plt.plot(en+eqp[ik,ib],imskb[ik,ib],'-')
-           #plt.plot(t,gt.real,'-')
-           #plt.plot(t,gt.imag,'-')
-           #gt = np.trapz(en[en<=eqp[ik,ib]],imskb[ik,ib][en<=eqp[ik,ib]])
             print(" Performing FFT...")
-            go = np.fft.fft(gt)
-            w = np.fft.fftfreq(N)*N*dw
-            w2 = np.fft.fftshift(go)
-           #en3 = np.fft.fftfreq(t.size,T)
-           #print("go.shape:",go.shape)
+            # Remember to divide by N ?
+           #go = fft(gt)/N
+            go = fft(gt)*dt # Whatever, just check the units please
+            freq = fftfreq(N,dt)
+           #w = np.fft.fftfreq(N)*N*dw
+            # Shifting the arrays for visualization
+            s_freq = fftshift(freq)*2*np.pi # To have the correct energies (hopefully!)
+            s_go = fftshift(go)
             f, axarr = plt.subplots(2, 2)
             axarr[0, 0].plot(t, gt.real)
             axarr[0, 0].set_title('Axis [0,0]')
             axarr[0, 1].plot(t, gt.imag)
             axarr[0, 1].set_title('Axis [0,1]')
-            axarr[1, 0].plot(w, go.real)
+            axarr[1, 0].plot(s_freq, s_go.real)
             axarr[1, 0].set_title('Axis [1,0]')
-            axarr[1, 1].plot(w, go.imag)
+            axarr[1, 1].plot(s_freq, s_go.imag)
             axarr[1, 1].set_title('Axis [1,1]')
-            f2 = plt.figure()
-           #plt.plot(abs(go.imag),label="N "+str(N)+" dt "+str(dt))
-            plt.plot(t,w)
-            plt.plot(t,w2)
-           #plt.plot(abs(go.imag),'-')
+            plt.grid()
+            plt.figure(); plt.grid()
+            plt.plot(s_freq, abs(s_go.imag),'-')
             plt.show()
             sys.exit()
+           #plt.plot(abs(go.imag),label="N "+str(N)+" dt "+str(dt))
+           #plt.figure(); plt.grid()
+           #plt.plot(s_freq, abs(go.imag),'-')
+           #plt.show()
            #sfkb[ik,ib] = abs(go.imag)
            #ft += abs(go.imag)
     print(" calc_sf_c_num :: Done.")
-    return ft, sfkb, w
+    return s_freq, s_go.imag
+   #return ft, sfkb, w
 
 
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
@@ -2082,12 +2085,14 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     plot_fit = int(vardct['plot_fit'])
     #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
    #ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
-    for N in [100,500,1000,]: 
-        for dt in [0.1, 0.01, 0.005]: 
-            print(" N, dt =", N, dt) 
-            ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
-       #plt.plot(w, abs(go.imag),label="N "+str(N)+" dt "+str(dt))
+    for N, dt in [(1000,0.01),(10000,0.01),(10000,0.01)]: #,(10000,0.001)]: 
+       #for dt in [0.005]: 
+            print("\n N, dt =", N, dt) 
+           #ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
+            s_freq, s_go_imag = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N,dt=dt)
+            plt.plot(s_freq, abs(s_go_imag), label="N "+str(N)+" dt "+str(dt))
        #plt.plot(w,ftot)
+    plt.legend()
     plt.show()
     sys.exit()
    #ftot = [1]
