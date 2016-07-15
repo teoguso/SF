@@ -1959,18 +1959,23 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     outfile2.close()
     return omegai, lambdai, deltai
 
-def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=100, T=1.):
+def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.001):
     """
     """
     import matplotlib.pylab as plt
+    print()
+    print(" calc_sf_c_num :: ")
     # G(t)
     print("en, imskb:",en.shape, imskb.shape)
     # Number of samplepoints 
-    N = 1000 
-    # sample spacing 
-    T = 5.0 
+   #N = 4000 
+   ## sample spacing 
+   #dt = 0.005 
+    T = dt*N # PERIOD
+    dw = 2*np.pi/T
    #N = en.size
-    t = np.linspace(- N * T, N * T, N)
+    t = np.linspace(- T/2, T/2, N)
+    print(" Time domain length, spacing:", t.size*dt, dt)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
     ft =  np.zeros((len(en)))
     corr_factor = np.zeros((t.size,en.size),'complex')
@@ -2017,14 +2022,30 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=100, T=1.):
            #gt = np.trapz(en[en<=eqp[ik,ib]],imskb[ik,ib][en<=eqp[ik,ib]])
             print(" Performing FFT...")
             go = np.fft.fft(gt)
+            w = np.fft.fftfreq(N)*N*dw
+            w2 = np.fft.fftshift(go)
            #en3 = np.fft.fftfreq(t.size,T)
            #print("go.shape:",go.shape)
-            plt.plot(abs(go.imag),'-')
+            f, axarr = plt.subplots(2, 2)
+            axarr[0, 0].plot(t, gt.real)
+            axarr[0, 0].set_title('Axis [0,0]')
+            axarr[0, 1].plot(t, gt.imag)
+            axarr[0, 1].set_title('Axis [0,1]')
+            axarr[1, 0].plot(w, go.real)
+            axarr[1, 0].set_title('Axis [1,0]')
+            axarr[1, 1].plot(w, go.imag)
+            axarr[1, 1].set_title('Axis [1,1]')
+            f2 = plt.figure()
+           #plt.plot(abs(go.imag),label="N "+str(N)+" dt "+str(dt))
+            plt.plot(t,w)
+            plt.plot(t,w2)
+           #plt.plot(abs(go.imag),'-')
             plt.show()
             sys.exit()
-            sfkb[ik,ib] = abs(go.imag)
-            ft += abs(go.imag)
-    return ft, sfkb
+           #sfkb[ik,ib] = abs(go.imag)
+           #ft += abs(go.imag)
+    print(" calc_sf_c_num :: Done.")
+    return ft, sfkb, w
 
 
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
@@ -2061,10 +2082,12 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     plot_fit = int(vardct['plot_fit'])
     #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
    #ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
-    for N in [10,50,100]: 
-        print(" N =",N)
-        ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
-        plt.plot(newen,ftot)
+    for N in [100,500,1000,]: 
+        for dt in [0.1, 0.01, 0.005]: 
+            print(" N, dt =", N, dt) 
+            ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
+       #plt.plot(w, abs(go.imag),label="N "+str(N)+" dt "+str(dt))
+       #plt.plot(w,ftot)
     plt.show()
     sys.exit()
    #ftot = [1]
