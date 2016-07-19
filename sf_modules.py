@@ -1993,17 +1993,39 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
     Given the parameters N and t, G(w) is 
     calculated from G(t) using the FFT.
     """
-    from scipy.fftpack import fft,fftfreq,fftshift
+    from scipy.fftpack import fft,ifft
+    from numpy.fft import fftshift,fftfreq,ifftshift
     print(" calc_sf_c_num :: ")
     # G(t)
     print(" en, imskb:",en.shape, imskb.shape)
     # Number of samplepoints 
-    N = 20000
+    N = 2000
    ## sample spacing 
-    dt = 0.2 
+    dt = 0.02 # 0.06 
+    # Good for band 1: N = 2000, dt = 0.02
+    # Best adaptable parameters
+    w_max = abs(en[-1]-en[0])
+    dw = abs(en[1]-en[0])
+    dt = 2*np.pi/w_max
+    N = int(w_max/dw)
+    if np.mod(N,2) != 0:
+        N += 1
+    print(" N, dt: {} {}".format(N, dt))
     t = np.linspace(- N*dt/2, N*dt/2, N)
+   #print(t.shape, t)
+   #print(t[::2].shape, t[::2])
+   #t = t[::2]
     print(" Time domain length, spacing:", t.size*dt, dt)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
+    ### FFT test on ImSigma ###
+    print(" ### FFT test ###")
+    t_ims = imskb[kptrange[-1],bdrange[-1]]
+    t_fft = fft(t_ims, t_ims.size)
+    t_ifft = ifft(t_fft)
+    t_diff = np.trapz(abs(t_ims-t_ifft),en)
+    print(" Difference between f(w) and its double FFT: {}".format(t_diff))
+    if t_diff >= 0.01:
+        print("WARNING: double FFT does not yeld identity. Spacing might be too coarse.")
     for ik in kptrange:
         for ib in bdrange:
             print(" ik, ib:",ik, ib)
@@ -2012,29 +2034,40 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
             print(" Calculating G(t)...")
             gt = calc_gt(imskb[ik,ib],en,t,eqp[ik,ib],hf[ik,ib])
             print(" Performing FFT...")
-            go = fft(gt)*dt # Whatever, just check the units please
-            freq = fftfreq(N,dt)*2*np.pi
+            # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
+            go = ifft(gt,2*gt.size) #*dt # Whatever, just check the units please
+            freq = fftfreq(2*N,dt)*2*np.pi
             # Shifting the arrays for visualization
             s_freq = fftshift(freq) # To have the correct energies (hopefully!)
             s_go = fftshift(go)
+           #print("### Normalization test ###")
+           #sf_integral = np.trapz(abs(s_go.imag), s_freq)
+           #print(" Integral of Im[G(w)] (should be == 1): {}".format(sf_integral))
+           #if sf_integral < 0.8:
+           #    print(" WARNING: The integral of the spectral function")
+           #print("### ================== ###")
             # Visualize the function and its FFT
             flag_test = False
             flag_test = True
             if flag_test is True:
                 f, axarr = plt.subplots(2, 2)
+                f.suptitle("ik, ib, N, dt: {}, {}, {}, {}".format(ik,ib,N,dt))
                 axarr[0, 0].plot(t, gt.real)
                 axarr[0, 0].set_title('Re[G(t)]')
+                axarr[0, 0].grid()
                 axarr[0, 1].plot(t, gt.imag)
                 axarr[0, 1].set_title('Im[G(t)]')
+                axarr[0, 1].grid()
                 axarr[1, 0].plot(s_freq, s_go.real)
                 axarr[1, 0].set_title('Re[G(w)]')
+                axarr[1, 0].grid()
                 axarr[1, 1].plot(s_freq, s_go.imag)
                 axarr[1, 1].set_title('Im[G(w)]')
-                plt.grid()
+                axarr[1, 1].grid()
                 plt.figure(); plt.grid()
                #plt.plot(freq, abs(go.imag),'-', label='out-of-the-box FFT')
                 plt.plot(s_freq, abs(s_go.imag),'-', label='shifted FFT')
-                plt.title('|Im[G(w)]|')
+                plt.title('|Im[G(w)]|, ik, ib, N, dt: {}, {}, {}, {}'.format(ik, ib, N, dt))
                 plt.legend()
                 plt.show()
                 sys.exit()
@@ -2085,14 +2118,11 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
            #ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
             s_freq, s_go_imag = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N,dt=dt)
             plt.plot(s_freq, abs(s_go_imag), label="N "+str(N)+" dt "+str(dt))
-       #plt.plot(w,ftot)
     plt.legend()
     plt.show()
     sys.exit()
    #ftot = [1]
    #sfkb_c = [1]
-    ### HERE GOES THE JUICY STUFF!!!
-    ### NUMERICAL INTEGRAL AND WHATNOT ###
     #write_sftot_c(vardct, newen, ftot)
     print(" sf_c_numeric :: Done.")
     return newen, ftot, sfkb_c
