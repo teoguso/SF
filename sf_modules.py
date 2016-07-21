@@ -7,7 +7,7 @@ of spectral functions.
 """
 from __future__ import print_function
 import numpy as np;
-import matplotlib.pylab as plt;
+import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import optimize
 import sys
@@ -47,6 +47,7 @@ def read_invar(infile='invar.in'):
      'restart': 0, Will not calculate anything, but simply use the single spf files already calculated (0, 1)
      'add_wtk': 1, Include k-point weights (0, 1)
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
+     'ir_cut': 0.0, Puts to 0 the imaginary part of sigma in a [-ir_cut;ir_cut) range around eqp[ik,ib]
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
     """
     var_defaults = { 
@@ -77,6 +78,7 @@ def read_invar(infile='invar.in'):
             'restart': 0,
             'add_wtk': 1,
             'plot_fit': 0, 
+            'ir_cut': 0.0, 
             'coarse': 0
             }
 #    varlist = list((
@@ -1418,6 +1420,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     print(" calc_sf_c_serial :: ")
     import numpy as np;
+    ir_cut = float(vardct['ir_cut'])
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1535,11 +1538,13 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
-                   #zcut = 3.0
+                    # cut to solve the 0 divergency
+                    if ir_cut != 0: 
+                        im3[(en3>(eqp[ik,ib]-ir_cut)) & (en3<(eqp[ik,ib]+ir_cut))] = 0
                    #for i in range(en3.size):
                    #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
                    #        im3[i] = 0.
-                   #import matplotlib.pylab as plt
+                   #import matplotlib.pyplot as plt
                    #plt.plot(en3,im3,'-')
                    #plt.show()
                     en3 = en3 - eqp[ik,ib]
