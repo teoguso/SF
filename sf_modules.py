@@ -1933,6 +1933,9 @@ def calc_ct(im,en,t):
     Returns the function of time C(t) (ndarray)
     defined over the t array.
     """
+   #print(" calc_ct :: ")
+   #plt.plot(en,im)
+   #plt.show();sys.exit()
     ts = int(t.size)
     ct = np.zeros((ts),'complex')
     den = 1/(en**2)
@@ -1940,6 +1943,7 @@ def calc_ct(im,en,t):
         integrand = im*(np.exp(1j*en*t[i]) - 1j*en*t[i] - 1)*den
         ct[i] = np.trapz(integrand,en)
     ct = ct/np.pi/2
+   #print(" calc_ct :: Done.")
     return ct
 
 def calc_ct_treat0(im,en,t):
@@ -1947,6 +1951,11 @@ def calc_ct_treat0(im,en,t):
     Calculation of exponent C(t) if w=0
     is included. NON TESTED!!!
     """
+    print(" calc_ct_treat0 :: ")
+    ### NUMBA HEADER - START ###
+   #import numba
+   #calc_ct = numba.jit(calc_ct_python)
+    ### NUMBA HEADER - END ###
     en_bot = en[en<0]
     im_bot = im[en<0]
     en_top = en[en>0]
@@ -1959,6 +1968,7 @@ def calc_ct_treat0(im,en,t):
     dim_0 = dim[np.nonzero(en == 0)[0][0]]
     ct0 = 2 * dim_0 * ( 1 - 1j * t ) * dx_inv
     ct = ct0 + ct1 + ct2
+    print(" calc_ct_treat0 :: Done.")
     return ct
 
 def calc_gt(im,en,t,eqp,hf):
@@ -1967,6 +1977,11 @@ def calc_gt(im,en,t,eqp,hf):
     presence of w = 0. 
     For now, this only acts if one w is EXACTLY 0. 
     """
+    ### NUMBA HEADER - START ###
+    print(" calc_gt :: ")
+   #import numba
+   #calc_ct = numba.jit(calc_ct_python)
+    ### NUMBA HEADER - END ###
     en2 = en - eqp
     en2 = -en2[::-1]
     im2 = im[::-1]
@@ -1977,13 +1992,15 @@ def calc_gt(im,en,t,eqp,hf):
     else: # Performing the integral for every value of t
         ct = calc_ct(im2,en2,t)
     # This is our G(t):
-    gt = 1j*np.exp( -1j * hf * t + ct )
-    print("gt[:-10]",gt[:10])
+   #gt = 1j*np.exp( -1j * hf * t  + ct )
+    gt = 1j*np.exp(  ct )
+   #print("gt[:-10]",gt[:10])
     # The time-ordered G is 0 for positive times
     # TODO: This is for occupied states only, see how to adapt for empty states
     gt[t>0] = 0
     print("ct:", ct.shape, type(ct))
     print("gt:", gt.shape, type(gt))
+    print(" calc_gt :: Done.")
     return gt
 
 def set_best_fft_grid(en):
@@ -1994,11 +2011,13 @@ def set_best_fft_grid(en):
     w_max = abs(en[-1]-en[0])
     dw = abs(en[1]-en[0])
     dt = 2*np.pi/w_max
-    N = int(w_max/dw)
+   #N = int(w_max/dw)
+    N = en.size
+    # N*dt = T = 2*pi/dw
     if np.mod(N,2) != 0: # even steps are better
         N += 1
     print(" N, dt: {} {}".format(N, dt))
-    t = np.linspace(- N*dt/2, N*dt/2, N)
+    t = np.linspace(- N*dt, 0, N)
     print("set_best_fft_grid :: Done.")
     return t, N, dt, dw
 
@@ -2025,14 +2044,23 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
     print(" Time domain length, spacing:", t.size*dt, dt)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
     ### FFT test on ImSigma ###
-    print(" ### FFT test ###")
-    t_ims = imskb[kptrange[-1],bdrange[-1]]
-    t_fft = fft(t_ims, t_ims.size)
-    t_ifft = ifft(t_fft)
-    t_diff = np.trapz(abs(t_ims-t_ifft),en)
-    print(" Difference between f(w) and its double FFT: {}".format(t_diff))
-    if t_diff >= 0.01:
-        print("WARNING: double FFT does not yeld identity. Spacing might be too coarse.")
+   #print(" ### FFT test ###")
+   #t_ims = imskb[kptrange[-1],bdrange[-1]]
+   #interpims = interp1d(en, t_ims, kind = 'linear', axis = -1)
+   #for i in [1,4,16,64,256,1024]:
+   #    t_en = np.linspace(en[0], en[-1], en.size/i)
+   #    t_ims = interpims(t_en)
+   #    t_fft = fft(t_ims, t_ims.size)
+   #    t_ifft = ifft(t_fft)
+   #    t_int = np.trapz(t_ims,t_en)
+   #    t_diff = np.trapz(abs(t_ims-t_ifft),t_en)/t_int
+   #    print(" Number of samples in w: {}".format(t_en.size))
+   #    print(" Difference between f(w) and its double FFT: {}".format(t_diff))
+   #    plt.plot(t_en,t_ims,label=str(t_en.size))
+   #    if t_diff >= 0.01:
+   #        print("WARNING: double FFT does not yeld identity. Spacing might be too coarse.")
+   #plt.legend(); plt.show()
+   #sys.exit()
     for ik in kptrange:
         for ib in bdrange:
             print(" ik, ib:",ik, ib)
@@ -2044,32 +2072,86 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
             interpims = interp1d(en, ims_local, kind = 'linear', axis = -1)
             imeqp = interpims(eqp_kb)
             print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
+           #plt.plot(en,ims_local); plt.show(); sys.exit()
             # IDEA: THIS NUMBER SHOULD BE OUR DISCRIMINATE FOR THE RESOLUTION IN ENERGIES
             # Hence now we should recalculate en, t, N , dt
             # Let's say dw = ImSigma(eqp)/4, and then everything follows.
-            dw = imeqp/4
-            nsamples = int(abs(en[0]-en[-1])/dw)
+            dw = imeqp/2
+            en_len = abs(en[0]-en[-1])
+            nsamples = int(en_len/dw)
             en_adapt = np.linspace(en[0],en[-1],nsamples)
             ims_adapt = interpims(en_adapt)
-            t, N, dt, dw = set_best_fft_grid(en_adapt)
+            # HERE ZEROS ARE ADDED!!!
+           #en_ad2 = np.append(en_adapt[:]-en_len,en_adapt)
+           #en_ad2 = np.append(en_ad2[:]-en_len*2,en_ad2)
+           #ims_ad2 = np.append(np.zeros((nsamples)),ims_adapt)
+           #ims_ad2 = np.append(np.zeros((2*nsamples)),ims_ad2)
+            # These 2 lines remove the zeros
+            en_ad2 = en_adapt
+            ims_ad2 = ims_adapt
+           #ims_ad2 = np.append(ims_ad2,np.zeros((nsamples/2)))
+            t, N, dt, dw = set_best_fft_grid(en_ad2)
            #en_adapt, ims_adapt = adapt_interp(en,ims_local)
+            print()
             print(" Calculating G(t)...")
-            gt = calc_gt(ims_adapt,en_adapt,t,eqp_kb,hf_kb)
+           #t = np.linspace(-500,0)
+            for j in [1]:
+                for k in [512,1024,2048,4096]:
+                    print("j, k:",j,k)
+                    # This determines 1/T
+                    dw = imeqp/j
+                    print("dw",dw)
+                    # This determines 1/dt
+                    en_len_new = k*abs(en[0]-en[-1])
+                    print("w_max",en_len_new)
+                    nsamples = int(en_len_new/dw)
+                    print("N",nsamples)
+                    dt = 2*np.pi/en_len_new
+                    print("dt:",dt)
+                    print(" T SHOULD BE {:4.4}".format(2*np.pi/dw))
+                    en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
+                    ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
+                    en_int = en_adapt[en_adapt>=en[0]]
+                    ims_adapt = np.append(ims_zeros,interpims(en_int))
+                    en_ad2 = en_adapt
+                    ims_ad2 = ims_adapt
+                    print("en_ad2.size",en_ad2.size)
+                    t, N, dt, dw = set_best_fft_grid(en_ad2)
+                    print(" T IN FACT IS {:4.4}".format(N*dt))
+              #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
+              #    #t_ims = interpims(t_en)
+                    gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
+                   #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+                    go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                    freq = fftfreq(N,dt)*2*np.pi#/N_padded
+                    s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+                    s_go = fftshift(go)
+                    a = np.absolute(s_go.imag)
+                    plt.xlim(-75,8)
+                    plt.ylim(0,0.1)
+                    plt.plot(s_freq+hf_kb, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
+              #     plt.plot(t, gt.imag, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
+            plt.legend(loc='best'); plt.grid(); plt.show(); 
+            sys.exit()
+            gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
            #gt = calc_gt(imskb[ik,ib],en,t,eqp_kb,hf_kb)
             print(" Performing FFT...")
             # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
             # Let's try
-            set_padding = False
-            if set_padding is True:
-                N_padded = 2*N
-            else:
-                N_padded = N
-            go = ifft(gt,N_padded) #*dt # Whatever, just check the units please
-            freq = fftfreq(N_padded,dt)*2*np.pi
+           #set_padding = False
+           #if set_padding is True:
+           #    print(" Padding 0...")
+           #    N_padded = 2*N
+           #else:
+           #    N_padded = N
+            go = ifft(gt,N) #/dt # Whatever, just check the units please
+            freq = fftfreq(N,dt)*2*np.pi#/N_padded
             # Shifting the energy arrays for visualization
             s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-            s_freq += s_freq[0] # Apparently the FFT grid puts the bottom half above zero. This shifts back everything
-           #s_go = fftshift(go) # This is actually useless
+            s_go = fftshift(go)
+            aw = np.absolute(go.imag)
+            s_aw = np.absolute(s_go.imag)
+           #s_freq += s_freq[0] # Apparently the FFT grid puts the bottom half above zero. This shifts back everything
            #print("### Normalization test ###")
            #sf_integral = np.trapz(abs(s_go.imag), s_freq)
            #print(" Integral of Im[G(w)] (should be == 1): {}".format(sf_integral))
@@ -2077,11 +2159,11 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
            #    print(" WARNING: The integral of the spectral function")
            #print("### ================== ###")
             # Visualize the function and its FFT
-            flag_test = True
             flag_test = False
+            flag_test = True
             if flag_test is True:
                 f, axarr = plt.subplots(2, 2)
-                f.suptitle("ik, ib, N, dt: {}, {}, {}, {}".format(ik,ib,N,dt))
+                f.suptitle("ik, ib, N, dt: {:2} {:2} {:5} {:3.4}".format(ik,ib,N,dt))
                 axarr[0, 0].plot(t, gt.real)
                 axarr[0, 0].set_title('Re[G(t)]')
                 axarr[0, 0].grid()
@@ -2095,7 +2177,13 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                 axarr[1, 1].set_title('Im[G(w)]')
                 axarr[1, 1].grid()
                 plt.figure(); plt.grid()
-                plt.plot(s_freq, abs(go.imag),'-', label='shifted FFT')
+                s_freq_above_idx = np.where(s_freq > en[-1])
+                delta_s_freq = abs(s_freq[-1] - s_freq[0])
+                readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
+                readjust_go = np.roll(go,len(s_freq_above_idx))
+                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
+               #plt.plot(readjust_freq, abs(readjust_go.imag),'-', label='readjusted FFT')
+               #plt.plot(en, np.ones((en.size))*0.00001,'o', label='shifted FFT')
                #plt.plot(freq, abs(go.imag),'-', label='out-of-the-box FFT')
                #t_go = abs(np.append(go.imag[-go.imag.size/2:],go.imag[:go.imag.size/2]))
                #plt.plot(s_freq, t_go,'-', label='test FFT')
@@ -2106,8 +2194,13 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                #t_go = np.concatenate(abs(s_go.imag)[-s_freq.size/2:],abs(s_go.imag)[0:s_freq.size/2])
                #plt.plot(t_fr, t_go,'-', label='test FFT')
                #plt.plot(s_freq[-freq.size/2:freq.size/2], abs(s_go.imag)[-freq.size/2:freq.size/2],'-', label='out-of-the-box FFT')
-                plt.title('|Im[G(w)]|, ik, ib, N, dt: {}, {}, {}, {}'.format(ik, ib, N, dt))
+                plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
                 plt.legend()
+                fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
+                outarray = np.transpose(np.vstack((s_freq,aw)))
+                np.savetxt(fname,outarray, delimiter='   ', newline='\n')
+               #with open('out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt),'w') as of:
+               #    of.write()
                #plt.figure()
                #plt.plot(freq,label='freq')
                #plt.plot(s_freq, label='s_freq')
@@ -2115,11 +2208,18 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                 plt.show()
                 sys.exit()
             # END OF VISUALIZATION PART
-            sfkb[ik,ib] = abs(go.imag)
-            ft += abs(go.imag)
+            # All arrays must now be brought back on a common energy resolution
+            plt.plot(s_freq, abs(s_go.imag),'-', label='shifted FFT')
+            aw = abs(go.imag)
+            plt.plot(s_freq,s_freq,label='s_freq')
+            plt.plot(en,en,label='en')
+            plt.legend(); plt.show();sys.exit()
+            interp_aw = interp1d(s_freq, aw, kind = 'linear', axis = -1)
+            sfkb[ik,ib] = interp_aw(en)
+            ft += sfkb[ik,ib]
     print(" calc_sf_c_num :: Done.")
-    return s_freq, s_go.imag
-   #return ft, sfkb, w
+   #return s_freq, s_go.imag
+    return ft, sfkb
 
 
 def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
@@ -2154,16 +2254,16 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     imskb = allkb[3]
     plot_fit = int(vardct['plot_fit'])
     #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
-   #ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
-    for N, dt in [(1000,0.01),(10000,0.01),(10000,0.01)]: #,(10000,0.001)]: 
-       #for dt in [0.005]: 
-            print("\n N, dt =", N, dt) 
-           #ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
-            s_freq, s_go_imag = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N,dt=dt)
-            plt.plot(s_freq, abs(s_go_imag), label="N "+str(N)+" dt "+str(dt))
-    plt.legend()
-    plt.show()
-    sys.exit()
+    ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
+   #for N, dt in [(1000,0.01),(10000,0.01),(10000,0.01)]: #,(10000,0.001)]: 
+   #   #for dt in [0.005]: 
+   #        print("\n N, dt =", N, dt) 
+   #       #ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
+   #        s_freq, s_go_imag = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N,dt=dt)
+   #        plt.plot(s_freq, abs(s_go_imag), label="N "+str(N)+" dt "+str(dt))
+   #plt.legend()
+   #plt.show()
+   #sys.exit()
    #ftot = [1]
    #sfkb_c = [1]
     #write_sftot_c(vardct, newen, ftot)
