@@ -1951,7 +1951,7 @@ def calc_ct_treat0(im,en,t):
     Calculation of exponent C(t) if w=0
     is included. NON TESTED!!!
     """
-    print(" calc_ct_treat0 :: ")
+    print("calc_ct_treat0 :: ")
     ### NUMBA HEADER - START ###
    #import numba
    #calc_ct = numba.jit(calc_ct_python)
@@ -1968,7 +1968,7 @@ def calc_ct_treat0(im,en,t):
     dim_0 = dim[np.nonzero(en == 0)[0][0]]
     ct0 = 2 * dim_0 * ( 1 - 1j * t ) * dx_inv
     ct = ct0 + ct1 + ct2
-    print(" calc_ct_treat0 :: Done.")
+    print("calc_ct_treat0 :: Done.")
     return ct
 
 def calc_gt(im,en,t,eqp,hf):
@@ -1978,7 +1978,7 @@ def calc_gt(im,en,t,eqp,hf):
     For now, this only acts if one w is EXACTLY 0. 
     """
     ### NUMBA HEADER - START ###
-    print(" calc_gt :: ")
+    print("calc_gt :: ")
    #import numba
    #calc_ct = numba.jit(calc_ct_python)
     ### NUMBA HEADER - END ###
@@ -1992,22 +1992,22 @@ def calc_gt(im,en,t,eqp,hf):
     else: # Performing the integral for every value of t
         ct = calc_ct(im2,en2,t)
     # This is our G(t):
-   #gt = 1j*np.exp( -1j * hf * t  + ct )
-    gt = 1j*np.exp(  ct )
+    gt = 1j*np.exp( -1j * hf * t  + ct )
+   #gt = 1j*np.exp(  ct )
    #print("gt[:-10]",gt[:10])
     # The time-ordered G is 0 for positive times
     # TODO: This is for occupied states only, see how to adapt for empty states
     gt[t>0] = 0
-    print("ct:", ct.shape, type(ct))
-    print("gt:", gt.shape, type(gt))
-    print(" calc_gt :: Done.")
+   #print("ct:", ct.shape, type(ct))
+   #print("gt:", gt.shape, type(gt))
+    print("calc_gt :: Done.")
     return gt
 
-def set_best_fft_grid(en):
+def set_fft_grid(en):
     """
     """
     # Best adaptable parameters
-    print("set_best_fft_grid ::")
+    print("set_fft_grid ::")
     w_max = abs(en[-1]-en[0])
     dw = abs(en[1]-en[0])
     dt = 2*np.pi/w_max
@@ -2018,7 +2018,7 @@ def set_best_fft_grid(en):
         N += 1
     print(" N, dt: {} {}".format(N, dt))
     t = np.linspace(- N*dt, 0, N)
-    print("set_best_fft_grid :: Done.")
+    print("set_fft_grid :: Done.")
     return t, N, dt, dw
 
 def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
@@ -2029,20 +2029,22 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
     """
     from scipy.fftpack import fft,ifft
     from numpy.fft import fftshift,fftfreq,ifftshift
-    print(" calc_sf_c_num :: ")
+    print()
+    print("calc_sf_c_num :: ")
     # G(t)
-    print(" en, imskb:",en.shape, imskb.shape)
+    print(" en.shape, imskb.shape:",en.shape, imskb.shape)
     # Good for band 1: N = 2000, dt = 0.02
     # Number of samplepoints 
-    N = 2000
+   #N = 2000
    ## sample spacing 
-    dt = 0.02 # 0.06 
-    t, N, dt, dw = set_best_fft_grid(en)
+   #dt = 0.02 # 0.06 
+   #t, N, dt, dw = set_fft_grid(en)
    #print(t.shape, t)
    #print(t[::2].shape, t[::2])
    #t = t[::2]
-    print(" Time domain length, spacing:", t.size*dt, dt)
+   #print(" Time domain length, spacing:", t.size*dt, dt)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
+    ft =  np.zeros((len(en)))
     ### FFT test on ImSigma ###
    #print(" ### FFT test ###")
    #t_ims = imskb[kptrange[-1],bdrange[-1]]
@@ -2090,15 +2092,20 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
             en_ad2 = en_adapt
             ims_ad2 = ims_adapt
            #ims_ad2 = np.append(ims_ad2,np.zeros((nsamples/2)))
-            t, N, dt, dw = set_best_fft_grid(en_ad2)
+            t, N, dt, dw = set_fft_grid(en_ad2)
            #en_adapt, ims_adapt = adapt_interp(en,ims_local)
             print()
-            print(" Calculating G(t)...")
+            print(" Converging dt... ")
            #t = np.linspace(-500,0)
-            for j in [1]:
-                for k in [512,1024,2048,4096]:
-                    print("j, k:",j,k)
-                    # This determines 1/T
+            converged = False
+            a_int0 = 0.
+            k = 8
+            while not converged:
+           #for j in [3]:
+           #    for k in [64,128,256,512]: #512,1024,2048,4096]:
+                   #print("j, k:",j,k)
+                    # This determines 1/T and seems like a good guess
+                    j = 4.
                     dw = imeqp/j
                     print("dw",dw)
                     # This determines 1/dt
@@ -2116,26 +2123,38 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     en_ad2 = en_adapt
                     ims_ad2 = ims_adapt
                     print("en_ad2.size",en_ad2.size)
-                    t, N, dt, dw = set_best_fft_grid(en_ad2)
-                    print(" T IN FACT IS {:4.4}".format(N*dt))
+                    t, N, dt, dw = set_fft_grid(en_ad2)
+                    print(" T IS IN FACT {:4.4}".format(N*dt))
               #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
               #    #t_ims = interpims(t_en)
+                    print(" Calculating G(t)...")
                     gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
                    #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+                    print(" Performing FFT...")
                     go = ifft(gt,N)*N*dt # Whatever, just check the units please
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
                     s_go = fftshift(go)
                     a = np.absolute(s_go.imag)
-                    plt.xlim(-75,8)
-                    plt.ylim(0,0.1)
-                    plt.plot(s_freq+hf_kb, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
+                    a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
+                    d_int = abs(a_int1 - a_int0)
+                    print(" Integral: ",a_int1)
+                    print(" Delta integral: ",d_int)
+                    a_int0 = a_int1
+                    k *= 2
+                    if d_int <=0.005: 
+                        converged = True
+                        print(" dt CONVERGED at", d_int)
+                   #plt.xlim(-75,8)
+                   #plt.ylim(0,0.1)
+                   #plt.plot(s_freq+hf_kb, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
+                   #plt.plot(s_freq, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
+                   #plt.legend();plt.show();sys.exit()
               #     plt.plot(t, gt.imag, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
-            plt.legend(loc='best'); plt.grid(); plt.show(); 
-            sys.exit()
-            gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+           #plt.legend(loc='best'); plt.grid(); plt.show(); 
+           #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
            #gt = calc_gt(imskb[ik,ib],en,t,eqp_kb,hf_kb)
-            print(" Performing FFT...")
+           #print(" Performing FFT...")
             # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
             # Let's try
            #set_padding = False
@@ -2144,13 +2163,13 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
            #    N_padded = 2*N
            #else:
            #    N_padded = N
-            go = ifft(gt,N) #/dt # Whatever, just check the units please
-            freq = fftfreq(N,dt)*2*np.pi#/N_padded
-            # Shifting the energy arrays for visualization
-            s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-            s_go = fftshift(go)
-            aw = np.absolute(go.imag)
-            s_aw = np.absolute(s_go.imag)
+           #go = ifft(gt,N) #/dt # Whatever, just check the units please
+           #freq = fftfreq(N,dt)*2*np.pi#/N_padded
+           ## Shifting the energy arrays for visualization
+           #s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+           #s_go = fftshift(go)
+           #aw = np.absolute(go.imag)
+           #s_aw = np.absolute(s_go.imag)
            #s_freq += s_freq[0] # Apparently the FFT grid puts the bottom half above zero. This shifts back everything
            #print("### Normalization test ###")
            #sf_integral = np.trapz(abs(s_go.imag), s_freq)
@@ -2159,8 +2178,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
            #    print(" WARNING: The integral of the spectral function")
            #print("### ================== ###")
             # Visualize the function and its FFT
-            flag_test = False
             flag_test = True
+            flag_test = False
             if flag_test is True:
                 f, axarr = plt.subplots(2, 2)
                 f.suptitle("ik, ib, N, dt: {:2} {:2} {:5} {:3.4}".format(ik,ib,N,dt))
@@ -2209,15 +2228,15 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                 sys.exit()
             # END OF VISUALIZATION PART
             # All arrays must now be brought back on a common energy resolution
-            plt.plot(s_freq, abs(s_go.imag),'-', label='shifted FFT')
-            aw = abs(go.imag)
-            plt.plot(s_freq,s_freq,label='s_freq')
-            plt.plot(en,en,label='en')
-            plt.legend(); plt.show();sys.exit()
-            interp_aw = interp1d(s_freq, aw, kind = 'linear', axis = -1)
-            sfkb[ik,ib] = interp_aw(en)
+           #aw = abs(go.imag)
+           #plt.plot(s_freq, abs(s_go.imag),'-', label='shifted FFT')
+           #plt.plot(s_freq,s_freq,label='s_freq')
+           #plt.plot(en,en,label='en')
+           #plt.legend(); plt.show();sys.exit()
+            interp_a = interp1d(s_freq, a, kind = 'linear', axis = -1)
+            sfkb[ik,ib] = interp_a(en)
             ft += sfkb[ik,ib]
-    print(" calc_sf_c_num :: Done.")
+    print("calc_sf_c_num :: Done.")
    #return s_freq, s_go.imag
     return ft, sfkb
 
@@ -2228,7 +2247,7 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     It is a numeric approach. It calculates first G(t),
     then G(w) = FT[G(t)], and then A(w) = ImG(w). 
     """
-    print(" sf_c_numeric :: ")
+    print("sf_c_numeric :: ")
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     hf = np.array(vardct['hf'])
@@ -2267,6 +2286,6 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
    #ftot = [1]
    #sfkb_c = [1]
     #write_sftot_c(vardct, newen, ftot)
-    print(" sf_c_numeric :: Done.")
+    print("sf_c_numeric :: Done.")
     return newen, ftot, sfkb_c
 
