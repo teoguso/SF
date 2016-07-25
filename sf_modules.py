@@ -2107,14 +2107,15 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     # This determines 1/T and seems like a good guess
                     j = 4.
                     dw = imeqp/j
-                    print("dw",dw)
+                   #print(" dw:",dw)
                     # This determines 1/dt
                     en_len_new = k*abs(en[0]-en[-1])
-                    print("w_max",en_len_new)
+                    print()
+                    print(" dw, w_max:", dw, en_len_new)
                     nsamples = int(en_len_new/dw)
-                    print("N",nsamples)
+                    print(" Number of samples:",nsamples)
                     dt = 2*np.pi/en_len_new
-                    print("dt:",dt)
+                    print(" dt:",dt)
                     print(" T SHOULD BE {:4.4}".format(2*np.pi/dw))
                     en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
                     ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
@@ -2122,7 +2123,6 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     ims_adapt = np.append(ims_zeros,interpims(en_int))
                     en_ad2 = en_adapt
                     ims_ad2 = ims_adapt
-                    print("en_ad2.size",en_ad2.size)
                     t, N, dt, dw = set_fft_grid(en_ad2)
                     print(" T IS IN FACT {:4.4}".format(N*dt))
               #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
