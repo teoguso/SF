@@ -1933,6 +1933,32 @@ def calc_ct(im,en,t):
     Returns the function of time C(t) (ndarray)
     defined over the t array.
     """
+    from calc_ct_fort import calc_ct_fort
+   #print(" calc_ct :: ")
+   #plt.plot(en,im)
+   #plt.show();sys.exit()
+    ts = int(t.size)
+    im = np.asfortranarray(im)
+    en = np.asfortranarray(en)
+    t = np.asfortranarray(t)
+    ct = np.zeros((ts),'complex',order='Fortran')
+    nen = int(en.size)
+    ct = calc_ct_fort(ct,im,en,t)
+   #plt.plot(t,ct.real)
+   #plt.plot(t,ct.imag)
+   #plt.show();sys.exit()
+    im = np.ascontiguousarray(im)
+    en = np.ascontiguousarray(en)
+    t =  np.ascontiguousarray(t)
+    ct = np.ascontiguousarray(ct)
+    return ct
+
+def calc_ct_python(im,en,t):
+    """
+    Integration of the cumulant exponent.
+    Returns the function of time C(t) (ndarray)
+    defined over the t array.
+    """
    #print(" calc_ct :: ")
    #plt.plot(en,im)
    #plt.show();sys.exit()
@@ -1943,6 +1969,9 @@ def calc_ct(im,en,t):
         integrand = im*(np.exp(1j*en*t[i]) - 1j*en*t[i] - 1)*den
         ct[i] = np.trapz(integrand,en)
     ct = ct/np.pi/2
+   #plt.plot(t,ct.real)
+   #plt.plot(t,ct.imag)
+   #plt.show();sys.exit()
    #print(" calc_ct :: Done.")
     return ct
 
@@ -2016,7 +2045,7 @@ def set_fft_grid(en):
     # N*dt = T = 2*pi/dw
     if np.mod(N,2) != 0: # even steps are better
         N += 1
-    print(" N, dt: {} {}".format(N, dt))
+   #print(" N, dt: {} {}".format(N, dt))
     t = np.linspace(- N*dt, 0, N)
     print("set_fft_grid :: Done.")
     return t, N, dt, dw
@@ -2094,12 +2123,17 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
            #ims_ad2 = np.append(ims_ad2,np.zeros((nsamples/2)))
             t, N, dt, dw = set_fft_grid(en_ad2)
            #en_adapt, ims_adapt = adapt_interp(en,ims_local)
-            print()
-            print(" Converging dt... ")
            #t = np.linspace(-500,0)
             converged = False
+            tol_val = 0.01
             a_int0 = 0.
             k = 8
+            print()
+            print(" Converging dt... ")
+            print(" Tolerance: ",tol_val)
+           #print("{12.8} {12.4} {12.8} {12.4} {12.8} {12.8}".format(dw,en_len_new,dt,T,a_int,d_int))
+            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
+           #print("      dw   en_len_new      dt        T     a_int     d_int")
             while not converged:
            #for j in [3]:
            #    for k in [64,128,256,512]: #512,1024,2048,4096]:
@@ -2110,13 +2144,12 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                    #print(" dw:",dw)
                     # This determines 1/dt
                     en_len_new = k*abs(en[0]-en[-1])
-                    print()
-                    print(" dw, w_max:", dw, en_len_new)
+                   #print(" dw, w_max:", dw, en_len_new)
                     nsamples = int(en_len_new/dw)
-                    print(" Number of samples:",nsamples)
+                   #print(" Number of samples:",nsamples)
                     dt = 2*np.pi/en_len_new
-                    print(" dt:",dt)
-                    print(" T SHOULD BE {:4.4}".format(2*np.pi/dw))
+                   #print(" dt:",dt)
+                   #print(" T SHOULD BE {:4.4}".format(2*np.pi/dw))
                     en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
                     ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
                     en_int = en_adapt[en_adapt>=en[0]]
@@ -2124,13 +2157,14 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     en_ad2 = en_adapt
                     ims_ad2 = ims_adapt
                     t, N, dt, dw = set_fft_grid(en_ad2)
-                    print(" T IS IN FACT {:4.4}".format(N*dt))
+                    T = N*dt
+                   #print(" T IS IN FACT {:4.4}".format(N*dt))
               #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
               #    #t_ims = interpims(t_en)
-                    print(" Calculating G(t)...")
+                   #print(" Calculating G(t)...")
                     gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
                    #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
-                    print(" Performing FFT...")
+                   #print(" Performing FFT...")
                     go = ifft(gt,N)*N*dt # Whatever, just check the units please
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
@@ -2138,13 +2172,14 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     a = np.absolute(s_go.imag)
                     a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
                     d_int = abs(a_int1 - a_int0)
-                    print(" Integral: ",a_int1)
-                    print(" Delta integral: ",d_int)
+                   #print(" Integral: ",a_int1)
+                   #print(" Delta integral: ",d_int)
+                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
                     a_int0 = a_int1
                     k *= 2
-                    if d_int <=0.005: 
+                    if d_int <= tol_val: 
                         converged = True
-                        print(" dt CONVERGED at", d_int)
+                        print(" dt CONVERGED at", dt)
                    #plt.xlim(-75,8)
                    #plt.ylim(0,0.1)
                    #plt.plot(s_freq+hf_kb, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
