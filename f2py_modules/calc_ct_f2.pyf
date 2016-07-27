@@ -1,0 +1,18 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module calc_ct_fort ! in 
+    interface  ! in :calc_ct_fort
+        subroutine calc_ct_fort(ct,im,en,nen,xt,nt) ! in :calc_ct_fort:calc_ct_fort.f90
+            complex(kind=8) dimension(nt),intent(in,out) :: ct
+            double precision dimension(nen),intent(in) :: im
+            double precision dimension(nen),intent(in) :: en
+            integer, optional,check(len(im)>=nen),depend(im) :: nen=len(im)
+            double precision dimension(nt) :: xt
+            integer, optional,check(len(ct)>=nt),depend(ct) :: nt=len(ct)
+        end subroutine calc_ct_fort
+    end interface 
+end python module calc_ct_fort
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
