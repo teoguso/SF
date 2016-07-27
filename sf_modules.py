@@ -2139,6 +2139,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
            #    for k in [64,128,256,512]: #512,1024,2048,4096]:
                    #print("j, k:",j,k)
                     # This determines 1/T and seems like a good guess
+                    # TODO: maybe automate convergence of dw as well
                     j = 4.
                     dw = imeqp/j
                    #print(" dw:",dw)
