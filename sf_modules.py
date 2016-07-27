@@ -406,7 +406,8 @@ def calc_pdos(var_dct,res=None):
     sfac =  float(var_dct['sfactor'])
     pfac =  float(var_dct['pfactor'])
     #nband = int(var_dct['nband'])
-    nband = int(var_dct['sig_bdgw'][1]) - int(var_dct['sig_bdgw'][0])
+    nband = int(var_dct['sig_bdgw'][1]) - int(var_dct['sig_bdgw'][0]) + 1
+   #[print(x, var_dct[x]) for x in var_dct if ('band' in x) | ('bd' in x)]
     if penergy != 0:
         # ======== CROSS SECTIONS ======= #
         cs = read_cross_sections(penergy)
@@ -532,13 +533,23 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    for ik in range(nkpt):
-        #ikeff = minkpt+ik-1
-        print(" k point, nband = %02d %02d" % (ik,nband))
-        #print(" nband = %02d " % (nband))
-        for ib in range(nband):
-            #ibeff = minband+ib-1
-           #print(ik, ib)
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = vardct['bdrange']
+    kptrange = vardct['kptrange']
+   #for ik in range(nkpt):
+   #    #ikeff = minkpt+ik-1
+   #    print(" k point, nband = %02d %02d" % (ik,nband))
+   #    #print(" nband = %02d " % (nband))
+   #    for ib in range(nband):
+   #        #ibeff = minband+ib-1
+    for ik in kptrange:
+       #ikeff = ik + minkpt
+        ikeff = ik + 1
+        #for ib in range(nband):
+        for ib in bdrange:
+           #ibeff = ib + minband
+            ibeff = ib + bdgw[0]
+            print(ik, ib)
            #plt.plot(en,ims[ik,ib])
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
@@ -892,11 +903,12 @@ def write_sfkb_c(vardct,en,sfkb):
     bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
     extinf = int(vardct['extinf'])
-    npoles = int(vardct['npoles'])
+    npoles = "_np"+vardct['npoles']
     penergy = int(vardct['penergy'])
     label = '_exp'
     if int(vardct['calc_numeric']) == 1:
         label += '_num'
+        npoles = ''
    #plt.plot(en,sfkb[0,4])
    #plt.show()
     if extinf == 1: 
@@ -910,7 +922,7 @@ def write_sfkb_c(vardct,en,sfkb):
         for ib in bdrange:
            #ibeff = minband + ib
             ibeff = ib + bdgw[0] 
-            outnamekb = "spf"+str(label)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            outnamekb = "spf"+str(label)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str(npoles)+str_exi+"."+str(penergy)
            #outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             print("ik,ib: ",ik,ib)
             print(" Writing on file : ", outnamekb)
@@ -1168,7 +1180,7 @@ def write_sftot_c(vardct, enexp, ftot):
     bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
     newdx = 0.005
-    npoles = int(vardct['npoles'])
+    npoles = "_np"+vardct['npoles']
     extinf = int(vardct['extinf'])
     sfac = vardct['sfactor']
     pfac = vardct['pfactor']
@@ -1176,10 +1188,11 @@ def write_sftot_c(vardct, enexp, ftot):
     label = '_exp'
     if int(vardct['calc_numeric']) == 1:
         label += '_num'
+        npoles = ''
     if extinf == 1:
         outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
     else: # extinf == 0
-        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+str(npoles)+".dat"
     outfile = open(outname,'w')
     with open(outname,'w') as outfile:
         outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
@@ -2188,7 +2201,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
                     s_go = fftshift(go)
-                    a = np.absolute(s_go.imag)
+                    a = np.absolute(s_go.imag)/np.pi
                     a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
                     d_int = abs(a_int1 - a_int0)
                    #print(" Integral: ",a_int1)
@@ -2199,38 +2212,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     if d_int <= tol_val: 
                         converged = True
                         print(" dt CONVERGED at", dt)
-                   #plt.xlim(-75,8)
-                   #plt.ylim(0,0.1)
-                   #plt.plot(s_freq+hf_kb, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
-                   #plt.plot(s_freq, a, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
-                   #plt.legend();plt.show();sys.exit()
-              #     plt.plot(t, gt.imag, '-', label="k,dt,N,T: {:2} {:03.3} {:03} {:03.3}".format(k,dt,N,dt*N))
-           #plt.legend(loc='best'); plt.grid(); plt.show(); 
-           #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
-           #gt = calc_gt(imskb[ik,ib],en,t,eqp_kb,hf_kb)
-           #print(" Performing FFT...")
             # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
-            # Let's try
-           #set_padding = False
-           #if set_padding is True:
-           #    print(" Padding 0...")
-           #    N_padded = 2*N
-           #else:
-           #    N_padded = N
-           #go = ifft(gt,N) #/dt # Whatever, just check the units please
-           #freq = fftfreq(N,dt)*2*np.pi#/N_padded
-           ## Shifting the energy arrays for visualization
-           #s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-           #s_go = fftshift(go)
-           #aw = np.absolute(go.imag)
-           #s_aw = np.absolute(s_go.imag)
-           #s_freq += s_freq[0] # Apparently the FFT grid puts the bottom half above zero. This shifts back everything
-           #print("### Normalization test ###")
-           #sf_integral = np.trapz(abs(s_go.imag), s_freq)
-           #print(" Integral of Im[G(w)] (should be == 1): {}".format(sf_integral))
-           #if sf_integral < 0.8:
-           #    print(" WARNING: The integral of the spectral function")
-           #print("### ================== ###")
             # Visualize the function and its FFT
             flag_test = True
             flag_test = False

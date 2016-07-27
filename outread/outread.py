@@ -823,9 +823,13 @@ class AbinitOutReader(CodeOutReader):
        #a = np.array(hartree_k)
        #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
        #print(a[0])
+        qpen_k = np.array(qpen_k)
+        hartree_k = np.array(hartree_k)
+        hf_k = np.array(hf_k)
         self.qpen = qpen_k
         self.hartree = hartree_k
         self.hf = hf_k
+       #print(hartree_k)
         print("Done.")
 #        print(np.array(qpen_k))
 #        if version >= 6: 

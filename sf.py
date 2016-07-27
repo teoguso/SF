@@ -68,6 +68,7 @@ else:
 if invar_dict['gwcode'] == 'abinit':
    #print("1")
     gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
+    pass
 elif invar_dict['gwcode'] == 'exciting':
    #print("2")
     gwout = ExcitingOutReader() 
@@ -91,6 +92,7 @@ dict_c['sig_bdgw'] = sig_bdgw
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
 dict_c['hartree'] = hartree
+#print(hartree.shape);sys.exit()
 # ---------------------------------- #
 # ====== READING HF ===== #
 hf = gwout.hf
