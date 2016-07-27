@@ -574,8 +574,10 @@ def write_spfkb(vardct, newen, allkb):
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
     bdgw = map(int, vardct['sig_bdgw'])
-    bdrange = range(minband - bdgw[0], maxband - bdgw[0] + 1)
-    kptrange = range(minkpt - 1, maxkpt)
+   #bdrange = range(minband - bdgw[0], maxband - bdgw[0] + 1)
+   #kptrange = range(minkpt - 1, maxkpt)
+    bdrange = vardct['bdrange']
+    kptrange = vardct['kptrange']
     spfkb = allkb[0]
     reskb = allkb[1]
     rdenkb = allkb[2]
@@ -585,10 +587,12 @@ def write_spfkb(vardct, newen, allkb):
    #    ikeff = minkpt + ik 
    #    for ib in range(nband):
     for ik in kptrange:
-        ikeff = ik + minkpt
+       #ikeff = ik + minkpt
+        ikeff = ik + 1
         #for ib in range(nband):
         for ib in bdrange:
-            ibeff = ib + minband
+           #ibeff = ib + minband
+            ibeff = ib + bdgw[0]
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
@@ -890,6 +894,9 @@ def write_sfkb_c(vardct,en,sfkb):
     extinf = int(vardct['extinf'])
     npoles = int(vardct['npoles'])
     penergy = int(vardct['penergy'])
+    label = '_exp'
+    if int(vardct['calc_numeric']) == 1:
+        label += '_num'
    #plt.plot(en,sfkb[0,4])
    #plt.show()
     if extinf == 1: 
@@ -903,7 +910,8 @@ def write_sfkb_c(vardct,en,sfkb):
         for ib in bdrange:
            #ibeff = minband + ib
             ibeff = ib + bdgw[0] 
-            outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            outnamekb = "spf"+str(label)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+           #outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             print("ik,ib: ",ik,ib)
             print(" Writing on file : ", outnamekb)
             with open(outnamekb,'w') as ofkb:
@@ -1141,7 +1149,7 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
-    write_sftot_c(vardct, enexp, ftot)
+   #write_sftot_c(vardct, enexp, ftot)
     print(" calc_sf_c_para :: Done.")
     return enexp, ftot, sfkb_c
 
@@ -1165,10 +1173,13 @@ def write_sftot_c(vardct, enexp, ftot):
     sfac = vardct['sfactor']
     pfac = vardct['pfactor']
     penergy = int(vardct['penergy'])
+    label = '_exp'
+    if int(vardct['calc_numeric']) == 1:
+        label += '_num'
     if extinf == 1:
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
+        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
     else: # extinf == 0
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
     outfile = open(outname,'w')
     with open(outname,'w') as outfile:
         outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
@@ -1179,7 +1190,8 @@ def write_sftot_c(vardct, enexp, ftot):
 
 def array_doublefill(en_in):
     """
-    Just doubles the array size and fills the gaps 
+    Just
+    label += '_num'doubles the array size and fills the gaps 
     with linear interpolation. 
     """
     en_out = np.zeros((2*en_in.size-1))
@@ -1782,7 +1794,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
     #print(" ### Writing out A(\omega)_exp...  ")
     #enexp = enexp-efermi
-    write_sftot_c(vardct, enexp, ftot)
+   #write_sftot_c(vardct, enexp, ftot)
     print(" calc_sf_c_serial :: Done.")
     return enexp, ftot, sfkb_c
 

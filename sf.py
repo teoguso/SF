@@ -334,6 +334,7 @@ else:
        #plt.plot(enexp2, ftot2, label="ftot_serial")
        #plt.legend(loc=2)
        #plt.show()
+        write_sftot_c(dict_c, enexp, ftot)
         print("Integral test, spftot: ", np.trapz(ftot,enexp))
         print("="*40)
         print("MEMORY USAGE TEST")
