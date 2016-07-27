@@ -49,6 +49,7 @@ def read_invar(infile='invar.in'):
      'add_wtk': 1, Include k-point weights (0, 1)
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
+     'fit_model': 'new', Choose what multipole fit model to use (old=Josh's, new=uniform binning) (old, new)
      'test_lorentz_W': 0, Enables the use of a Lorentzian function (for code testing)
     """
     var_defaults = { 
@@ -81,6 +82,7 @@ def read_invar(infile='invar.in'):
             'add_wtk': 1,
             'plot_fit': 0, 
             'coarse': 0,
+            'fit_model': 'new',
             'test_lorentz_W': 0
             }
 #    varlist = list((
@@ -1552,7 +1554,11 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                    #plt.show()
                    #sys.exit()
                    #### END TESTING ###
-                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
+                    method = 'const2'
+                    if vardct['fit_model'] == 'old':
+                        method = 'fast'
+                        print("WARNING: Using old version of multipole fit (slow)")
+                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,method=method)
                     plot_fit = int(vardct['plot_fit'])
                     if plot_fit == 1:
                         from multipole import write_f_as_sum_of_poles
