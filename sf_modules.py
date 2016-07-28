@@ -82,6 +82,7 @@ def read_invar(infile='invar.in'):
             'restart': 0,
             'add_wtk': 1,
             'plot_fit': 0, 
+            'ir_cut': 0.0,
             'coarse': 0,
             'fit_model': 'new',
             'test_lorentz_W': 0
