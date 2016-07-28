@@ -149,6 +149,7 @@ class CodeOutReader(object):
         self.var_dict = {}
         self.gw_ks_ev = []
         self.qpen = []
+        self.hf = []
         self.hartree = []
 # Call methods
         print(52*"=")
@@ -734,6 +735,7 @@ class AbinitOutReader(CodeOutReader):
             vxc_k = []
         hartree_k = []
         qpen_k = []
+        hf_k = []
         if nsppol == 2:
             nkpt = 2*nkpt
         if version >= 6.19: 
@@ -770,6 +772,7 @@ class AbinitOutReader(CodeOutReader):
                 ib += 1
             if ib == nband :
                 qpen = []
+                hf = []
                 if version >= 6.2: 
                     imag = lines[1::2]
                     lines = lines[0::2]
@@ -779,10 +782,13 @@ class AbinitOutReader(CodeOutReader):
                     for line in lines:
                         hartree.append(line[4])
                         qpen.append(line[12])
+                        hf.append(line[5])
                     hartree_k.append(hartree)
                     qpen_k.append(qpen)
+                    hf_k.append(hf)
                     hartree = []
                     qpen = []
+                    hf = []
                 else:
                     elda = []
                     vxc = []
@@ -790,9 +796,11 @@ class AbinitOutReader(CodeOutReader):
                         elda.append(line[1])
                         vxc.append(line[2])
                         qpen.append(line[9])
+                        hf.append(line[3])
                     elda_k.append(elda)
                     vxc_k.append(vxc)
                     qpen_k.append(qpen)
+                    hf_k.append(hf)
                     elda = []
                     vxc = []
                     qpen = []
@@ -811,11 +819,17 @@ class AbinitOutReader(CodeOutReader):
         if nsppol == 2:
             hartree_k = hartree_k[::2]
             qpen_k = qpen_k[::2]
+            hf_k = hf_k[::2]
        #a = np.array(hartree_k)
        #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
        #print(a[0])
+        qpen_k = np.array(qpen_k)
+        hartree_k = np.array(hartree_k)
+        hf_k = np.array(hf_k)
         self.qpen = qpen_k
         self.hartree = hartree_k
+        self.hf = hf_k
+       #print(hartree_k)
         print("Done.")
 #        print(np.array(qpen_k))
 #        if version >= 6: 

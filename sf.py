@@ -68,6 +68,7 @@ else:
 if invar_dict['gwcode'] == 'abinit':
    #print("1")
     gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
+    pass
 elif invar_dict['gwcode'] == 'exciting':
    #print("2")
     gwout = ExcitingOutReader() 
@@ -90,6 +91,12 @@ dict_c['sig_bdgw'] = sig_bdgw
 
 # ====== READING HARTREE ===== #
 hartree = gwout.hartree
+dict_c['hartree'] = hartree
+#print(hartree.shape);sys.exit()
+# ---------------------------------- #
+# ====== READING HF ===== #
+hf = gwout.hf
+dict_c['hf'] = hf
 # ---------------------------------- #
 
 # ======== READING WTK ======= #
@@ -290,10 +297,32 @@ else:
         print(" Test imeqp:\n", imeqp)
         # Writing out eqp
         # Writing out imeqp
+        print(" Launching write_eqp_imeqp in a separate thread...")
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir
-        enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        if 'test_lorentz_W' not in dict_c:
+            print(" --- TEST: Using lorentzian form for W ---")
+            if dict_c['minkpt'] == dict_c['maxkpt'] and  dict_c['minband'] == dict_c['maxband']:
+                print(allkb[-1].shape)
+                my_im = allkb[-1][minkpt-1,minband-1]
+                lbd = np.trapz(newen[newen<eqp[minkpt-1,minband-1]],my_im[newen<eqp[minkpt-1,minband-1]])
+                print(" EQP:", eqp[minkpt-1,minband-1])
+                print(" Integral of ImS:", lbd)
+                lbd = abs(lbd)/np.pi
+               #plt.plot(newen,my_im,newen,imW(eqp[minkpt-1,minband-1]-newen,lbd = lbd, w0=17.,G=3.))
+               #plt.plot(newen[newen<eqp[minkpt-1,minband-1]],my_im[newen<eqp[minkpt-1,minband-1]])
+               #plt.show()
+                allkb[-1][minkpt-1,minband-1] = imW(eqp[minkpt-1,minband-1]-newen,lbd = lbd, w0=17.,G=1.)
+            else:
+                print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
+                sys.exit()
+        ### NUMERICAL INTEGRATION ###
+        if int(dict_c['calc_numeric']) == 1:
+            enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        else:
+            enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        ### CRC FORMULA ###
         if int(dict_c['calc_crc']) == 1:
             print()
             print(" ### Calculation of constrained retarded cumulant ### ")
@@ -307,6 +336,7 @@ else:
        #plt.plot(enexp2, ftot2, label="ftot_serial")
        #plt.legend(loc=2)
        #plt.show()
+        write_sftot_c(dict_c, enexp, ftot)
         print("Integral test, spftot: ", np.trapz(ftot,enexp))
         print("="*40)
         print("MEMORY USAGE TEST")

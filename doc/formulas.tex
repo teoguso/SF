@@ -6,6 +6,8 @@
 %\usepackage[T1]{fontenc}
  \usepackage{palatino}
  \linespread{1.05}
+\usepackage{mathpazo}
+ 
 % \usepackage{hypen}`
  \usepackage{graphicx,amsmath,amssymb,amsfonts}
 
@@ -32,6 +34,159 @@
 \maketitle
 
 \tableofcontents
+
+
+\section{Exact renormalization}
+
+Using the multipole fit for $W$, we realized that there is a divergence in the theory. 
+However, it is possible that this divergence could be controlled if the theory is rewritten
+in a certain way. 
+Specifically, the renormalization factor should be kept with and expanded the same way as 
+the satellites term, instead of being extracted after the explicit integration of $W(\tau)$. 
+Let's see how. 
+First, we take (from M.\@ Guzzo's thesis., eq.\@ 5.37) the expression for $G$ in the decoupling approximation. 
+\be\label{eq:onelevelg_qp}
+   {G} ( \tau ) =  {G}^{QP} ( \tau ) 
+  \exp\left\{ \frac{i}{2\pi} \int\! d\omega\,
+   {W} ( \omega )\left[ 
+   \frac{ e^{i\omega \tau } - 1} 
+     {\omega^2} \right]  \right\} ,
+\ee
+where $G^\textnormal{QP}$ is the ground-state Hartree Green's function
+with QP energies and $W(\omega)$ is the Fourier transform of an element of
+the screened Coulomb interaction. 
+
+\subsection{Single-pole model}
+We can proceed using the single plasmon-pole model for W, obtaining
+\be
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right)
+  \exp\left[ 
+   \frac{\lambda}{\omega_p^2} \left( 
+   e^{i\omega_p \tau } - 1 
+      \right)  \right] ,
+\ee
+where $\lambda$ and $\omega_p$ are the strength and frequency of the plasmon, respectively. 
+Expanding the  $e^{ i \omega_p \tau } - 1 $ term, we get
+\begin{multline}
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 + 
+   \frac{\lambda}{\omega_p^2} \left(  e^{i\omega_p \tau } - 1 \right) 
+  + \frac12 \left( \frac{\lambda}{\omega_p^2} \right)^2  \left( e^{i\omega_p \tau } - 1 \right)^2  \right. \\
+  \left.  + \frac16 \left( \frac{\lambda}{\omega_p^2} \right)^3  \left( e^{i\omega_p \tau } - 1 \right)^3  
+  + \ldots  \right\} .
+\end{multline}
+Let's define $a_p=\lambda/\omega_p^2$. Therefore
+\begin{multline}
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 + 
+   a_p e^{i\omega_p \tau } - a_p 
+  + \frac{a_p^2}2  e^{i 2\omega_p \tau }  + \frac{a_p^2}2 - a_p^2 e^{i \omega_p \tau }  \right. \\
+  \left.  + \frac{a_p^3}6 e^{ i 3 \omega_p \tau } - \frac{a_p^3}6 
+  + \frac{a_p^3}2 e^{ i \omega_p \tau } -  \frac{a_p^3}2 e^{ i 2 \omega_p \tau }
+  + \ldots  \right\} ,
+\end{multline}
+which becomes
+\begin{multline}
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 - a_p +\frac{a_p^2}2 -\frac{a_p^3}6 
+   + \left( a_p - a_p^2 +\frac{a_p}2 \right) e^{i\omega_p \tau }   \right. \\
+  \left.  + \left( \frac{a_p^2}2 - \frac{a_p^3}2 \right) e^{i 2 \omega_p \tau }
+  + \frac{a_p^3}6 e^{ i 3 \omega_p \tau } 
+  + \ldots  \right\} .
+\end{multline}
+%
+Now $G(\omega) = \int\!d\tau e^{i\omega\tau} G(\tau)$, so
+\begin{multline}
+   {G} ( \omega ) =  i \int\!d\tau \theta ( -\tau ) 
+  \exp\! \left[ i (\omega - E^\textnormal{QP} ) \tau \right] \\
+ \times \left\{ 1 - a_p +\frac{a_p^2}2 -\frac{a_p^3}6 
+   + \left( a_p - a_p^2 +\frac{a_p}2 \right) e^{i\omega_p \tau }   \right. \\
+  \left.  + \left( \frac{a_p^2}2 - \frac{a_p^3}2 \right) e^{i 2 \omega_p \tau }
+  + \frac{a_p^3}6 e^{ i 3 \omega_p \tau } 
+  + \ldots  \right\} \\
+ = i\left[ \left( 1 - a_p +\frac{a_p^2}2 -\frac{a_p^3}6 \right) \delta (\omega - E^\textnormal{QP} ) \right. 
+  + \left( a_p - a_p^2 +\frac{a_p}2 \right) \delta (\omega - E^\textnormal{QP} +\omega_p )  \\ 
+  +  \left( \frac{a_p^2}2 - \frac{a_p^3}2 \right) \delta (\omega - E^\textnormal{QP} + 2 \omega_p ) 
+  + \left. \frac{a_p^3}6 \delta (\omega - E^\textnormal{QP} + 3 \omega_p )+ \ldots  \right] . 
+\end{multline}
+Let's calculate $A(\omega) = 1/\pi \Im[G(\omega)]$: 
+\begin{multline}
+   A ( \omega ) =  \frac1\pi \left[ \left( 1 - a_p +\frac{a_p^2}2 -\frac{a_p^3}6 \right) \delta (\omega - E^\textnormal{QP} ) \right. \\
+  + \left( a_p - a_p^2 +\frac{a_p}2 \right) \delta (\omega - E^\textnormal{QP} +\omega_p )  \\ 
+  +  \left( \frac{a_p^2}2 - \frac{a_p^3}2 \right) \delta (\omega - E^\textnormal{QP} + 2 \omega_p ) \\
+  + \left. \frac{a_p^3}6 \delta (\omega - E^\textnormal{QP} + 3 \omega_p )+ \ldots  \right] .
+\end{multline}
+Using a complex QP energy $E=\epsilon+\Gamma$, one gets
+\begin{multline}
+   A ( \omega ) =  \frac\Gamma\pi \left[ \left( 1 - a_p +\frac{a_p^2}2 -\frac{a_p^3}6 \right) \frac1{(\omega - \epsilon )^2 + \Gamma^2} \right. \\
+  + \left( a_p - a_p^2 +\frac{a_p}2 \right) \frac1{(\omega - \epsilon +\omega_p )^2 + \Gamma^2}  \\ 
+  +  \left( \frac{a_p^2}2 - \frac{a_p^3}2 \right) \frac1{(\omega - \epsilon + 2\omega_p )^2 + \Gamma^2}  \\
+  + \left. \frac{a_p^3}6 \frac1{(\omega - \epsilon + 3\omega_p )^2 + \Gamma^2} + \ldots  \right] .
+\end{multline}
+
+\subsection{Multipole model}
+
+Extending the formulation to a multipole model for $W$, with $N$ weights $\lambda_j$ and frequencies $\omega_j$, one obtains 
+\be
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right)
+  \exp\left[ \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1 
+      \right)  \right] ,
+\ee
+where $ a_j = \lambda_j/\omega_j^2 $. 
+Expanding the exponential one gets
+\begin{multline}
+   {G} ( \tau ) =  i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 + 
+    \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right) 
+  + \frac12 \left[ \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right)  \right]^2  \right. \\
+  \left.  + \frac16  \left[ \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right)  \right]^3  
+  + \ldots  \right\} \\
+ =   i \theta ( -\tau ) 
+  \exp\! \left( - i E^\textnormal{QP} \tau \right) \\
+ \times \left\{ 1 + 
+    \sum_j^N a_j \left(  e^{i\tilde\omega_j \tau } - 1  \right) 
+   + \frac12 \sum_{ij}^N a_i a_j \left[  e^{i (\tilde\omega_i + \tilde\omega_j) \tau } 
+   - 2 e^{i \tilde\omega_i \tau} + 1   \right]  \right. \\
+ \left.   + \frac16 \sum_{ijk}^N a_i a_j a_k \left[ e^{i (\tilde\omega_i + \tilde\omega_j + \tilde\omega_k) \tau } 
+  - 3  e^{i (\tilde\omega_i + \tilde\omega_j) \tau } 
+   + 3 e^{i \tilde\omega_i \tau} - 1   \right] 
+  + \ldots  \right\} \\
+\end{multline}
+The spectral function will be
+\begin{multline}
+ A(\omega) = \frac1\pi \Biggl\{ \delta(\omega-E^\textnormal{QP}) 
+ + \sum_i^N a_i \left[ \delta(\omega-E^\textnormal{QP}+\omega_i) 
+  - \delta(\omega-E^\textnormal{QP}) \right] \\
+  + \frac12 \sum_{ij}^N a_i a_j \left[ \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j) 
+ - 2 \delta(\omega-E^\textnormal{QP}+\omega_i) + \delta(\omega-E^\textnormal{QP}) \right] \\
+  + \frac16 \sum_{ijk}^N a_i a_j a_k 
+   \left[ \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j + \omega_k) 
+  - 3 \delta(\omega - E^\textnormal{QP} + \omega_i + \omega_j) \right. \\ 
+   \left. + 3 \delta(\omega-E^\textnormal{QP}+\omega_i) 
+   - \delta(\omega-E^\textnormal{QP}) \right] \Biggr\} .
+\end{multline}
+Using a complex QP energy $E=\epsilon+\Gamma$, one gets
+\begin{multline}
+ A(\omega) = \frac{\Gamma}\pi \Biggl\{ \frac1{(\omega-\epsilon)^2+\Gamma^2} \\
+ + \sum_i^N a_i \left[ \frac1{(\omega- \epsilon + \omega_i)^2 + \Gamma^2} 
+  - \frac1{(\omega-\epsilon)^2+\Gamma^2} \right] \\
+  + \frac12 \sum_{ij}^N a_i a_j \left[ 
+   \frac1{(\omega - \epsilon + \omega_i + \omega_j)^2 + \Gamma^2 } \right. \\ 
+ \left. - \frac2{(\omega- \epsilon + \omega_i)^2 + \Gamma^2} 
+  + \frac1{(\omega-\epsilon)^2+\Gamma^2} \right] \\ 
+  + \frac16 \sum_{ijk}^N a_i a_j a_k 
+   \left[ \frac1{(\omega - \epsilon + \omega_i + \omega_j + \omega_k)^2 + \Gamma^2}  \right. \\ 
+   \left. - \frac3{(\omega - \epsilon + \omega_i + \omega_j)^2 + \Gamma^2} \right. \\ 
+   \left.  + \frac3{(\omega - \epsilon + \omega_i)^2 + \Gamma^2 } 
+   - \frac1{(\omega-\epsilon)^2+\Gamma^2}  \right] \Biggr\} .
+\end{multline}
+
 
 \section{The CRC approximation}
 

@@ -18,29 +18,81 @@
 !Cf2py	depend(npoles) akb
 !Cf2py	depend(npoles) omegapkb
       !spf = 0.0d0
-      integer :: ien,i,j,k
+      integer :: ien,i,j,k,offset
       double precision :: tmpf1, tmpf2, tmpf3, tmpomp 
+      double precision :: third,imeqp2,diff
+      double precision, dimension (0:3*npoles) :: denom3
+      double precision, dimension (0:2*npoles) :: denom2
+
+      parameter (third=1d0/3d0)
+!imeqp is renormalized dividing by the number of poles (npoles)
+      imeqp2=(imeqp/npoles)**2 
       tmpomp = 0.0d0
       spf(:) = 0.0d0
+!$OMP PARALLEL DEFAULT(SHARED) PRIVATE(tmpomp,tmpf2,tmpf3,tmpf1,k,i,j,ien,diff,denom2,denom3,offset)
+!$OMP DO         
+
       do ien=0,nen-1
+
+
+      if (npoles.lt.1) then 
        tmpf1 = 0.0d0
        do i=0,npoles-1
+
         tmpf2 = 0.0d0
         do j=0,npoles-1
          tmpf3 = 0.0d0
+
          do k=0,npoles-1
           tmpomp = omegapkb(i)+omegapkb(j)+omegapkb(k)
-          tmpf3 = tmpf3 + 1.0d0/3.0d0*akb(k)/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)
+          tmpf3 = tmpf3 + third*akb(k)/((en(ien)-eqp+tmpomp)**2+imeqp2)
          end do
+
          tmpomp = omegapkb(i)+omegapkb(j)
-         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp)**2)+tmpf3)
+         tmpf2 = tmpf2 + 1.0d0/2.0d0*akb(j)*(1.0d0/((en(ien)-eqp+tmpomp)**2+(imeqp2)+tmpf3))
         end do
         !tmpomp = omegapkb(i)+omegapkb(j)
-        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp)**2)+tmpf2)
+        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2))
        end do
+
        !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
        spf(ien) = spf(ien) + prefac*(1.0d0/((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
+      else
+       diff=omegapkb(1)-omegapkb(0)
+       do i=0,3*npoles
+         denom3(i)=0.5d0*third/((en(ien)-eqp+diff*dble(i)+omegapkb(0)*3d0)**2+imeqp2)
+       enddo
+       do i=0,2*npoles
+         denom2(i)=0.5d0/((en(ien)-eqp+diff*dble(i)+omegapkb(0)*2d0)**2+imeqp2)
+       enddo
+
+
+       tmpf1 = 0.0d0
+       do i=0,npoles-1
+
+        tmpf2 = 0.0d0
+        do j=0,npoles-1
+         tmpf3 = 0.0d0
+         offset=i+j
+         do k=0,npoles-1
+          tmpf3 = tmpf3 + akb(k)*denom3(offset+k)
+         end do
+
+         tmpomp = omegapkb(i)+omegapkb(j)
+         tmpf2 = tmpf2 +  akb(j)*(denom2(offset)+tmpf3)
+        end do
+        tmpf1 = tmpf1 + 1.0d0*akb(i)*(1.0d0/((en(ien)-eqp+omegapkb(i))**2+(imeqp2)+tmpf2))
+       end do
+
+       !f=prefac*(1./((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
+       spf(ien) = spf(ien) + prefac*(1.0d0/((en(ien)-eqp)**2+(imeqp)**2)+tmpf1)
+
+      endif
+
       end do 
+!$OMP END DO 
+!$OMP END PARALLEL         
+     
       !return spf
       end subroutine f2py_calc_spf_mpole
 

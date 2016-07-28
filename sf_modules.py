@@ -34,6 +34,7 @@ def read_invar(infile='invar.in'):
      'npoles': 1, Number of poles for multipole fit
      'calc_gw': 1, Enables output of GW spectral function
      'calc_exp': 0, Enables output of cumulant spectral function
+     'calc_numeric': 0, Enables full numerical calculation of the cumulant A(w) at all orders 
      'calc_crc': 0, Enables output of constrained retarded cumulant spectral function
      'np_crc': 1, Number of poles for B coefficient in constrained retarded cumulant spectral function
      'extinf': 0, Includes extrinsic and interference effects (0, 1)
@@ -49,6 +50,8 @@ def read_invar(infile='invar.in'):
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
      'ir_cut': 0.0, Puts to 0 the imaginary part of sigma in a [-ir_cut;ir_cut) range around eqp[ik,ib]
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
+     'fit_model': 'new', Choose what multipole fit model to use (old=Josh's, new=uniform binning) (old, new)
+     'test_lorentz_W': 0, Enables the use of a Lorentzian function (for code testing)
     """
     var_defaults = { 
             'sigmafile': None,   
@@ -65,6 +68,7 @@ def read_invar(infile='invar.in'):
             'npoles': 1,
             'calc_gw': 1,
             'calc_exp': 0,
+            'calc_numeric': 0,
             'calc_crc': 0,
             'np_crc': 1,
             'extinf': 0,
@@ -78,8 +82,9 @@ def read_invar(infile='invar.in'):
             'restart': 0,
             'add_wtk': 1,
             'plot_fit': 0, 
-            'ir_cut': 0.0, 
-            'coarse': 0
+            'coarse': 0,
+            'fit_model': 'new',
+            'test_lorentz_W': 0
             }
 #    varlist = list((
 #            'sigmafile','minband','maxnband','minkpt','maxkpt',
@@ -101,6 +106,26 @@ def read_invar(infile='invar.in'):
                 invar_dict[var] = line.split()[0]
     return invar_dict
 
+def imW(w,lbd=1.,w0=10.,G=1.):
+    """
+    Imaginary part of model Lorentzian W.
+    """
+    w = np.array(w)
+    return lbd*(G/((w+w0)**2+G**2)+G/((w-w0)**2+G**2))
+
+def reW(w,lbd=1.,w0=10.,G=1.):
+    """
+    Real part of model Lorentzian W.
+    """
+    w = np.array(w)
+    return lbd*((w+w0)/((w+w0)**2+G**2)+(w-w0)/((w-w0)**2+G**2))
+
+def model_W(w,lbd=1.,w0=10.,G=1.):
+    """
+    Handy shorthand when needing both reW and imW.
+    """
+    return reW(w,lbd,w0,G), imW(w,lbd,w0,G)
+
 def read_hartree():
     """
     This function takes the file 'hartree.dat'
@@ -112,7 +137,6 @@ def read_hartree():
     'nkpt x nband' fashion.
     """
 # TODO: write a function to read the parameters from not ad-hoc files
-    import numpy as np;
     if isfile("hartree.dat"):
         print(" Reading file hartree.dat... ",end="")
         hartreefile = open("hartree.dat");
@@ -153,7 +177,6 @@ def read_wtk():
     The input file is supposed to be a single column of
     nkpt elements. 
     """
-    import numpy as np;
     if isfile("wtk.dat"):
         wtkfile = open("wtk.dat");
     else : 
@@ -175,7 +198,6 @@ def read_occ(maxkpt,minband,maxband):
     All input files are supposed to be ordered in a 
     'nkpt x nband' fashion.
     """
-    import numpy as np;
     if isfile("occ.dat"):
         occfile = open("occ.dat");
         occ = [];
@@ -235,7 +257,6 @@ def read_sigfile(invar_dict):
     also: SPIN!!! For the moment, it will skip every second kpt,
     i.e. it will read only one spin channel. 
     """
-    import numpy as np;
     import glob
     from time import sleep
     print("read_sigfile :: ",end="")
@@ -356,7 +377,6 @@ def read_cross_sections(penergy):
     using the cs array would have to be changed accordingly. 
     cs array is returned. 
     """
-    import numpy as np;
     print(" ### Reading cross sections...  ")
     if int(penergy) == 0:
         cs = np.array([0.1,0.1])
@@ -383,12 +403,12 @@ def calc_pdos(var_dct,res=None):
     Calculates projected DOS for all bands contained in the
     sigma file. 
     """
-    import numpy as np
     penergy = float(var_dct['penergy'])
     sfac =  float(var_dct['sfactor'])
     pfac =  float(var_dct['pfactor'])
     #nband = int(var_dct['nband'])
-    nband = int(var_dct['sig_bdgw'][1]) - int(var_dct['sig_bdgw'][0])
+    nband = int(var_dct['sig_bdgw'][1]) - int(var_dct['sig_bdgw'][0]) + 1
+   #[print(x, var_dct[x]) for x in var_dct if ('band' in x) | ('bd' in x)]
     if penergy != 0:
         # ======== CROSS SECTIONS ======= #
         cs = read_cross_sections(penergy)
@@ -420,7 +440,6 @@ def read_band_type_sym(sfac,pfac,nband):
     number of band types that are considered (s and p for now). 
     sp numpy array is returned.
     """
-    import numpy as np;
     print(" Reading s bands file... ",)
     if isfile("s.dat"):
         sfile =  open("s.dat",'r')
@@ -472,7 +491,6 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
     and just return spfkb as an output variable. 
     spf (GW spectral function) is returned.
     """
-    import numpy as np;
     print("calc_sf_gw :: ")
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -516,13 +534,23 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #reskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
-    for ik in range(nkpt):
-        #ikeff = minkpt+ik-1
-        print(" k point, nband = %02d %02d" % (ik,nband))
-        #print(" nband = %02d " % (nband))
-        for ib in range(nband):
-            #ibeff = minband+ib-1
-           #print(ik, ib)
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = vardct['bdrange']
+    kptrange = vardct['kptrange']
+   #for ik in range(nkpt):
+   #    #ikeff = minkpt+ik-1
+   #    print(" k point, nband = %02d %02d" % (ik,nband))
+   #    #print(" nband = %02d " % (nband))
+   #    for ib in range(nband):
+   #        #ibeff = minband+ib-1
+    for ik in kptrange:
+       #ikeff = ik + minkpt
+        ikeff = ik + 1
+        #for ib in range(nband):
+        for ib in bdrange:
+           #ibeff = ib + minband
+            ibeff = ib + bdgw[0]
+            print(ik, ib)
            #plt.plot(en,ims[ik,ib])
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
@@ -550,7 +578,6 @@ def write_spfkb(vardct, newen, allkb):
     """
     Does what it says. For the GW spectral function. 
     """
-    import numpy as np
     print("write_spfkb :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -559,8 +586,10 @@ def write_spfkb(vardct, newen, allkb):
     maxband = int(vardct['maxband'])
     nband = maxband - minband + 1
     bdgw = map(int, vardct['sig_bdgw'])
-    bdrange = range(minband - bdgw[0], maxband - bdgw[0] + 1)
-    kptrange = range(minkpt - 1, maxkpt)
+   #bdrange = range(minband - bdgw[0], maxband - bdgw[0] + 1)
+   #kptrange = range(minkpt - 1, maxkpt)
+    bdrange = vardct['bdrange']
+    kptrange = vardct['kptrange']
     spfkb = allkb[0]
     reskb = allkb[1]
     rdenkb = allkb[2]
@@ -570,10 +599,12 @@ def write_spfkb(vardct, newen, allkb):
    #    ikeff = minkpt + ik 
    #    for ib in range(nband):
     for ik in kptrange:
-        ikeff = ik + minkpt
+       #ikeff = ik + minkpt
+        ikeff = ik + 1
         #for ib in range(nband):
         for ib in bdrange:
-            ibeff = ib + minband
+           #ibeff = ib + minband
+            ibeff = ib + bdgw[0]
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
@@ -594,7 +625,6 @@ def find_eqp_resigma(en, resigma, efermi):
     If no zeros are found, it will fit resigma with a line and 
     extrapolate a value.
     """
-    import numpy as np
     nzeros=0
     zeros = []
     tmpeqp = en[0]
@@ -632,7 +662,6 @@ def write_eqp_imeqp(eqp,imeqp):
     """
     Does what it says.
     """
-    import numpy as np
     print("write_eqp_imeqp :: ")
     outname = "eqp.dat"
     outfile2 = open(outname,'w')
@@ -656,7 +685,6 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
     The function find_eqp_resigma() is used here.
     eqp and imeqp are returned. 
     """
-    import numpy as np
     from scipy import interp
     nkpt = np.size(res[:,0,0])
     nband = np.size(res[0,:,0])
@@ -694,7 +722,6 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     The file structure is expected to be:
     #  wp, aext, ainf, aint, width
     """
-    import numpy as np;
     from multipole import getdata_file #, write_f_as_sum_of_poles
     #extinfname = "a_wp.dat"
     print(" Reading extrinsic and interference contribution from file "+str(extinfname)+"...")
@@ -768,7 +795,6 @@ def read_sf(vardct, pdos, approx):
     spf_gw- or spf_exp- and returns their sum, 
     according to minband, maxband and minkpt, maxkpt. 
     """
-    import numpy as np
     print("read_sf :: ")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -829,7 +855,6 @@ def calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles,wkb=None):
     OBSOLETE???
     This function calculates the exponential spectral function. 
     """
-    import numpy as np;
     nenexp=np.size(enexp)
     ftot = np.zeros((np.size(enexp)))
     tmpf1=np.zeros((nenexp))
@@ -867,8 +892,6 @@ def write_sfkb_c(vardct,en,sfkb):
     """
     Does what it says. For the cumulant spectral function. 
     """
-    import numpy as np
-    import matplotlib.pylab as plt
     sfkb = np.array(sfkb)
     print("write_sfkb_c :: ")
     minkpt = int(vardct['minkpt'])
@@ -881,8 +904,12 @@ def write_sfkb_c(vardct,en,sfkb):
     bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
     extinf = int(vardct['extinf'])
-    npoles = int(vardct['npoles'])
+    npoles = "_np"+vardct['npoles']
     penergy = int(vardct['penergy'])
+    label = '_exp'
+    if int(vardct['calc_numeric']) == 1:
+        label += '_num'
+        npoles = ''
    #plt.plot(en,sfkb[0,4])
    #plt.show()
     if extinf == 1: 
@@ -896,7 +923,8 @@ def write_sfkb_c(vardct,en,sfkb):
         for ib in bdrange:
            #ibeff = minband + ib
             ibeff = ib + bdgw[0] 
-            outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
+            outnamekb = "spf"+str(label)+"-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+str(npoles)+str_exi+"."+str(penergy)
+           #outnamekb = "spf_exp-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+"_np"+str(npoles)+str_exi+"."+str(penergy)
             print("ik,ib: ",ik,ib)
             print(" Writing on file : ", outnamekb)
             with open(outnamekb,'w') as ofkb:
@@ -909,7 +937,6 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     Meta-function that calls serial or para version.
     Still wishful thinking ATM, as it just calls the serial version. 
     """
-    import numpy as np
     npoles = int(vardct['npoles'])
    #if npoles == 0 or npoles == 1 or npoles == 999: 
     while True:
@@ -928,7 +955,6 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     Function that calculates frequencies and amplitudes
     of ImSigma using the multipole model. 
     """
-    import numpy as np
     from multipole import fit_multipole #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
@@ -1005,7 +1031,6 @@ def calc_extinf(vardct, ampole, omegampole):
     """
     # Extrinsic and interference contribution
     """
-    import numpy as np
     penergy = int(vardct['penergy'])
     origdir = vardct['origdir']
     extinfname = "a_wp."+str(penergy)
@@ -1030,7 +1055,6 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     cores that will be detected.
     """
     print(" calc_sf_c_para :: ")
-    import numpy as np;
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1138,7 +1162,7 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
             tmpf = f2py_calc_spf_mpole_extinf(tmpf,enexp,prefac,akb,omegakb,wkb,eqpkb,imkb) #,np.size(enexp),npoles)
             sfkb_c[ik,ib] = tmpf
             ftot = ftot + tmpf
-    write_sftot_c(vardct, enexp, ftot)
+   #write_sftot_c(vardct, enexp, ftot)
     print(" calc_sf_c_para :: Done.")
     return enexp, ftot, sfkb_c
 
@@ -1147,7 +1171,6 @@ def write_sftot_c(vardct, enexp, ftot):
     Just a small piece of code that writes two numpy arrays 
     (frequencies, spectral function) to disk.
     """
-    import numpy as np
     print(" write_sf_c ::")
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -1158,15 +1181,19 @@ def write_sftot_c(vardct, enexp, ftot):
     bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
     kptrange = range(minkpt - 1, maxkpt)
     newdx = 0.005
-    npoles = int(vardct['npoles'])
+    npoles = "_np"+vardct['npoles']
     extinf = int(vardct['extinf'])
     sfac = vardct['sfactor']
     pfac = vardct['pfactor']
     penergy = int(vardct['penergy'])
+    label = '_exp'
+    if int(vardct['calc_numeric']) == 1:
+        label += '_num'
+        npoles = ''
     if extinf == 1:
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
+        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+"_extinf.dat"
     else: # extinf == 0
-        outname = "spftot_exp"+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev_np"+str(npoles)+".dat"
+        outname = "spftot"+str(label)+"_kpt_"+str(minkpt)+"_"+str(maxkpt)+"_bd_"+str(minband)+"_"+str(maxband)+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+str(npoles)+".dat"
     outfile = open(outname,'w')
     with open(outname,'w') as outfile:
         outfile.write("# kpt "+str(minkpt)+" "+str(maxkpt)+"\n")
@@ -1177,10 +1204,10 @@ def write_sftot_c(vardct, enexp, ftot):
 
 def array_doublefill(en_in):
     """
-    Just doubles the array size and fills the gaps 
+    Just
+    label += '_num'doubles the array size and fills the gaps 
     with linear interpolation. 
     """
-    import numpy as np
     en_out = np.zeros((2*en_in.size-1))
     j = 0
     for i in range(en_in.size - 1):
@@ -1201,7 +1228,6 @@ def calc_B_crc(vardct, eqp, newen, allkb):
     degeneracy of k points. 
     """
     print(" calc_B_crc :: ")
-    import numpy as np;
     wtk = np.array(vardct['wtk'])
     minkpt = int(vardct['minkpt'])
     maxkpt = int(vardct['maxkpt'])
@@ -1270,7 +1296,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
                #    im3 = im3[::-1]
                #### TESTING ###
                #print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
-               #import matplotlib.pylab as plt
+               #import matplotlib.pyplot as plt
                #plt.plot(newen, imskb[ik,ib]/np.pi,"-")
                #plt.plot(en3+eqp[ik,ib], im3,"x")
                #plt.plot(en3, im3,"o")
@@ -1348,7 +1374,6 @@ def calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb):
     total CRC spectral function. 
     """
     print(" calc_sf_c_serial :: ")
-    import numpy as np;
     from extmod_spf_mpole import f2py_calc_spf_mpole
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -1419,7 +1444,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     - Standard cumulant for any other value of npoles.
     """
     print(" calc_sf_c_serial :: ")
-    import numpy as np;
     ir_cut = float(vardct['ir_cut'])
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -1553,17 +1577,20 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         im3 = im3[::-1]
                    #### TESTING ###
                    #print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
-                   #import matplotlib.pylab as plt
+                   #import matplotlib.pyplot as plt
                    #plt.plot(newen, imskb[ik,ib]/np.pi,"-")
                    #plt.plot(en3+eqp[ik,ib], im3,"x")
                    #plt.show()
                    #sys.exit()
                    #### END TESTING ###
-                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
+                    method = 'const2'
+                    if vardct['fit_model'] == 'old':
+                        method = 'fast'
+                        print("WARNING: Using old version of multipole fit (slow)")
+                    omegai, lambdai, deltai = fit_multipole(en3,im3,npoles,method=method)
                     plot_fit = int(vardct['plot_fit'])
                     if plot_fit == 1:
                         from multipole import write_f_as_sum_of_poles
-                        import matplotlib.pylab as plt
                         import pylab
                         plt.figure(2)
                         eta = 0.5
@@ -1578,7 +1605,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         plt.close()
                    ## TESTING THE MULTIPOLE REPRESENTATION
                    #from multipole import write_f_as_sum_of_poles
-                   #import matplotlib.pylab as plt
                    #import pylab
                    #eta = 0.01
                    #for eta in [0.1]: #, 0.1, 0.5]:
@@ -1744,17 +1770,20 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 print(" ik, ib, ikeff, ibeff", ik, ib, ikeff, ibeff)
                 #prefac=np.exp(-np.sum(ampole[ik,ib]))/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
                 # Experimental fix for npoles dependence
-                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                akb=ampole[ik,ib] # This is a numpy array (slice)
+                omegakb=omegampole[ik,ib] # This is a numpy array (slice)
+                eqpkb=eqp[ik,ib]
+                imkb=imeqp[ik,ib]
+                #tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imeqp[ik,ib])
+                # TEST: IMEQP IS NOW A VANISHING VALUE!!!
+               #imkb = 0.01
+                tmp = 1/np.pi*wtk[ik]*pdos[ib]*abs(imkb)
                 prefac=np.exp(-np.sum(ampole[ik,ib]))*tmp
                 #prefac=np.exp(-tmp*np.trapz(imskb[ik,ib],enexp)/np.sum(omegai)*npoles)
                 print("\n === Normalization test === ")
                 print(" Prefactor:", np.exp(-np.sum(ampole[ik,ib])))
                 print(" Exponent:", np.sum(ampole[ik,ib]))
                 print(" Exponent/npoles:", np.sum(ampole[ik,ib])/npoles,end="\n\n")
-                akb=ampole[ik,ib] # This is a numpy array (slice)
-                omegakb=omegampole[ik,ib] # This is a numpy array (slice)
-                eqpkb=eqp[ik,ib]
-                imkb=imeqp[ik,ib]
                 #tmpf1 = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
                 #print(nen, np.size(enexp))
                 #tmpf = 0.0*tmpf
@@ -1782,7 +1811,527 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     #print(str(" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2)))
     #print(" ### Writing out A(\omega)_exp...  ")
     #enexp = enexp-efermi
-    write_sftot_c(vardct, enexp, ftot)
+   #write_sftot_c(vardct, enexp, ftot)
     print(" calc_sf_c_serial :: Done.")
     return enexp, ftot, sfkb_c
+
+def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
+    """
+    FINALLY! The multipole fit lives in a separate function.
+    """
+    from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
+    print(" ### ================== ###")
+    print(" ###    Multipole fit   ###")
+    print(" Number of poles:", npoles)
+    omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    for ik in kptrange:
+        for ib in bdrange:
+            if eqp[ik,ib] > newen[-npoles]:
+                omegampole[ik,ib] = omegampole[ik,ib-1]
+                ampole[ik,ib] = ampole[ik,ib-1]
+                print(" Eqp beyond available energy range. Values from lower band are taken.")
+                continue
+            else:
+                print(" ik, ib", ik, ib)
+                #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
+                #print(newen.shape, imskb.shape)
+                interpims = interp1d(newen, imskb[ik,ib], kind = 'linear', axis = -1)
+                # Here we take the curve starting from eqp and then we invert it
+                # so as to have it defined on the positive x axis
+                # and so that the positive direction is in the 
+                # increasing direction of the array index
+                #if eqp[ik,ib] <= efermi:
+                if eqp[ik,ib] <= 0:
+                    en3 = newen[newen<=eqp[ik,ib]] # So as to avoid negative omegampole
+                else:
+                    en3 = newen[newen>eqp[ik,ib]] # So as to avoid negative omegampole
+                #en3 = en[en<=efermi]
+                if en3.size == 0:
+                    print()
+                    print(" WARNING: QP energy is outside of given energy range!\n"+\
+                            " This state will be skipped!\n"+\
+                            "You might want to modify enmin/enmax.")
+                    print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
+                    continue
+                im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
+               #zcut = 3.0
+               #for i in range(en3.size):
+               #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
+               #        im3[i] = 0.
+               #plt.plot(en3,im3,'-')
+               #plt.show()
+                en3 = en3 - eqp[ik,ib]
+                if eqp[ik,ib] <= 0:
+                    en3 = -en3[::-1] 
+                    im3 = im3[::-1]
+               #### TESTING ###
+               #print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+               #plt.plot(newen, imskb[ik,ib]/np.pi,"-")
+               #plt.plot(en3+eqp[ik,ib], im3,"x")
+               #plt.show()
+               #sys.exit()
+               #### END TESTING ###
+                omegai, lambdai, deltai = fit_multipole(en3,im3,npoles)
+                if plot_fit == 1:
+                    from multipole import write_f_as_sum_of_poles
+                    import pylab
+                    plt.figure(2)
+                    eta = 0.5
+                    enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+                    plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+                    plt.plot(en3,im3,"-",label="ImS(e-w)")
+                    plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+                    plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+                    plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+                    plt.legend()
+                    pylab.savefig('imS_fit_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'.pdf')
+                    plt.close()
+               ## TESTING THE MULTIPOLE REPRESENTATION
+               #from multipole import write_f_as_sum_of_poles
+               #import pylab
+               #eta = 0.01
+               #for eta in [0.1]: #, 0.1, 0.5]:
+               #    for npoles in [1,10,20,100]:
+               #        omegai, lambdai, deltai = fit_multipole_const(en3,im3,npoles)
+               #        print("ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1]:\n", ik, ib, eqp[ik,ib], en3[0], en3[-1], newen[0], newen[-1])
+               #        print(omegai, lambdai, deltai)
+               #        enlor, flor = write_f_as_sum_of_poles(en3, omegai, lambdai, deltai, eta)
+               #        plt.plot(enlor, flor,"-",label="sum of poles, eta: "+str(eta))
+               #        plt.plot(en3,im3,"-",label="ImS(e-w)")
+               #        plt.plot(omegai,lambdai,"go", label = "omegai, lambdai")
+               #        plt.plot(omegai,lambdai/deltai,"ro", label = "omegai, lambdai/deltai")
+               #        plt.title("ik: "+str(ik)+", ib: "+str(ib)+", npoles: "+str(npoles))
+               #        plt.legend()
+               #        pylab.savefig('imS_test_np'+str(npoles)+'_ik'+str(ik)+'_ib'+str(ib)+'_eta'+str(eta)+'.pdf')
+               #        plt.show()
+               #sys.exit()
+                # END TESTING THE MULTIPOLE REPRESENTATION 
+                # HERE WE MUST CHECK THAT THE NUMBER OF POLES 
+                # IS NOT BIGGER THAN THE NUMBER OF POINTS THAT HAS TO BE FITTED
+                if npoles > omegai.size:
+                    omegampole[ik,ib][:omegai.size] = omegai 
+                    ampole[ik,ib][:omegai.size] = np.true_divide(lambdai,(np.square(omegai)))
+                    print()
+                    print(" WARNING: npoles used ("+str(npoles)+") is larger"+\
+                            " than poles x data array can give ("+str(omegai.size)+").")
+                   #print("WARNING: Reduce npoles. You are wasting resources!!!")
+                    print(" Im(Sigma) will be interpolated to obtain the desired number of poles.")
+                    current_size = omegai.size
+                    counter = 0
+                    while npoles > current_size:
+                        counter += 1
+                        print()
+                        print(" WARNING: Arrays are too coarse.")
+                        print(" npoles, omegai.size:", npoles, omegai.size)
+                        print(" Filling arrays with interpolated values...")
+                        en1 = array_doublefill(en3)
+                        im1 = array_doublefill(im3)
+                        en3 = en1
+                        im3 = im1
+                        omegai, lambdai, deltai = fit_multipole(en1,im1,npoles)
+                        current_size = omegai.size
+                        if counter > 4:
+                            print(60*"=")
+                            print(" WARNING: You are trying too hard with too few points.")
+                            print(" The array has been interpolated more than 4 times.")
+                            print(" Maybe use less poles or calculate more points for Sigma?")
+                            print(60*"=")
+                else:
+                    omegampole[ik,ib] = omegai 
+                    ampole[ik,ib] = np.true_divide(lambdai,(np.square(omegai)))
+                print(" Integral test. Compare \int\Sigma and \sum_j^N\lambda_j.")
+                print(" 1/pi*\int\Sigma   =", np.trapz(im3,en3))
+                print(" \sum_j^N\lambda_j =", np.sum(lambdai))
+    # Writing out a_j e omega_j
+    print(" ### Writing out a_j and omega_j...")
+    outname = "a_j_np"+str(npoles)+".dat"
+    outfile = open(outname,'w')
+    outname2 = "omega_j_np"+str(npoles)+".dat"
+    outfile2 = open(outname2,'w')
+    for ipole in xrange(npoles):
+        for ik in range(imskb[:,0,0].size):
+            for ib in range(imskb[0,:,0].size):
+                outfile.write("%15.7e"  % (ampole[ik,ib,ipole]))
+                outfile2.write("%15.7e" % (omegampole[ik,ib,ipole]))
+            outfile.write("\n")
+            outfile2.write("\n")
+        outfile.write("\n")
+        outfile2.write("\n")
+    outfile.close()
+    outfile2.close()
+    return omegai, lambdai, deltai
+
+def calc_ct(im,en,t):
+    """
+    Integration of the cumulant exponent.
+    Returns the function of time C(t) (ndarray)
+    defined over the t array.
+    """
+    from calc_ct_fort import calc_ct_fort
+   #print(" calc_ct :: ")
+   #plt.plot(en,im)
+   #plt.show();sys.exit()
+    ts = int(t.size)
+    im = np.asfortranarray(im)
+    en = np.asfortranarray(en)
+    t = np.asfortranarray(t)
+    ct = np.zeros((ts),'complex',order='Fortran')
+    nen = int(en.size)
+   #plt.figure()
+   #plt.plot(en,im);plt.show();sys.exit()
+    ct = calc_ct_fort(ct,im,en,t)
+   #plt.figure()
+   #plt.plot(t,ct.real)
+   #plt.plot(t,ct.imag)
+   #with open('ct_out.dat','w') as outf:
+   #    for i,x in enumerate(ct):
+   #        outf.write(str(t[i])+"  "+str(ct.real[i])+"  "+str(ct.imag[i])+"\n")
+   #plt.show();sys.exit()
+    im = np.ascontiguousarray(im)
+    en = np.ascontiguousarray(en)
+    t =  np.ascontiguousarray(t)
+    ct = np.ascontiguousarray(ct)
+    return ct
+
+def calc_ct_python(im,en,t):
+    """
+    Integration of the cumulant exponent.
+    Returns the function of time C(t) (ndarray)
+    defined over the t array.
+    """
+   #print(" calc_ct :: ")
+   #plt.plot(en,im)
+   #plt.show();sys.exit()
+    ts = int(t.size)
+    ct = np.zeros((ts),'complex')
+    den = 1/(en**2)
+    for i in xrange(ts):
+        integrand = im*(np.exp(1j*en*t[i]) - 1j*en*t[i] - 1)*den
+        ct[i] = np.trapz(integrand,en)
+    ct = ct/np.pi/2
+   #plt.plot(t,ct.real)
+   #plt.plot(t,ct.imag)
+   #plt.show();sys.exit()
+   #print(" calc_ct :: Done.")
+    return ct
+
+def calc_ct_treat0(im,en,t):
+    """
+    Calculation of exponent C(t) if w=0
+    is included. NON TESTED!!!
+    """
+    print("calc_ct_treat0 :: ")
+    ### NUMBA HEADER - START ###
+   #import numba
+   #calc_ct = numba.jit(calc_ct_python)
+    ### NUMBA HEADER - END ###
+    en_bot = en[en<0]
+    im_bot = im[en<0]
+    en_top = en[en>0]
+    im_top = im[en>0]
+    ct1 = calc_ct(im_bot,en_bot,ct,t)
+    ct2 = calc_ct(im_top,en_top,ct,t)
+    dx_inv = 1/abs(en[0]-en[1])
+    dim = np.diff(im)*dx_inv
+    dim = np.append(dim, dim[-1])
+    dim_0 = dim[np.nonzero(en == 0)[0][0]]
+    ct0 = 2 * dim_0 * ( 1 - 1j * t ) * dx_inv
+    ct = ct0 + ct1 + ct2
+    print("calc_ct_treat0 :: Done.")
+    return ct
+
+def calc_gt(im,en,t,eqp,hf):
+    """
+    Calculation of G(t), taking into account the possible
+    presence of w = 0. 
+    For now, this only acts if one w is EXACTLY 0. 
+    """
+    ### NUMBA HEADER - START ###
+    print("calc_gt :: ")
+   #import numba
+   #calc_ct = numba.jit(calc_ct_python)
+    ### NUMBA HEADER - END ###
+    en2 = en - eqp
+    en2 = -en2[::-1]
+    im2 = im[::-1]
+    # Not totally sure this works
+    im2[im2<0] = 0
+    if 0 in en2: # We have to treat the w=0 case differently. YET TO BE TESTED!!!
+        ct = calc_ct_treat0(im2,en2,t)
+    else: # Performing the integral for every value of t
+        ct = calc_ct(im2,en2,t)
+    # This is our G(t):
+    gt = 1j*np.exp( -1j * hf * t  + ct )
+   #gt = 1j*np.exp(  ct )
+   #print("gt[:-10]",gt[:10])
+    # The time-ordered G is 0 for positive times
+    # TODO: This is for occupied states only, see how to adapt for empty states
+    gt[t>0] = 0
+   #print("ct:", ct.shape, type(ct))
+   #print("gt:", gt.shape, type(gt))
+    print("calc_gt :: Done.")
+    return gt
+
+def set_fft_grid(en):
+    """
+    """
+    # Best adaptable parameters
+    print("set_fft_grid ::")
+    w_max = abs(en[-1]-en[0])
+    dw = abs(en[1]-en[0])
+    dt = 2*np.pi/w_max
+   #N = int(w_max/dw)
+    N = en.size
+    # N*dt = T = 2*pi/dw
+    if np.mod(N,2) != 0: # even steps are better
+        N += 1
+   #print(" N, dt: {} {}".format(N, dt))
+    t = np.linspace(- N*dt, 0, N)
+    print("set_fft_grid :: Done.")
+    return t, N, dt, dw
+
+def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
+    """
+    Here the core of the calculation is done. 
+    Given the parameters N and t, G(w) is 
+    calculated from G(t) using the FFT.
+    """
+    from scipy.fftpack import fft,ifft
+    from numpy.fft import fftshift,fftfreq,ifftshift
+    print()
+    print("calc_sf_c_num :: ")
+    # G(t)
+    print(" en.shape, imskb.shape:",en.shape, imskb.shape)
+    # Good for band 1: N = 2000, dt = 0.02
+    # Number of samplepoints 
+   #N = 2000
+   ## sample spacing 
+   #dt = 0.02 # 0.06 
+   #t, N, dt, dw = set_fft_grid(en)
+   #print(t.shape, t)
+   #print(t[::2].shape, t[::2])
+   #t = t[::2]
+   #print(" Time domain length, spacing:", t.size*dt, dt)
+    sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
+    ft =  np.zeros((len(en)))
+    ### FFT test on ImSigma ###
+   #print(" ### FFT test ###")
+   #t_ims = imskb[kptrange[-1],bdrange[-1]]
+   #interpims = interp1d(en, t_ims, kind = 'linear', axis = -1)
+   #for i in [1,4,16,64,256,1024]:
+   #    t_en = np.linspace(en[0], en[-1], en.size/i)
+   #    t_ims = interpims(t_en)
+   #    t_fft = fft(t_ims, t_ims.size)
+   #    t_ifft = ifft(t_fft)
+   #    t_int = np.trapz(t_ims,t_en)
+   #    t_diff = np.trapz(abs(t_ims-t_ifft),t_en)/t_int
+   #    print(" Number of samples in w: {}".format(t_en.size))
+   #    print(" Difference between f(w) and its double FFT: {}".format(t_diff))
+   #    plt.plot(t_en,t_ims,label=str(t_en.size))
+   #    if t_diff >= 0.01:
+   #        print("WARNING: double FFT does not yeld identity. Spacing might be too coarse.")
+   #plt.legend(); plt.show()
+   #sys.exit()
+    for ik in kptrange:
+        for ib in bdrange:
+            print(" ik, ib:",ik, ib)
+            ims_local = imskb[ik,ib]
+            eqp_kb = eqp[ik,ib]
+            hf_kb = hf[ik,ib]
+            print("eqp:", eqp_kb)
+            print("hf:", hf_kb)
+            interpims = interp1d(en, ims_local, kind = 'linear', axis = -1)
+            imeqp = interpims(eqp_kb)
+            print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
+           #plt.plot(en,ims_local); plt.show(); sys.exit()
+            # IDEA: THIS NUMBER SHOULD BE OUR DISCRIMINATE FOR THE RESOLUTION IN ENERGIES
+            # Hence now we should recalculate en, t, N , dt
+            # Let's say dw = ImSigma(eqp)/4, and then everything follows.
+            dw = imeqp/2
+            en_len = abs(en[0]-en[-1])
+            nsamples = int(en_len/dw)
+            en_adapt = np.linspace(en[0],en[-1],nsamples)
+            ims_adapt = interpims(en_adapt)
+            # HERE ZEROS ARE ADDED!!!
+           #en_ad2 = np.append(en_adapt[:]-en_len,en_adapt)
+           #en_ad2 = np.append(en_ad2[:]-en_len*2,en_ad2)
+           #ims_ad2 = np.append(np.zeros((nsamples)),ims_adapt)
+           #ims_ad2 = np.append(np.zeros((2*nsamples)),ims_ad2)
+            # These 2 lines remove the zeros
+            en_ad2 = en_adapt
+            ims_ad2 = ims_adapt
+           #ims_ad2 = np.append(ims_ad2,np.zeros((nsamples/2)))
+            t, N, dt, dw = set_fft_grid(en_ad2)
+           #en_adapt, ims_adapt = adapt_interp(en,ims_local)
+           #t = np.linspace(-500,0)
+            converged = False
+            tol_val = 0.01
+            a_int0 = 0.
+            k = 8
+            print()
+            print(" Converging dt... ")
+            print(" Tolerance: ",tol_val)
+           #print("{12.8} {12.4} {12.8} {12.4} {12.8} {12.8}".format(dw,en_len_new,dt,T,a_int,d_int))
+            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
+           #print("      dw   en_len_new      dt        T     a_int     d_int")
+            while not converged:
+           #for j in [3]:
+           #    for k in [64,128,256,512]: #512,1024,2048,4096]:
+                   #print("j, k:",j,k)
+                    # This determines 1/T and seems like a good guess
+                    # TODO: maybe automate convergence of dw as well
+                    j = 4.
+                    dw = imeqp/j
+                   #print(" dw:",dw)
+                    # This determines 1/dt
+                    en_len_new = k*abs(en[0]-en[-1])
+                   #print(" dw, w_max:", dw, en_len_new)
+                    nsamples = int(en_len_new/dw)
+                   #print(" Number of samples:",nsamples)
+                    dt = 2*np.pi/en_len_new
+                   #print(" dt:",dt)
+                   #print(" T SHOULD BE {:4.4}".format(2*np.pi/dw))
+                    en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
+                    ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
+                    en_int = en_adapt[en_adapt>=en[0]]
+                    ims_adapt = np.append(ims_zeros,interpims(en_int))
+                    en_ad2 = en_adapt
+                    ims_ad2 = ims_adapt
+                    t, N, dt, dw = set_fft_grid(en_ad2)
+                    T = N*dt
+                   #print(" T IS IN FACT {:4.4}".format(N*dt))
+              #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
+              #    #t_ims = interpims(t_en)
+                   #print(" Calculating G(t)...")
+                    gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
+                   #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+                   #print(" Performing FFT...")
+                    go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                    freq = fftfreq(N,dt)*2*np.pi#/N_padded
+                    s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+                    s_go = fftshift(go)
+                    a = np.absolute(s_go.imag)/np.pi
+                    a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
+                    d_int = abs(a_int1 - a_int0)
+                   #print(" Integral: ",a_int1)
+                   #print(" Delta integral: ",d_int)
+                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
+                    a_int0 = a_int1
+                    k *= 2
+                    if d_int <= tol_val: 
+                        converged = True
+                        print(" dt CONVERGED at", dt)
+            # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
+            # Visualize the function and its FFT
+            flag_test = True
+            flag_test = False
+            if flag_test is True:
+                f, axarr = plt.subplots(2, 2)
+                f.suptitle("ik, ib, N, dt: {:2} {:2} {:5} {:3.4}".format(ik,ib,N,dt))
+                axarr[0, 0].plot(t, gt.real)
+                axarr[0, 0].set_title('Re[G(t)]')
+                axarr[0, 0].grid()
+                axarr[0, 1].plot(t, gt.imag)
+                axarr[0, 1].set_title('Im[G(t)]')
+                axarr[0, 1].grid()
+                axarr[1, 0].plot(s_freq, go.real)
+                axarr[1, 0].set_title('Re[G(w)]')
+                axarr[1, 0].grid()
+                axarr[1, 1].plot(s_freq, go.imag)
+                axarr[1, 1].set_title('Im[G(w)]')
+                axarr[1, 1].grid()
+                plt.figure(); plt.grid()
+                s_freq_above_idx = np.where(s_freq > en[-1])
+                delta_s_freq = abs(s_freq[-1] - s_freq[0])
+                readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
+                readjust_go = np.roll(go,len(s_freq_above_idx))
+                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
+               #plt.plot(readjust_freq, abs(readjust_go.imag),'-', label='readjusted FFT')
+               #plt.plot(en, np.ones((en.size))*0.00001,'o', label='shifted FFT')
+               #plt.plot(freq, abs(go.imag),'-', label='out-of-the-box FFT')
+               #t_go = abs(np.append(go.imag[-go.imag.size/2:],go.imag[:go.imag.size/2]))
+               #plt.plot(s_freq, t_go,'-', label='test FFT')
+               #plt.plot(abs(s_go.imag),'-', label='shifted FFT')
+               #plt.plot(abs(go.imag),'-', label='out-of-the-box FFT')
+               #plt.plot(t_go,'-', label='test FFT')
+               #t_fr = s_freq[0:s_freq.size/2]
+               #t_go = np.concatenate(abs(s_go.imag)[-s_freq.size/2:],abs(s_go.imag)[0:s_freq.size/2])
+               #plt.plot(t_fr, t_go,'-', label='test FFT')
+               #plt.plot(s_freq[-freq.size/2:freq.size/2], abs(s_go.imag)[-freq.size/2:freq.size/2],'-', label='out-of-the-box FFT')
+                plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
+                plt.legend()
+                fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
+                outarray = np.transpose(np.vstack((s_freq,aw)))
+                np.savetxt(fname,outarray, delimiter='   ', newline='\n')
+               #with open('out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt),'w') as of:
+               #    of.write()
+               #plt.figure()
+               #plt.plot(freq,label='freq')
+               #plt.plot(s_freq, label='s_freq')
+               #plt.legend()
+                plt.show()
+                sys.exit()
+            # END OF VISUALIZATION PART
+            # All arrays must now be brought back on a common energy resolution
+           #aw = abs(go.imag)
+           #plt.plot(s_freq, abs(s_go.imag),'-', label='shifted FFT')
+           #plt.plot(s_freq,s_freq,label='s_freq')
+           #plt.plot(en,en,label='en')
+           #plt.legend(); plt.show();sys.exit()
+            interp_a = interp1d(s_freq, a, kind = 'linear', axis = -1)
+            sfkb[ik,ib] = interp_a(en)
+            ft += sfkb[ik,ib]
+    print("calc_sf_c_num :: Done.")
+   #return s_freq, s_go.imag
+    return ft, sfkb
+
+
+def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    This method takes care of the calculation of the cumulant. 
+    It is a numeric approach. It calculates first G(t),
+    then G(w) = FT[G(t)], and then A(w) = ImG(w). 
+    """
+    print("sf_c_numeric :: ")
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    hf = np.array(vardct['hf'])
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
+   #print("kptrange, bdrange ", kptrange, bdrange)
+    newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
+    penergy = int(vardct['penergy'])
+    #allkb = [spfkb,reskb, rdenkb, imskb]
+    reskb = allkb[1]
+    imskb = allkb[3]
+    plot_fit = int(vardct['plot_fit'])
+    #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
+    ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
+   #for N, dt in [(1000,0.01),(10000,0.01),(10000,0.01)]: #,(10000,0.001)]: 
+   #   #for dt in [0.005]: 
+   #        print("\n N, dt =", N, dt) 
+   #       #ftot, sfkb_c, w = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N)
+   #        s_freq, s_go_imag = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf,N=N,dt=dt)
+   #        plt.plot(s_freq, abs(s_go_imag), label="N "+str(N)+" dt "+str(dt))
+   #plt.legend()
+   #plt.show()
+   #sys.exit()
+   #ftot = [1]
+   #sfkb_c = [1]
+    #write_sftot_c(vardct, newen, ftot)
+    print("sf_c_numeric :: Done.")
+    return newen, ftot, sfkb_c
 
