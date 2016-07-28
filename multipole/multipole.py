@@ -90,6 +90,8 @@ def fit_multipole(preen,predata,nbin, method='const2', ifilewrite=0):
        #print(omegai, gi, deltai)
     elif method == 'fast':
         omegai, gi, deltai = fit_multipole_fast(preen,predata,nbin)
+    else:
+        omegai, gi, deltai = fit_multipole_const2(preen,predata,nbin)
     return omegai, gi, deltai
 
 def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
@@ -127,7 +129,23 @@ def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
         lambdai.append(tmpgi)
     if nbin == 1:
         print(" WARNING: with 1 bin, the value of lambdai is simply the integral under the curve.")
+        print(" WARNING: with 1 bin, the value of omegai is simply the max value of the curve.")
         lambdai = totalint
+        argmax = np.argmax(predata)
+        omegai = preen[argmax]
+        max_val = np.amax(predata)
+        #Check for multiple max values
+        many_argmax = [omegai]
+        j = 0
+        while np.amax(predata[argmax+j+1:]) == max_val:
+            j += 1
+            max_val = np.amax(predata[argmax+1+j:])
+            argmax = np.argmax(predata[argmax+1+j:])
+            many_argmax.append(preen[argmax+j+1])
+            if argmax+j+2 == predata.size:
+                break
+        many_argmax = np.array(many_argmax)
+        omegai = many_argmax.mean()
     lambdai = np.array(lambdai)
     omegai  = np.array(omegai)
     deltai  = np.array(deltai)
