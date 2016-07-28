@@ -137,6 +137,8 @@ def fit_multipole_const2(preen,predata,nbin, ifilewrite=0):
         #Check for multiple max values
         many_argmax = [omegai]
         j = 0
+       #print(argmax,j,predata.size)
+       #plt.plot(preen,predata);plt.show();sys.exit()
         while np.amax(predata[argmax+j+1:]) == max_val:
             j += 1
             max_val = np.amax(predata[argmax+1+j:])

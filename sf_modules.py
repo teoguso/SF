@@ -1974,9 +1974,15 @@ def calc_ct(im,en,t):
     t = np.asfortranarray(t)
     ct = np.zeros((ts),'complex',order='Fortran')
     nen = int(en.size)
+   #plt.figure()
+   #plt.plot(en,im);plt.show();sys.exit()
     ct = calc_ct_fort(ct,im,en,t)
+   #plt.figure()
    #plt.plot(t,ct.real)
    #plt.plot(t,ct.imag)
+   #with open('ct_out.dat','w') as outf:
+   #    for i,x in enumerate(ct):
+   #        outf.write(str(t[i])+"  "+str(ct.real[i])+"  "+str(ct.imag[i])+"\n")
    #plt.show();sys.exit()
     im = np.ascontiguousarray(im)
     en = np.ascontiguousarray(en)
