@@ -1968,6 +1968,7 @@ def calc_ct(im,en,t):
    #print(" calc_ct :: ")
    #plt.plot(en,im)
    #plt.show();sys.exit()
+   #t = t[-t.size/10:]
     ts = int(t.size)
     im = np.asfortranarray(im)
     en = np.asfortranarray(en)
@@ -2093,8 +2094,9 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
     Given the parameters N and t, G(w) is 
     calculated from G(t) using the FFT.
     """
-    from scipy.fftpack import fft,ifft
+   #from scipy.fftpack import ifft
     from numpy.fft import fftshift,fftfreq,ifftshift
+    from pyfftw.interfaces.scipy_fftpack import ifft
     print()
     print("calc_sf_c_num :: ")
     # G(t)
@@ -2203,7 +2205,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
                    #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
                    #print(" Performing FFT...")
-                    go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                   #go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                    go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
                     s_go = fftshift(go)
