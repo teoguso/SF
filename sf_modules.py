@@ -2053,7 +2053,9 @@ def calc_gt(im,en,t,eqp,hf):
     en2 = -en2[::-1]
     im2 = im[::-1]
     # Not totally sure this works
-    im2[im2<0] = 0
+   #im2[im2<0] = 0
+   #im2 = np.absolute(im2)
+   #plt.plot(en2,im2);plt.show();sys.exit()
     if 0 in en2: # We have to treat the w=0 case differently. YET TO BE TESTED!!!
         ct = calc_ct_treat0(im2,en2,t)
     else: # Performing the integral for every value of t
@@ -2221,6 +2223,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     if d_int <= tol_val: 
                         converged = True
                         print(" dt CONVERGED at", dt)
+                        print()
             # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
             # Visualize the function and its FFT
             flag_test = True
