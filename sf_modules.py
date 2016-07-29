@@ -1974,7 +1974,7 @@ def calc_ct(im,en,t):
     en = np.asfortranarray(en)
     t = np.asfortranarray(t)
     ct = np.zeros((ts),'complex',order='Fortran')
-    nen = int(en.size)
+   #nen = int(en.size)
    #plt.figure()
    #plt.plot(en,im);plt.show();sys.exit()
     ct = calc_ct_fort(ct,im,en,t)
@@ -2015,8 +2015,9 @@ def calc_ct_python(im,en,t):
 
 def calc_ct_treat0(im,en,t):
     """
+    I SUSPECT THIS IS WRONG!!!
     Calculation of exponent C(t) if w=0
-    is included. NON TESTED!!!
+    is included. NOT TESTED!!!
     """
     print("calc_ct_treat0 :: ")
     ### NUMBA HEADER - START ###
@@ -2066,7 +2067,7 @@ def calc_gt(im,en,t,eqp,hf):
    #print("gt[:-10]",gt[:10])
     # The time-ordered G is 0 for positive times
     # TODO: This is for occupied states only, see how to adapt for empty states
-    gt[t>0] = 0
+   #gt[t>0] = 0
    #print("ct:", ct.shape, type(ct))
    #print("gt:", gt.shape, type(gt))
     print("calc_gt :: Done.")
@@ -2148,21 +2149,21 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
             # IDEA: THIS NUMBER SHOULD BE OUR DISCRIMINATE FOR THE RESOLUTION IN ENERGIES
             # Hence now we should recalculate en, t, N , dt
             # Let's say dw = ImSigma(eqp)/4, and then everything follows.
-            dw = imeqp/2
-            en_len = abs(en[0]-en[-1])
-            nsamples = int(en_len/dw)
-            en_adapt = np.linspace(en[0],en[-1],nsamples)
-            ims_adapt = interpims(en_adapt)
+           #dw = imeqp/2
+           #en_len = abs(en[0]-en[-1])
+           #nsamples = int(en_len/dw)
+           #en_adapt = np.linspace(en[0],en[-1],nsamples)
+           #ims_adapt = interpims(en_adapt)
             # HERE ZEROS ARE ADDED!!!
            #en_ad2 = np.append(en_adapt[:]-en_len,en_adapt)
            #en_ad2 = np.append(en_ad2[:]-en_len*2,en_ad2)
            #ims_ad2 = np.append(np.zeros((nsamples)),ims_adapt)
            #ims_ad2 = np.append(np.zeros((2*nsamples)),ims_ad2)
             # These 2 lines remove the zeros
-            en_ad2 = en_adapt
-            ims_ad2 = ims_adapt
+           #en_ad2 = en_adapt
+           #ims_ad2 = ims_adapt
            #ims_ad2 = np.append(ims_ad2,np.zeros((nsamples/2)))
-            t, N, dt, dw = set_fft_grid(en_ad2)
+           #t, N, dt, dw = set_fft_grid(en_ad2)
            #en_adapt, ims_adapt = adapt_interp(en,ims_local)
            #t = np.linspace(-500,0)
             converged = False
