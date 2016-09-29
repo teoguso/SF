@@ -1992,7 +1992,7 @@ def calc_ct(im,en,t):
     ct_printout = False
     if ct_printout is True:
         np.savetxt('ct.dat',np.hstack(t.reshape(-1,1),ct.reshape(-1,1)))
-        break
+        sys.exit()
     return ct
 
 def calc_ct_python(im,en,t):
