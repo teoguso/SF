@@ -1989,6 +1989,9 @@ def calc_ct(im,en,t):
     en = np.ascontiguousarray(en)
     t =  np.ascontiguousarray(t)
     ct = np.ascontiguousarray(ct)
+    ct_printout = False
+    if ct_printout is True:
+        np.savetxt('ct.dat',np.hstack(t.reshape(-1,1),ct.reshape(-1,1))
     return ct
 
 def calc_ct_python(im,en,t):
@@ -2212,6 +2215,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+                    s_freq = fftshift(freq)*np.pi # To have the correct energies (hopefully!)
                     s_go = fftshift(go)
                     a = np.absolute(s_go.imag)/np.pi
                     a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
