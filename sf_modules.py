@@ -1989,10 +1989,6 @@ def calc_ct(im,en,t):
     en = np.ascontiguousarray(en)
     t =  np.ascontiguousarray(t)
     ct = np.ascontiguousarray(ct)
-    ct_printout = False
-    if ct_printout is True:
-        np.savetxt('ct.dat',np.hstack(t.reshape(-1,1),ct.reshape(-1,1)))
-        sys.exit()
     return ct
 
 def calc_ct_python(im,en,t):
@@ -2067,6 +2063,11 @@ def calc_gt(im,en,t,eqp,hf):
         ct = calc_ct(im2,en2,t)
     # This is our G(t):
     gt = 1j*np.exp( -1j * hf * t  + ct )
+    gt_printout = False
+    if gt_printout is True:
+        np.savetxt('gt.dat', np.hstack((t.real.reshape(-1,1), gt.real.reshape(-1,1), gt.imag.reshape(-1,1))))
+        np.savetxt('ct.dat', np.hstack((t.real.reshape(-1,1), ct.real.reshape(-1,1), ct.imag.reshape(-1,1))))
+        sys.exit()
    #gt = 1j*np.exp(  ct )
    #print("gt[:-10]",gt[:10])
     # The time-ordered G is 0 for positive times
