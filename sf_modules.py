@@ -2063,11 +2063,6 @@ def calc_gt(im,en,t,eqp,hf):
         ct = calc_ct(im2,en2,t)
     # This is our G(t):
     gt = 1j*np.exp( -1j * hf * t  + ct )
-    gt_printout = False
-    if gt_printout is True:
-        np.savetxt('gt.dat', np.hstack((t.real.reshape(-1,1), gt.real.reshape(-1,1), gt.imag.reshape(-1,1))))
-        np.savetxt('ct.dat', np.hstack((t.real.reshape(-1,1), ct.real.reshape(-1,1), ct.imag.reshape(-1,1))))
-        sys.exit()
    #gt = 1j*np.exp(  ct )
    #print("gt[:-10]",gt[:10])
     # The time-ordered G is 0 for positive times
@@ -2230,6 +2225,11 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     if d_int <= tol_val: 
                         converged = True
                         print(" dt CONVERGED at", dt)
+                        gt_printout = False
+                        if gt_printout is True:
+                            np.savetxt('gt.dat', np.hstack((t.real.reshape(-1,1), gt.real.reshape(-1,1), gt.imag.reshape(-1,1))))
+                            # np.savetxt('ct.dat', np.hstack((t.real.reshape(-1,1), ct.real.reshape(-1,1), ct.imag.reshape(-1,1))))
+                            sys.exit()
                         print()
             # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
             # Visualize the function and its FFT
@@ -2345,7 +2345,7 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     return newen, ftot, sfkb_c
 
 
-def calc_sf_sat1(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
+def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
     """
     Here the core of the calculation is done. 
     Given the parameters N and t, G(w) is 
@@ -2369,6 +2369,34 @@ def calc_sf_sat1(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
             interpims = interp1d(en, ims_local, kind = 'linear', axis = -1)
             imeqp = interpims(eqp_kb)
             print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
+
+            # the beta function is 0 above \mu
+            beta = ims_local/np.pi
+            beta[en>efermi] = 0.
+            beta_qp = imeqp/np.pi
+            dx = en[-1] - en[-2]
+            beta_p = np.gradient(beta, dx)
+            interpbp = interp1d(en, beta_p, kind = 'linear', axis = -1)
+            beta_p_qp = interpbp(eqp_kb)
+            sf_sat1 = (beta - beta_qp - (en - eqp_kb)*beta_p_qp)/(en - eqp_kb)**2
+
+            res_local = reskb[ik,ib]
+            dsigma_re = np.gradient(res_local, dx)
+            interp_dsigma_re = interp1d(en, dsigma_re, kind = 'linear', axis = -1)
+            dsigma_re_qp = interp_dsigma_re(eqp_kb)
+            z_factor = 1./(1 - dsigma_re_qp - 1j*np.pi*beta_p_qp)
+            den_sf_qp = np.pi*((en - eqp_kb)**2 + imeqp**2)
+            sf_qp = np.absolute((imeqp*z_factor.real + (en - eqp_kb)*z_factor.imag)/den_sf_qp)
+
+            sf_tot = sf_qp + np.convolve(sf_sat1, sf_qp, 'same')
+            plt.plot(sf_sat1, label='A^S_{kw}')
+            plt.plot(sf_qp, label='A^{QP}_{kw}')
+            plt.plot(sf_tot, label='A^C_{kw}')
+            plt.legend()
+            plt.grid()
+            plt.show()
+            sys.exit()
+
             converged = False
             tol_val = 0.01
             a_int0 = 0.
@@ -2479,7 +2507,8 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     reskb = allkb[1]
     imskb = allkb[3]
     plot_fit = int(vardct['plot_fit'])
-    ftot, sfkb_c = calc_sf_sat1(newen, imskb, kptrange, bdrange, eqp, hf)
+    efermi = float(vardct['efermi'])
+    ftot, sfkb_c = calc_sf_sat1(newen, reskb, imskb, kptrange, bdrange, eqp, hf, efermi)
     print("sf_c_exact_sat1 :: Done.")
     return newen, ftot, sfkb_c
 
