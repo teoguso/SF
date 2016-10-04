@@ -322,7 +322,7 @@ else:
         ### NUMERICAL INTEGRATION ###
         if int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        else if calc_exact_sat1:
+        elif calc_exact_sat1:
             print(" ### Calculation of spectral function with exact first satellite ### ")
             enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         else:
