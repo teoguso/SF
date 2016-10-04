@@ -2217,7 +2217,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-                    s_freq = fftshift(freq)*np.pi # To have the correct energies (hopefully!)
+                    # s_freq = fftshift(freq)*np.pi # To have the correct energies (hopefully!)
                     s_go = fftshift(go)
                     a = np.absolute(s_go.imag)/np.pi
                     a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
@@ -2342,5 +2342,144 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
    #sfkb_c = [1]
     #write_sftot_c(vardct, newen, ftot)
     print("sf_c_numeric :: Done.")
+    return newen, ftot, sfkb_c
+
+
+def calc_sf_sat1(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
+    """
+    Here the core of the calculation is done. 
+    Given the parameters N and t, G(w) is 
+    calculated from G(t) using the FFT.
+    """
+    # from numpy.fft import fftshift,fftfreq,ifftshift
+    # from pyfftw.interfaces.scipy_fftpack import ifft
+    print()
+    print("calc_sf_sat1 :: ")
+    print(" en.shape, imskb.shape:",en.shape, imskb.shape)
+    sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
+    ft =  np.zeros((len(en)))
+    for ik in kptrange:
+        for ib in bdrange:
+            print(" ik, ib:",ik, ib)
+            ims_local = imskb[ik,ib]
+            eqp_kb = eqp[ik,ib]
+            hf_kb = hf[ik,ib]
+            print("eqp:", eqp_kb)
+            print("hf:", hf_kb)
+            interpims = interp1d(en, ims_local, kind = 'linear', axis = -1)
+            imeqp = interpims(eqp_kb)
+            print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
+            converged = False
+            tol_val = 0.01
+            a_int0 = 0.
+            k = 8
+            print()
+            print(" Converging dt... ")
+            print(" Tolerance: ",tol_val)
+            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
+            while not converged:
+                    j = 4.
+                    dw = imeqp/j
+                    en_len_new = k*abs(en[0]-en[-1])
+                    nsamples = int(en_len_new/dw)
+                    dt = 2*np.pi/en_len_new
+                    en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
+                    ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
+                    en_int = en_adapt[en_adapt>=en[0]]
+                    ims_adapt = np.append(ims_zeros,interpims(en_int))
+                    en_ad2 = en_adapt
+                    ims_ad2 = ims_adapt
+                    t, N, dt, dw = set_fft_grid(en_ad2)
+                    T = N*dt
+                    gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
+                    go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
+                    freq = fftfreq(N,dt)*2*np.pi#/N_padded
+                    s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+                    s_freq = fftshift(freq)*np.pi # To have the correct energies (hopefully!)
+                    s_go = fftshift(go)
+                    a = np.absolute(s_go.imag)/np.pi
+                    a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
+                    d_int = abs(a_int1 - a_int0)
+                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
+                    a_int0 = a_int1
+                    k *= 2
+                    if d_int <= tol_val: 
+                        converged = True
+                        print(" dt CONVERGED at", dt)
+                        print()
+            # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
+            # Visualize the function and its FFT
+            flag_test = True
+            flag_test = False
+            if flag_test is True:
+                f, axarr = plt.subplots(2, 2)
+                f.suptitle("ik, ib, N, dt: {:2} {:2} {:5} {:3.4}".format(ik,ib,N,dt))
+                axarr[0, 0].plot(t, gt.real)
+                axarr[0, 0].set_title('Re[G(t)]')
+                axarr[0, 0].grid()
+                axarr[0, 1].plot(t, gt.imag)
+                axarr[0, 1].set_title('Im[G(t)]')
+                axarr[0, 1].grid()
+                axarr[1, 0].plot(s_freq, go.real)
+                axarr[1, 0].set_title('Re[G(w)]')
+                axarr[1, 0].grid()
+                axarr[1, 1].plot(s_freq, go.imag)
+                axarr[1, 1].set_title('Im[G(w)]')
+                axarr[1, 1].grid()
+                plt.figure(); plt.grid()
+                s_freq_above_idx = np.where(s_freq > en[-1])
+                delta_s_freq = abs(s_freq[-1] - s_freq[0])
+                readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
+                readjust_go = np.roll(go,len(s_freq_above_idx))
+                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
+                plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
+                plt.legend()
+                fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
+                outarray = np.transpose(np.vstack((s_freq,aw)))
+                np.savetxt(fname,outarray, delimiter='   ', newline='\n')
+                plt.show()
+                sys.exit()
+
+            interp_a = interp1d(s_freq, a, kind = 'linear', axis = -1)
+            sfkb[ik,ib] = interp_a(en)
+            ft += sfkb[ik,ib]
+
+    print("calc_sf_sat1 :: Done.")
+    return ft, sfkb
+
+
+def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
+    """
+    This method takes care of the calculation of the cumulant
+    spectral function using Ferdi's formula (15) from [Aryasetiawan et al., PRL 77, 1996].
+    This should be a good analytic reference for any numerical method.
+    """
+    print("sf_c_exact_sat1 :: ")
+    wtk = np.array(vardct['wtk'])
+    hartree = np.array(hartree)
+    hf = np.array(vardct['hf'])
+    pdos = np.array(pdos)
+    minkpt = int(vardct['minkpt'])
+    maxkpt = int(vardct['maxkpt'])
+    nkpt = maxkpt - minkpt + 1
+    minband = int(vardct['minband'])
+    maxband = int(vardct['maxband'])
+    nband = maxband - minband + 1
+    bdgw = map(int, vardct['sig_bdgw'])
+    bdrange = range(minband-bdgw[0],maxband-bdgw[0]+1)
+    kptrange = range(minkpt - 1, maxkpt)
+   #print("kptrange, bdrange ", kptrange, bdrange)
+    newdx = 0.005
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    npoles = int(vardct['npoles'])
+    extinf = int(vardct['extinf'])
+    penergy = int(vardct['penergy'])
+    #allkb = [spfkb,reskb, rdenkb, imskb]
+    reskb = allkb[1]
+    imskb = allkb[3]
+    plot_fit = int(vardct['plot_fit'])
+    ftot, sfkb_c = calc_sf_sat1(newen, imskb, kptrange, bdrange, eqp, hf)
+    print("sf_c_exact_sat1 :: Done.")
     return newen, ftot, sfkb_c
 

@@ -317,9 +317,14 @@ else:
             else:
                 print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
                 sys.exit()
+
+        calc_exact_sat1 = True
         ### NUMERICAL INTEGRATION ###
         if int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        else if calc_exact_sat1:
+            print(" ### Calculation of spectral function with exact first satellite ### ")
+            enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         ### CRC FORMULA ###
@@ -328,6 +333,7 @@ else:
             print(" ### Calculation of constrained retarded cumulant ### ")
             B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
             sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
+
        ## TEST!!!!
        #dict_c['npoles'] = 1  
        #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
