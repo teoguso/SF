@@ -49,6 +49,8 @@ def read_invar(infile='invar.in'):
      'add_wtk': 1, Include k-point weights (0, 1)
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
+     'exact_sat1': 0, Use exact analytic formula from Ferdi's paper (0, 1)
+     'print_gt': 0, Print out G(t) from the numerical integration method (0, 1)
      'fit_model': 'new', Choose what multipole fit model to use (old=Josh's, new=uniform binning) (old, new)
      'test_lorentz_W': 0, Enables the use of a Lorentzian function (for code testing)
     """
@@ -82,6 +84,8 @@ def read_invar(infile='invar.in'):
             'add_wtk': 1,
             'plot_fit': 0, 
             'coarse': 0,
+            'exact_sat1': 0,
+            'print_gt': 0,
             'fit_model': 'new',
             'test_lorentz_W': 0
             }
@@ -2091,7 +2095,7 @@ def set_fft_grid(en):
     print("set_fft_grid :: Done.")
     return t, N, dt, dw
 
-def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
+def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_gt=0):
     """
     Here the core of the calculation is done. 
     Given the parameters N and t, G(w) is 
@@ -2225,8 +2229,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01):
                     if d_int <= tol_val: 
                         converged = True
                         print(" dt CONVERGED at", dt)
-                        gt_printout = False
-                        if gt_printout is True:
+                        if print_gt:
                             np.savetxt('gt.dat', np.hstack((t.real.reshape(-1,1), gt.real.reshape(-1,1), gt.imag.reshape(-1,1))))
                             # np.savetxt('ct.dat', np.hstack((t.real.reshape(-1,1), ct.real.reshape(-1,1), ct.imag.reshape(-1,1))))
                             sys.exit()
@@ -2323,12 +2326,13 @@ def sf_c_numeric(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     npoles = int(vardct['npoles'])
     extinf = int(vardct['extinf'])
     penergy = int(vardct['penergy'])
+    print_gt = int(vardct['print_gt'])
     #allkb = [spfkb,reskb, rdenkb, imskb]
     reskb = allkb[1]
     imskb = allkb[3]
     plot_fit = int(vardct['plot_fit'])
     #omegai, lambdai, deltai = get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit)
-    ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf)
+    ftot, sfkb_c = calc_sf_c_num(newen, imskb, kptrange, bdrange, eqp, hf, print_gt=print_gt)
    #for N, dt in [(1000,0.01),(10000,0.01),(10000,0.01)]: #,(10000,0.001)]: 
    #   #for dt in [0.005]: 
    #        print("\n N, dt =", N, dt) 

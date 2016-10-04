@@ -318,7 +318,7 @@ else:
                 print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
                 sys.exit()
 
-        calc_exact_sat1 = True
+        calc_exact_sat1 = int(dict_c['exact_sat1'])
         ### NUMERICAL INTEGRATION ###
         if calc_exact_sat1:
             print(" ### Calculation of spectral function with exact first satellite ### ")
