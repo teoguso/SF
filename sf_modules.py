@@ -2355,8 +2355,8 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
     Given the parameters N and t, G(w) is 
     calculated from G(t) using the FFT.
     """
-    # from numpy.fft import fftshift,fftfreq,ifftshift
-    # from pyfftw.interfaces.scipy_fftpack import ifft
+    from numpy.fft import fftshift,fftfreq,ifftshift
+    from pyfftw.interfaces.scipy_fftpack import fft, ifft
     print()
     print("calc_sf_sat1 :: ")
     print(" en.shape, imskb.shape:",en.shape, imskb.shape)
@@ -2382,7 +2382,7 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             beta_p = np.gradient(beta, dx)
             interpbp = interp1d(en, beta_p, kind = 'linear', axis = -1)
             beta_p_qp = interpbp(eqp_kb)
-            sf_sat1 = (beta - beta_qp - (en - eqp_kb)*beta_p_qp)/(en - eqp_kb)**2
+            sf_sat1 = (beta - beta_qp - (en - eqp_kb)*beta_p_qp)/((en - eqp_kb)**2)
 
             res_local = reskb[ik,ib]
             dsigma_re = np.gradient(res_local, dx)
@@ -2392,88 +2392,56 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             den_sf_qp = np.pi*((en - eqp_kb)**2 + imeqp**2)
             sf_qp = np.absolute((imeqp*z_factor.real + (en - eqp_kb)*z_factor.imag)/den_sf_qp)
 
-            sf_tot = sf_qp + np.convolve(sf_sat1, sf_qp, 'same')
-            plt.plot(sf_sat1, label='A^S_{kw}')
-            plt.plot(sf_qp, label='A^{QP}_{kw}')
-            plt.plot(sf_tot, label='A^C_{kw}')
+            # sf_tot = sf_qp + np.convolve(sf_sat1, sf_qp, 'same')
+            # sf_tot[en>efermi] = 0.
+            gauss = lambda x: np.exp(-(x)**2/2.)/np.sqrt(2*np.pi)
+            from scipy.signal import fftconvolve
+            def mystep(x, eqp_kb):
+                mystep = np.ones(len(x))
+                mystep[x<eqp_kb] = 0.
+                return mystep
+            def mydoublefft(myfunc, x):
+                N = int(100./(x[-1]-x[-2]))
+                # dt = en[-1] - en[0]/100.
+                ft_g = ifft(myfunc, N)
+                # print("ft_g.size", ft_g.size)
+                ift_g = fft(ft_g)
+                # print("ift_g.size", ift_g.size)
+                # freq = fftfreq(N,dt)*2*np.pi
+                # print("freq.size", freq.size)
+                return ift_g[:x.size]
+            # sf_tot = fftconvolve(gauss(en), gauss(en), 'same')
+            # x = np.linspace(0,50,num=)
+            myg = gauss(en)
+            myg = myg[(en>=-10) & (en<10)]
+            myen = en[(en>=-10) & (en<10)]
+            N = int(100./(en[-1]-en[-2]))
+            dt = en[-1] - en[0]/100.
+            # myg = myg[en<10]
+            ft_g1 = ifft(myg, N)
+            ft_g2 = ifft(myg, N)
+            # plt.plot(ft_g1)
+            # plt.plot(ft_g2)
+            myprod = ft_g1*ft_g2*np.sqrt(N)
+            myconv = fft(myprod)
+            plt.plot(myconv)
+            # print("myg.size", myg.size)
+            plt.plot(myg)
+            # plt.plot(myen,mydoublefft(myg,myen))
+            # plt.plot(myen, myprod[:myen.size])
+            # plt.plot(myen, ift_g.real[:myen.size])
+            # plt.plot(myen, ift_g.imag[:myen.size])
+            # sf_tot = 1/en.size*fftconvolve(gauss(en), mystep(en, eqp_kb), 'same')
+            # plt.plot(en, gauss(en))
+            # plt.plot(en, sf_sat1, label='A^S_{kw}')
+            # plt.plot(en, sf_qp, label='A^{QP}_{kw}')
+            # plt.plot(en, mystep(en, eqp_kb))
+            # plt.plot(en, sf_tot, label='A^C_{kw}')
             plt.legend()
             plt.grid()
             plt.show()
             sys.exit()
 
-            converged = False
-            tol_val = 0.01
-            a_int0 = 0.
-            k = 8
-            print()
-            print(" Converging dt... ")
-            print(" Tolerance: ",tol_val)
-            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
-            while not converged:
-                    j = 4.
-                    dw = imeqp/j
-                    en_len_new = k*abs(en[0]-en[-1])
-                    nsamples = int(en_len_new/dw)
-                    dt = 2*np.pi/en_len_new
-                    en_adapt = np.linspace(en[-1]-en_len_new,en[-1],nsamples)
-                    ims_zeros = np.zeros((en_adapt[en_adapt<en[0]].size))
-                    en_int = en_adapt[en_adapt>=en[0]]
-                    ims_adapt = np.append(ims_zeros,interpims(en_int))
-                    en_ad2 = en_adapt
-                    ims_ad2 = ims_adapt
-                    t, N, dt, dw = set_fft_grid(en_ad2)
-                    T = N*dt
-                    gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
-                    go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
-                    freq = fftfreq(N,dt)*2*np.pi#/N_padded
-                    s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-                    s_freq = fftshift(freq)*np.pi # To have the correct energies (hopefully!)
-                    s_go = fftshift(go)
-                    a = np.absolute(s_go.imag)/np.pi
-                    a_int1 = np.trapz(a[(s_freq>=en[0]) & (s_freq<en[-1])],s_freq[(s_freq>=en[0]) & (s_freq<en[-1])])
-                    d_int = abs(a_int1 - a_int0)
-                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
-                    a_int0 = a_int1
-                    k *= 2
-                    if d_int <= tol_val: 
-                        converged = True
-                        print(" dt CONVERGED at", dt)
-                        print()
-            # TODO: The ifft method can use a parameter n to pad zeros below and above the freqs we already have.
-            # Visualize the function and its FFT
-            flag_test = True
-            flag_test = False
-            if flag_test is True:
-                f, axarr = plt.subplots(2, 2)
-                f.suptitle("ik, ib, N, dt: {:2} {:2} {:5} {:3.4}".format(ik,ib,N,dt))
-                axarr[0, 0].plot(t, gt.real)
-                axarr[0, 0].set_title('Re[G(t)]')
-                axarr[0, 0].grid()
-                axarr[0, 1].plot(t, gt.imag)
-                axarr[0, 1].set_title('Im[G(t)]')
-                axarr[0, 1].grid()
-                axarr[1, 0].plot(s_freq, go.real)
-                axarr[1, 0].set_title('Re[G(w)]')
-                axarr[1, 0].grid()
-                axarr[1, 1].plot(s_freq, go.imag)
-                axarr[1, 1].set_title('Im[G(w)]')
-                axarr[1, 1].grid()
-                plt.figure(); plt.grid()
-                s_freq_above_idx = np.where(s_freq > en[-1])
-                delta_s_freq = abs(s_freq[-1] - s_freq[0])
-                readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
-                readjust_go = np.roll(go,len(s_freq_above_idx))
-                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
-                plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
-                plt.legend()
-                fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
-                outarray = np.transpose(np.vstack((s_freq,aw)))
-                np.savetxt(fname,outarray, delimiter='   ', newline='\n')
-                plt.show()
-                sys.exit()
-
-            interp_a = interp1d(s_freq, a, kind = 'linear', axis = -1)
-            sfkb[ik,ib] = interp_a(en)
             ft += sfkb[ik,ib]
 
     print("calc_sf_sat1 :: Done.")

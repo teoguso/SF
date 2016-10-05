@@ -826,6 +826,9 @@ class AbinitOutReader(CodeOutReader):
         qpen_k = np.array(qpen_k)
         hartree_k = np.array(hartree_k)
         hf_k = np.array(hf_k)
+        elda_k = np.array(elda_k)
+        vxc_k = np.array(vxc_k)
+        hf_k = elda_k - vxc_k + hf_k
         self.qpen = qpen_k
         self.hartree = hartree_k
         self.hf = hf_k
