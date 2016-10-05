@@ -820,6 +820,8 @@ class AbinitOutReader(CodeOutReader):
             hartree_k = hartree_k[::2]
             qpen_k = qpen_k[::2]
             hf_k = hf_k[::2]
+            vxc_k = vxc_k[::2]
+            elda_k = elda_k[::2]
        #a = np.array(hartree_k)
        #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
        #print(a[0])
