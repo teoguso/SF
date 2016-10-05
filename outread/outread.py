@@ -736,6 +736,7 @@ class AbinitOutReader(CodeOutReader):
         hartree_k = []
         qpen_k = []
         hf_k = []
+        sigc_k = []
         if nsppol == 2:
             nkpt = 2*nkpt
         if version >= 6.19: 
@@ -773,7 +774,8 @@ class AbinitOutReader(CodeOutReader):
             if ib == nband :
                 qpen = []
                 hf = []
-                if version >= 6.2: 
+                sigc = []
+                if version >= 6.2:
                     imag = lines[1::2]
                     lines = lines[0::2]
                     qpen_im = []
@@ -783,12 +785,15 @@ class AbinitOutReader(CodeOutReader):
                         hartree.append(line[4])
                         qpen.append(line[12])
                         hf.append(line[5])
+                        sigc.append(line[6])
                     hartree_k.append(hartree)
                     qpen_k.append(qpen)
                     hf_k.append(hf)
+                    sigc_k.append(sigc)
                     hartree = []
                     qpen = []
                     hf = []
+                    sigc = []
                 else:
                     elda = []
                     vxc = []
@@ -797,10 +802,12 @@ class AbinitOutReader(CodeOutReader):
                         vxc.append(line[2])
                         qpen.append(line[9])
                         hf.append(line[3])
+                        sigc.append(line[4])
                     elda_k.append(elda)
                     vxc_k.append(vxc)
                     qpen_k.append(qpen)
                     hf_k.append(hf)
+                    sigc_k.append(sigc)
                     elda = []
                     vxc = []
                     qpen = []
@@ -820,6 +827,7 @@ class AbinitOutReader(CodeOutReader):
             hartree_k = hartree_k[::2]
             qpen_k = qpen_k[::2]
             hf_k = hf_k[::2]
+            sigc_k = sigc_k[::2]
             vxc_k = vxc_k[::2]
             elda_k = elda_k[::2]
        #a = np.array(hartree_k)
@@ -828,12 +836,14 @@ class AbinitOutReader(CodeOutReader):
         qpen_k = np.array(qpen_k)
         hartree_k = np.array(hartree_k)
         hf_k = np.array(hf_k)
-        elda_k = np.array(elda_k)
-        vxc_k = np.array(vxc_k)
-        hf_k = elda_k - vxc_k + hf_k
+        sigc_k = np.array(sigc_k)
+        # elda_k = np.array(elda_k)
+        # vxc_k = np.array(vxc_k)
+        hf_k = qpen_k - sigc_k
         self.qpen = qpen_k
         self.hartree = hartree_k
         self.hf = hf_k
+        # self.sigc = sigc_k
        #print(hartree_k)
         print("Done.")
 #        print(np.array(qpen_k))
