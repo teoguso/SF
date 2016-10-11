@@ -39,7 +39,8 @@ def read_invar(infile='invar.in'):
      'np_crc': 1, Number of poles for B coefficient in constrained retarded cumulant spectral function
      'extinf': 0, Includes extrinsic and interference effects (0, 1)
      'efermi': 0.0, Fermi energy
-     'omega_p':0.0, Arbitrary plasmon frequency (used only in the case npoles=999)
+     'omega_p': 5.0, Arbitrary plasmon frequency (used only in the case npoles=999)
+     'max_range_integral': 10.0, Arbitrary integral range for Im(Sigma), relative to eqp (used only in the case npoles=999)
      'enhartree': 0, Converts energies to eV in case they are given in Hartree (0, 1)
      'gwcode': 'abinit', Name of code
      'nspin': 0, Number of spin polarizations (0, 1, 2)
@@ -74,7 +75,8 @@ def read_invar(infile='invar.in'):
             'np_crc': 1,
             'extinf': 0,
             'efermi': 0.0,
-            'omega_p':0.0,
+            'omega_p': 5.0,
+            'max_range_integral': 10.0,
             'enhartree': 0,
             'gwcode': 'abinit',
             'nspin': 0, 
@@ -942,11 +944,9 @@ def calc_sf_c(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     """
     npoles = int(vardct['npoles'])
    #if npoles == 0 or npoles == 1 or npoles == 999: 
-    while True:
-        enexp, ftot, sfkb_c = \
+    enexp, ftot, sfkb_c = \
                 calc_sf_c_serial(\
                 vardct, hartree, pdos, eqp, imeqp, newen, allkb)
-        break
    #else:
    #    enexp, ftot, sfkb_c = \
    #            calc_sf_c_para(\
@@ -1479,29 +1479,37 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     imskb = allkb[3]
     if npoles==999: # same omega_p for every state, with the intensity calculated integrating Im(Sigma)
         omega_p = float(vardct['omega_p'])
+        max_range_integral = float(vardct['max_range_integral'])
        #omegampole = np.ones((nkpt,nband))*omega_p
        #ampole =  np.zeros((nkpt,nband))
-        omegampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))*omega_p
+        omegampole =  omega_p*np.ones((imskb[:,0,0].size,imskb[0,:,0].size))
         ampole =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size))
         #for ik in range(nkpt):
-        #for ik in kptrange:
-           #for ib in range(nband):
-           #for ib in bdrange:
-        for ik in range(imskb[:,0,0].size):
-            for ib in range(imskb[0,:,0].size):
+        for ik in kptrange:
+            for ib in bdrange:
+                #for ib in range(nband):
+        # for ik in range(imskb[:,0,0].size):
+        #     for ib in range(imskb[0,:,0].size):
                 print(" ik, ib", ik, ib)
                 #interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
                 #if eqp[ik,ib]<=efermi:
+                # sanity check
+                # if max_range_integral < omega_p:
+                #     max_range_integral = omega_p
                 if eqp[ik,ib]<=0:
                     tmpen = newen[imskb[ik,ib]>=0]
                     tmpim = imskb[ik,ib,imskb[ik,ib]>=0]
+                    tmpim = tmpim[tmpen > eqp[ik,ib] - max_range_integral]
+                    tmpen = tmpen[tmpen > eqp[ik,ib] - max_range_integral]
                 else:
                     tmpen = newen[imskb[ik,ib]<0]
-                    tmpim = imskb[ik,ib,ims[ik,ib]<0]
-                ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi
+                    tmpim = imskb[ik,ib,imskb[ik,ib]<0]
+                    tmpim = tmpim[tmpen < eqp[ik,ib] + max_range_integral]
+                    tmpen = tmpen[tmpen < eqp[ik,ib] + max_range_integral]
+                ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi/omega_p**2
                 print(" 1/pi*\int\Sigma   =", ampole[ik,ib])
                 # Workaround correction for small energy plasmons
-                ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
+                # ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
 #                # Workaround for small energy plasmons
 #                if eqp[ik,ib]<=efermi:
 #                    tmpim = tmpim[tmpen>=eqp[ik,ib]-2.5]
@@ -2362,6 +2370,8 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
     print(" en.shape, imskb.shape:",en.shape, imskb.shape)
     sfkb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,len(en)))
     ft =  np.zeros((len(en)))
+    # not sure where efermi has been set. this should be safe for now.
+    efermi = 0
     for ik in kptrange:
         for ib in bdrange:
             print(" ik, ib:",ik, ib)
@@ -2377,8 +2387,10 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             # the beta function is 0 above \mu
             beta = ims_local/np.pi
             beta[en>efermi] = 0.
+            # plt.plot(en,beta); plt.grid(); plt.show()
             beta_qp = imeqp/np.pi
             dx = en[-1] - en[-2]
+            en2 = en - eqp_kb
             beta_p = np.gradient(beta, dx)
             interpbp = interp1d(en, beta_p, kind = 'linear', axis = -1)
             beta_p_qp = interpbp(eqp_kb)
@@ -2391,11 +2403,30 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             z_factor = 1./(1 - dsigma_re_qp - 1j*np.pi*beta_p_qp)
             den_sf_qp = np.pi*((en - eqp_kb)**2 + imeqp**2)
             sf_qp = np.absolute((imeqp*z_factor.real + (en - eqp_kb)*z_factor.imag)/den_sf_qp)
+            sf_sat1[en>efermi] = 0.
+            sf_qp[en>efermi] = 0.
 
-            # sf_tot = sf_qp + np.convolve(sf_sat1, sf_qp, 'same')
-            # sf_tot[en>efermi] = 0.
-            gauss = lambda x: np.exp(-(x)**2/2.)/np.sqrt(2*np.pi)
+            # Locate roll quantity using eqp
+            n_roll = np.size(en[(en<=efermi) & (en>eqp_kb)])
             from scipy.signal import fftconvolve
+            dx = en[1] - en[0]
+            # sf_tot = sf_qp + dx*fftconvolve(sf_sat1/sf_sat1.sum(), sf_qp, 'same')
+            convolution = dx*fftconvolve(sf_sat1, sf_qp, 'same')
+            sf_tot = sf_qp + convolution
+            sf_tot[en>efermi] = 0.
+            plt.plot(en, sf_sat1, label='A^S_{kw}')
+            plt.plot(en, sf_qp + dx*fftconvolve(np.roll(sf_sat1, n_roll), sf_qp, 'same'), label='A^C_{kw} rolled')
+            plt.plot(en, np.roll(sf_sat1, n_roll), label='A^S_{kw} rolled')
+            # sf_sat1 = np.roll(sf_sat1, 800)
+            plt.plot(en, sf_qp, label='A^{QP}_{kw}')
+            # plt.plot(en, convolution, label='convolution')
+            plt.plot(en, sf_tot, label='A^C_{kw}')
+            plt.legend()
+            plt.grid()
+            plt.show()
+            sys.exit()
+
+            gauss = lambda x: np.exp(-(x)**2/2.)/np.sqrt(2*np.pi)
             def mystep(x, eqp_kb):
                 mystep = np.ones(len(x))
                 mystep[x<eqp_kb] = 0.
@@ -2422,25 +2453,18 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             ft_g2 = ifft(myg, N)
             # plt.plot(ft_g1)
             # plt.plot(ft_g2)
-            myprod = ft_g1*ft_g2*np.sqrt(N)
-            myconv = fft(myprod)
-            plt.plot(myconv)
+            myprod = ft_g1*ft_g2 #*np.sqrt(N)
+            myconvprod = fft(myprod)
+            # plt.plot(myconvprod, label='fft product')
+            # plt.plot(fftconvolve(myg, myg/myg.sum(), mode='same'), label= 'convolve')
             # print("myg.size", myg.size)
-            plt.plot(myg)
+            # plt.plot(myg, label='gaussian')
             # plt.plot(myen,mydoublefft(myg,myen))
             # plt.plot(myen, myprod[:myen.size])
             # plt.plot(myen, ift_g.real[:myen.size])
             # plt.plot(myen, ift_g.imag[:myen.size])
             # sf_tot = 1/en.size*fftconvolve(gauss(en), mystep(en, eqp_kb), 'same')
             # plt.plot(en, gauss(en))
-            # plt.plot(en, sf_sat1, label='A^S_{kw}')
-            # plt.plot(en, sf_qp, label='A^{QP}_{kw}')
-            # plt.plot(en, mystep(en, eqp_kb))
-            # plt.plot(en, sf_tot, label='A^C_{kw}')
-            plt.legend()
-            plt.grid()
-            plt.show()
-            sys.exit()
 
             ft += sfkb[ik,ib]
 
