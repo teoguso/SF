@@ -1507,7 +1507,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     tmpim = tmpim[tmpen < eqp[ik,ib] + max_range_integral]
                     tmpen = tmpen[tmpen < eqp[ik,ib] + max_range_integral]
                 ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi/omega_p**2
-                print(" 1/pi*\int\Sigma   =", ampole[ik,ib])
+                print(" Using user-defined single pole")
+                print(" omega_p: ", omega_p)
+                print(" max_range_integral: ", max_range_integral)
+                print(" a_j: ", ampole[ik,ib])
                 # Workaround correction for small energy plasmons
                 # ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
 #                # Workaround for small energy plasmons
@@ -2395,6 +2398,19 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             interpbp = interp1d(en, beta_p, kind = 'linear', axis = -1)
             beta_p_qp = interpbp(eqp_kb)
             sf_sat1 = (beta - beta_qp - (en - eqp_kb)*beta_p_qp)/((en - eqp_kb)**2)
+            def sat1_cs(en, im_sigma, eqp_kb, imeqp_kb):
+                dx = en[-1] - en[-2]
+                gamma = np.absolute(im_sigma)/np.pi
+                gamma_qp = imeqp_kb/np.pi
+                dgamma = np.gradient(gamma, dx)
+                interp_dgamma = interp1d(en, dgamma, kind = 'linear', axis = -1)
+                dgamma_qp = interp_dgamma(eqp_kb)
+                sf_sat1 = (gamma - gamma_qp - en * dgamma_qp)/(en**2)
+                return sf_sat1
+            plt.plot(sf_sat1, label='old')
+            sf_sat1b = sat1_cs(en, ims_local, eqp_kb, imeqp)
+            plt.plot(sf_sat1b, label='new')
+            plt.legend(); plt.show(); exit()
 
             res_local = reskb[ik,ib]
             dsigma_re = np.gradient(res_local, dx)
@@ -2415,8 +2431,9 @@ def calc_sf_sat1(en, reskb, imskb, kptrange, bdrange, eqp, hf, efermi=0.):
             sf_tot = sf_qp + convolution
             sf_tot[en>efermi] = 0.
             plt.plot(en, sf_sat1, label='A^S_{kw}')
-            plt.plot(en, sf_qp + dx*fftconvolve(np.roll(sf_sat1, n_roll), sf_qp, 'same'), label='A^C_{kw} rolled')
-            plt.plot(en, np.roll(sf_sat1, n_roll), label='A^S_{kw} rolled')
+            # plt.plot(en, sf_qp + sf_sat1 * sf_qp, label='A^C_{kw} multiplied')
+            # plt.plot(en, sf_qp + dx*fftconvolve(np.roll(sf_sat1, n_roll), sf_qp, 'same'), label='A^C_{kw} rolled')
+            # plt.plot(en, np.roll(sf_sat1, n_roll), label='A^S_{kw} rolled')
             # sf_sat1 = np.roll(sf_sat1, 800)
             plt.plot(en, sf_qp, label='A^{QP}_{kw}')
             # plt.plot(en, convolution, label='convolution')
@@ -2477,6 +2494,17 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     This method takes care of the calculation of the cumulant
     spectral function using Ferdi's formula (15) from [Aryasetiawan et al., PRL 77, 1996].
     This should be a good analytic reference for any numerical method.
+    or maybe:
+    {
+    author = "Gunnarsson, {F Aryasetiawan and O}",
+    issn = "0034-4885",
+    journal = "Reports on Progress in Physics",
+    number = "3",
+    pages = "237",
+    title = "{The GW method}",
+    volume = "61",
+    year = "1998"
+    }
     """
     print("sf_c_exact_sat1 :: ")
     wtk = np.array(vardct['wtk'])
