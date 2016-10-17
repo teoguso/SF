@@ -670,10 +670,10 @@ class AbinitOutReader(CodeOutReader):
                             tmp_kpt_ev = [] 
                             ikpt += 1
                             ib = -1
-                            print("breaking, ib = nband - 1", ib)
+                            # print("breaking, ib = nband - 1", ib)
                             break
                 if ikpt == nkpt:
-                    print(" breakind, ikpt = nkpt", ikpt)
+                    # print(" breakind, ikpt = nkpt", ikpt)
                     break
                 self.gw_ks_ev = tmp_ks_ev
             print("Done.")
