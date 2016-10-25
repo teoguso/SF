@@ -659,7 +659,6 @@ def find_eqp_resigma(en, resigma, efermi):
         tmpeqp = -b/a
         zeros.append(tmpeqp)
     elif nzeros>1 : 
-        print()
         print(" WARNING: Plasmarons! ")
     return tmpeqp, nzeros
 

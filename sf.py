@@ -294,7 +294,7 @@ else:
         ### ==== Finding zero in res --> Eqp ===== ###
         print(" Finding zeros in real parts...")
         eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
-        print(" Test imeqp:\n", imeqp)
+        # print(" Test imeqp:\n", imeqp)
         # Writing out eqp
         # Writing out imeqp
         print(" Launching write_eqp_imeqp in a separate thread...")
