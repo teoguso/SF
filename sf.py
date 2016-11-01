@@ -20,7 +20,7 @@ TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 from __future__ import print_function
 from threading import Thread
 from sf_modules import *
-from outread import *
+from outread import outread
 import numpy as np;
 import matplotlib.pylab as plt;
 #from scipy.interpolate import interp1d
@@ -67,7 +67,7 @@ else:
 # TODO: remove the debugging prints here below
 if invar_dict['gwcode'] == 'abinit':
    #print("1")
-    gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
+    gwout = outread.AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc'])
     pass
 elif invar_dict['gwcode'] == 'exciting':
    #print("2")

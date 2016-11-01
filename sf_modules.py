@@ -726,7 +726,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     The file structure is expected to be:
     #  wp, aext, ainf, aint, width
     """
-    from multipole import getdata_file #, write_f_as_sum_of_poles
+    import multipole.getdata_file as getdata_file #, write_f_as_sum_of_poles
     #extinfname = "a_wp.dat"
     print(" Reading extrinsic and interference contribution from file "+str(extinfname)+"...")
     en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
@@ -1086,7 +1086,6 @@ def calc_sf_c_para(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     nenexp = np.size(enexp)
     ftot = np.zeros((np.size(enexp)),order='Fortran')
     sfkb_c = np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,nenexp))
-    from extmod_spf_mpole import f2py_calc_spf_mpole, f2py_calc_spf_mpole_extinf
     for ik in kptrange:
         ikeff = ik + 1
         for ib in bdrange:
@@ -1375,8 +1374,9 @@ def calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb):
     Calculation of the CRC part of the spectral function and of the
     total CRC spectral function. 
     """
-    print(" calc_sf_c_serial :: ")
-    from extmod_spf_mpole import f2py_calc_spf_mpole
+    print(" calc_sf_c_crc :: ")
+    # from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1445,6 +1445,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     weights are put to 0. 
     - Standard cumulant for any other value of npoles.
     """
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     print(" calc_sf_c_serial :: ")
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -1732,7 +1734,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     ############################
     # With extrinsic effects ###
     if extinf == 1:
-        from extmod_spf_mpole import f2py_calc_spf_mpole_extinf
         #for ik in range(nkpt):
         for ik in kptrange:
             ikeff = ik + 1
@@ -1770,7 +1771,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 sfkb_c[ik,ib] = tmpf
                 ftot = ftot + tmpf
     else: # extinf == 0
-        from extmod_spf_mpole import f2py_calc_spf_mpole
+        import f2py_modules.extmod_spf_mpole as extmod_spf_mpole
         #for ik in range(nkpt):
             #for ib in range(nband):
         for ik in kptrange:
