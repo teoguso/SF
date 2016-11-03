@@ -13,13 +13,6 @@ from scipy import optimize
 import sys
 from os.path import isfile, join, isdir
 from os import getcwd, pardir, mkdir, chdir
-from multipole.multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
-import glob
-from scipy.optimize import curve_fit
-from scipy import interp
-from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
-from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
-from f2py_modules.calc_ct_fort import calc_ct_fort
 #
 def read_invar(infile='invar.in'):
     """
@@ -269,6 +262,8 @@ def read_sigfile(invar_dict):
     also: SPIN!!! For the moment, it will skip every second kpt,
     i.e. it will read only one spin channel. 
     """
+    import glob
+    from time import sleep
     print("read_sigfile :: ",end="")
     # We put the content of the file (lines) in this array
     sigfilename = invar_dict['sigmafile']
@@ -655,6 +650,7 @@ def find_eqp_resigma(en, resigma, efermi):
         print(" WARNING: No eqp found! ")
         def fit_func(x, a, b): 
             return a*x + b
+        from scipy.optimize import curve_fit
         params = curve_fit(fit_func, en, resigma)
         [a, b] = params[0]
         if -b/a < en[-1]:
@@ -693,6 +689,7 @@ def calc_eqp_imeqp(en,res,ims,hartree,efermi):
     The function find_eqp_resigma() is used here.
     eqp and imeqp are returned. 
     """
+    from scipy import interp
     nkpt = np.size(res[:,0,0])
     nband = np.size(res[0,:,0])
     eqp = np.zeros((nkpt,nband))
@@ -729,6 +726,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     The file structure is expected to be:
     #  wp, aext, ainf, aint, width
     """
+    import multipole.getdata_file as getdata_file #, write_f_as_sum_of_poles
     #extinfname = "a_wp.dat"
     print(" Reading extrinsic and interference contribution from file "+str(extinfname)+"...")
     en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
@@ -959,6 +957,7 @@ def calc_multipole(npoles, imskb, kptrange, bdrange, eqp, newen):
     Function that calculates frequencies and amplitudes
     of ImSigma using the multipole model. 
     """
+    from multipole import fit_multipole #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -1243,6 +1242,7 @@ def calc_B_crc(vardct, eqp, newen, allkb):
     npoles = int(vardct['np_crc'])
     imskb = allkb[3]
     B_crc_kb =  np.zeros((imskb[:,0,0].size,imskb[0,:,0].size,npoles))
+    from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -1375,6 +1375,8 @@ def calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb):
     total CRC spectral function. 
     """
     print(" calc_sf_c_crc :: ")
+    # from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1443,6 +1445,8 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     weights are put to 0. 
     - Standard cumulant for any other value of npoles.
     """
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     print(" calc_sf_c_serial :: ")
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
@@ -1504,10 +1508,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     tmpim = tmpim[tmpen < eqp[ik,ib] + max_range_integral]
                     tmpen = tmpen[tmpen < eqp[ik,ib] + max_range_integral]
                 ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi/omega_p**2
-                print(" Using user-defined single pole")
+                print(" Using user-defined single pole - npoles 999")
                 print(" omega_p: ", omega_p)
                 print(" max_range_integral: ", max_range_integral)
-                print(" a_j: ", ampole[ik,ib])
+                print(" Satellite strength a_j: ", ampole[ik,ib])
                 # Workaround correction for small energy plasmons
                 # ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
 #                # Workaround for small energy plasmons
@@ -1521,6 +1525,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
         #ampole = ampole/omega_p**2
                 #ampole[ik,ib] = np.trapz(en[ims[ik,ib]>=0],ims[ik,ib,ims[ik,ib]>=0])/np.pi
     elif npoles != 0:
+        from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
         print(" ### ================== ###")
         print(" ###    Multipole fit   ###")
         print(" Number of poles:", npoles)
@@ -1766,6 +1771,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 sfkb_c[ik,ib] = tmpf
                 ftot = ftot + tmpf
     else: # extinf == 0
+        import f2py_modules.extmod_spf_mpole as extmod_spf_mpole
         #for ik in range(nkpt):
             #for ib in range(nband):
         for ik in kptrange:
@@ -1800,9 +1806,6 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     omegakb=-omegakb
                     #print("-omegakb", omegakb)
                 tmpf = np.zeros((nenexp), order='Fortran')
-                # print(omegakb)
-                # print(akb)
-                # exit("ONOIJNHO")
                 tmpf = f2py_calc_spf_mpole(tmpf,enexp,prefac,akb,omegakb,eqpkb,imkb) #,nen,npoles)
                     #tmpf = calc_spf_mpole(enexp,prefac,akb,omegakb,eqpkb,imkb,npoles)
                 #outnamekb = "spf_exp-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+"_np"+str(npoles)+"."+str(penergy)
@@ -1827,6 +1830,7 @@ def get_mp_params(imskb,kptrange,bdrange,eqp,newen,npoles,plot_fit):
     """
     FINALLY! The multipole fit lives in a separate function.
     """
+    from multipole import fit_multipole, fit_multipole, getdata_file #, write_f_as_sum_of_poles
     print(" ### ================== ###")
     print(" ###    Multipole fit   ###")
     print(" Number of poles:", npoles)
@@ -1975,6 +1979,7 @@ def calc_ct(im,en,t):
     Returns the function of time C(t) (ndarray)
     defined over the t array.
     """
+    from calc_ct_fort import calc_ct_fort
    #print(" calc_ct :: ")
    #plt.plot(en,im)
    #plt.show();sys.exit()
