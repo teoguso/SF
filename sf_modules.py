@@ -1979,7 +1979,7 @@ def calc_ct(im,en,t):
     Returns the function of time C(t) (ndarray)
     defined over the t array.
     """
-    from calc_ct_fort import calc_ct_fort
+    from f2py_modules.calc_ct_fort import calc_ct_fort
    #print(" calc_ct :: ")
    #plt.plot(en,im)
    #plt.show();sys.exit()
@@ -1988,7 +1988,7 @@ def calc_ct(im,en,t):
     im = np.asfortranarray(im)
     en = np.asfortranarray(en)
     t = np.asfortranarray(t)
-    ct = np.zeros((ts),'complex',order='Fortran')
+    ct = np.zeros((ts),'complex', order='Fortran')
    #nen = int(en.size)
    #plt.figure()
    #plt.plot(en,im);plt.show();sys.exit()
@@ -2053,6 +2053,7 @@ def calc_ct_treat0(im,en,t):
     ct = ct0 + ct1 + ct2
     print("calc_ct_treat0 :: Done.")
     return ct
+
 
 def calc_gt(im,en,t,eqp,hf):
     """
@@ -2189,7 +2190,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
             print(" Converging dt... ")
             print(" Tolerance: ",tol_val)
            #print("{12.8} {12.4} {12.8} {12.4} {12.8} {12.8}".format(dw,en_len_new,dt,T,a_int,d_int))
-            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
+            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format(
+                'dw','en_len_new','N','dt','T','a_int','d_int'))
            #print("      dw   en_len_new      dt        T     a_int     d_int")
             while not converged:
            #for j in [3]:
@@ -2216,14 +2218,14 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                     ims_ad2 = ims_adapt
                     t, N, dt, dw = set_fft_grid(en_ad2)
                     T = N*dt
-                   #print(" T IS IN FACT {:4.4}".format(N*dt))
-              #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
-              #    #t_ims = interpims(t_en)
-                   #print(" Calculating G(t)...")
+                    #print(" T IS IN FACT {:4.4}".format(N*dt))
+                    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
+                    #t_ims = interpims(t_en)
+                    #print(" Calculating G(t)...")
                     gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
-                   #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
-                   #print(" Performing FFT...")
-                   #go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                    #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+                    #print(" Performing FFT...")
+                    #go = ifft(gt,N)*N*dt # Whatever, just check the units please
                     go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
@@ -2234,7 +2236,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                     d_int = abs(a_int1 - a_int0)
                    #print(" Integral: ",a_int1)
                    #print(" Delta integral: ",d_int)
-                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
+                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(
+                        dw, en_len_new, N, dt, T, a_int1, d_int))
                     a_int0 = a_int1
                     k *= 2
                     if d_int <= tol_val: 
@@ -2269,7 +2272,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                 delta_s_freq = abs(s_freq[-1] - s_freq[0])
                 readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
                 readjust_go = np.roll(go,len(s_freq_above_idx))
-                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
+                plt.plot(s_freq, a,'-', label='shifted FFT')
                #plt.plot(readjust_freq, abs(readjust_go.imag),'-', label='readjusted FFT')
                #plt.plot(en, np.ones((en.size))*0.00001,'o', label='shifted FFT')
                #plt.plot(freq, abs(go.imag),'-', label='out-of-the-box FFT')
@@ -2285,7 +2288,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                 plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
                 plt.legend()
                 fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
-                outarray = np.transpose(np.vstack((s_freq,aw)))
+                outarray = np.transpose(np.vstack((s_freq,a)))
                 np.savetxt(fname,outarray, delimiter='   ', newline='\n')
                #with open('out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt),'w') as of:
                #    of.write()
