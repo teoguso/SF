@@ -1,5 +1,5 @@
-##!/bin/sh
-## Written by Matteo Guzzo ###
+#!/bin/sh
+### Written by Matteo Guzzo ###
 ### A.D. MMXIV (2014)       ###
 # Small script to compile and link the fortran module
 # and to do other small tasks.
@@ -14,5 +14,4 @@ f2py -c --fcompiler="gfortran" --f90flags="-fopenmp -ffree-form -ffast-math -fun
 #f2py --f90exec=/usr/global/intel/bin/ifort extmod_spf_mpole.pyf -c spf_mpole.f90
 cd ..
 ln -s f2py_modules/extmod_spf_mpole.so extmod_spf_mpole.so
-ln -s f2py_modules/calc_ct_fort.so calc_ct_fort.so
 ln -s f2py_modules/calc_ct_fort.so calc_ct_fort.so
