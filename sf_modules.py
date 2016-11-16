@@ -49,6 +49,7 @@ def read_invar(infile='invar.in'):
      'restart': 0, Will not calculate anything, but simply use the single spf files already calculated (0, 1)
      'add_wtk': 1, Include k-point weights (0, 1)
      'plot_fit': 0, Plot the fitted ImSigma as representation of poles (0, 1)
+     'ir_cut': 0.0, Puts to 0 the imaginary part of sigma in a [-ir_cut;ir_cut) range around eqp[ik,ib]
      'coarse': 0, Use coarser grid for the spectral function (faster?) (0, 1)
      'exact_sat1': 0, Use exact analytic formula from Ferdi's paper (0, 1)
      'print_gt': 0, Print out G(t) from the numerical integration method (0, 1)
@@ -94,6 +95,7 @@ def read_invar(infile='invar.in'):
             'restart': 0,
             'add_wtk': 1,
             'plot_fit': 0, 
+            'ir_cut': 0.0,
             'coarse': 0,
             'exact_sat1': 0,
             'print_gt': 0,
@@ -735,7 +737,7 @@ def calc_extinf_corrections(origdir,extinfname,ampole,omegampole):
     The file structure is expected to be:
     #  wp, aext, ainf, aint, width
     """
-    from multipole import getdata_file #, write_f_as_sum_of_poles
+    import multipole.getdata_file as getdata_file #, write_f_as_sum_of_poles
     #extinfname = "a_wp.dat"
     print(" Reading extrinsic and interference contribution from file "+str(extinfname)+"...")
     en_ei, aext = getdata_file(origdir+"/"+str(extinfname))
@@ -1384,8 +1386,9 @@ def calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb):
     Calculation of the CRC part of the spectral function and of the
     total CRC spectral function. 
     """
-    print(" calc_sf_c_serial :: ")
-    from extmod_spf_mpole import f2py_calc_spf_mpole
+    print(" calc_sf_c_crc :: ")
+    # from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1454,7 +1457,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     weights are put to 0. 
     - Standard cumulant for any other value of npoles.
     """
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole_extinf
+    from f2py_modules.extmod_spf_mpole import f2py_calc_spf_mpole
     print(" calc_sf_c_serial :: ")
+    ir_cut = float(vardct['ir_cut'])
     wtk = np.array(vardct['wtk'])
     hartree = np.array(hartree)
     pdos = np.array(pdos)
@@ -1515,10 +1521,10 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                     tmpim = tmpim[tmpen < eqp[ik,ib] + max_range_integral]
                     tmpen = tmpen[tmpen < eqp[ik,ib] + max_range_integral]
                 ampole[ik,ib] = abs(np.trapz(tmpim,tmpen))/np.pi/omega_p**2
-                print(" Using user-defined single pole")
+                print(" Using user-defined single pole - npoles 999")
                 print(" omega_p: ", omega_p)
                 print(" max_range_integral: ", max_range_integral)
-                print(" a_j: ", ampole[ik,ib])
+                print(" Satellite strength a_j: ", ampole[ik,ib])
                 # Workaround correction for small energy plasmons
                 # ampole[ik,ib] = ampole[ik,ib]/(abs(tmpen[-1]-tmpen[0]))*omega_p
 #                # Workaround for small energy plasmons
@@ -1583,7 +1589,9 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                         print(" eqp[ik,ib], newen[-1]", eqp[ik,ib] , newen[-1])
                         continue
                     im3 = abs(interpims(en3)/np.pi) # This is what should be fitted
-                   #zcut = 3.0
+                    # cut to solve the 0 divergency
+                    if ir_cut != 0: 
+                        im3[(en3>(eqp[ik,ib]-ir_cut)) & (en3<(eqp[ik,ib]+ir_cut))] = 0
                    #for i in range(en3.size):
                    #    if en3[i]>(eqp[ik,ib]-zcut) and en3[i]<(eqp[ik,ib]+zcut):
                    #        im3[i] = 0.
@@ -1779,7 +1787,7 @@ def calc_sf_c_serial(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
                 sfkb_c[ik,ib] = tmpf
                 ftot = ftot + tmpf
     else: # extinf == 0
-        from extmod_spf_mpole import f2py_calc_spf_mpole
+        import f2py_modules.extmod_spf_mpole as extmod_spf_mpole
         #for ik in range(nkpt):
             #for ib in range(nband):
         for ik in kptrange:
@@ -1987,7 +1995,7 @@ def calc_ct(im,en,t):
     Returns the function of time C(t) (ndarray)
     defined over the t array.
     """
-    from calc_ct_fort import calc_ct_fort
+    from f2py_modules.calc_ct_fort import calc_ct_fort
    #print(" calc_ct :: ")
    #plt.plot(en,im)
    #plt.show();sys.exit()
@@ -1996,7 +2004,7 @@ def calc_ct(im,en,t):
     im = np.asfortranarray(im)
     en = np.asfortranarray(en)
     t = np.asfortranarray(t)
-    ct = np.zeros((ts),'complex',order='Fortran')
+    ct = np.zeros((ts),'complex', order='Fortran')
    #nen = int(en.size)
    #plt.figure()
    #plt.plot(en,im);plt.show();sys.exit()
@@ -2197,7 +2205,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
             print(" Converging dt... ")
             print(" Tolerance: ",tol_val)
            #print("{12.8} {12.4} {12.8} {12.4} {12.8} {12.8}".format(dw,en_len_new,dt,T,a_int,d_int))
-            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format('dw','en_len_new','N','dt','T','a_int','d_int'))
+            print("{0:>12.8} {1:>12.4} {2:>9} {3:>12.4} {4:>12.8} {5:>12.8} {6:>12.8}".format(
+                'dw','en_len_new','N','dt','T','a_int','d_int'))
            #print("      dw   en_len_new      dt        T     a_int     d_int")
             while not converged:
            #for j in [3]:
@@ -2224,14 +2233,14 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                     ims_ad2 = ims_adapt
                     t, N, dt, dw = set_fft_grid(en_ad2)
                     T = N*dt
-                   #print(" T IS IN FACT {:4.4}".format(N*dt))
-              #    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
-              #    #t_ims = interpims(t_en)
-                   #print(" Calculating G(t)...")
+                    #print(" T IS IN FACT {:4.4}".format(N*dt))
+                    #t_en = np.linspace(en_ad2[0],en_ad2[-1],en_ad2.size*k)
+                    #t_ims = interpims(t_en)
+                    #print(" Calculating G(t)...")
                     gt = calc_gt(ims_local,en,t,eqp_kb,hf_kb)
-                   #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
-                   #print(" Performing FFT...")
-                   #go = ifft(gt,N)*N*dt # Whatever, just check the units please
+                    #gt = calc_gt(ims_ad2,en_ad2,t,eqp_kb,hf_kb)
+                    #print(" Performing FFT...")
+                    #go = ifft(gt,N)*N*dt # Whatever, just check the units please
                     go = ifft(gt,N,threads=4)*N*dt # This is for FFTW use
                     freq = fftfreq(N,dt)*2*np.pi#/N_padded
                     s_freq = fftshift(freq) # To have the correct energies (hopefully!)
@@ -2242,7 +2251,8 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                     d_int = abs(a_int1 - a_int0)
                    #print(" Integral: ",a_int1)
                    #print(" Delta integral: ",d_int)
-                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(dw,en_len_new,N,dt,T,a_int1,d_int))
+                    print("{0:12.8f} {1:12.4f} {2:9} {3:12.4} {4:12.8} {5:12.8} {6:12.8}".format(
+                        dw, en_len_new, N, dt, T, a_int1, d_int))
                     a_int0 = a_int1
                     k *= 2
                     if d_int <= tol_val: 
@@ -2277,7 +2287,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                 delta_s_freq = abs(s_freq[-1] - s_freq[0])
                 readjust_freq = np.append(s_freq[s_freq_above_idx]-delta_s_freq,s_freq[s_freq<=en[-1]]) 
                 readjust_go = np.roll(go,len(s_freq_above_idx))
-                plt.plot(s_freq, s_aw,'-', label='shifted FFT')
+                plt.plot(s_freq, a,'-', label='shifted FFT')
                #plt.plot(readjust_freq, abs(readjust_go.imag),'-', label='readjusted FFT')
                #plt.plot(en, np.ones((en.size))*0.00001,'o', label='shifted FFT')
                #plt.plot(freq, abs(go.imag),'-', label='out-of-the-box FFT')
@@ -2293,7 +2303,7 @@ def calc_sf_c_num(en, imskb, kptrange, bdrange, eqp, hf, N=1000, dt=0.01, print_
                 plt.title('|Im[G(w)]|, ik, ib, N, dt: {:2} {:2} {:5} {:3.4}'.format(ik, ib, N, dt))
                 plt.legend()
                 fname = 'out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt)
-                outarray = np.transpose(np.vstack((s_freq,aw)))
+                outarray = np.transpose(np.vstack((s_freq,a)))
                 np.savetxt(fname,outarray, delimiter='   ', newline='\n')
                #with open('out_{}_{}_{}_{}.dat'.format(ik, ib, N, dt),'w') as of:
                #    of.write()
@@ -2545,7 +2555,7 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
     return newen, ftot, sfkb_c
 
 def integ_w(x , ShiftIms,NewEn,tImag): # pay attention of NewEn==0!!!!!
-    return 1.0/np.pi*abs(ShiftIms[x])*(np.exp(-(NewEn[x])*tImag)-1.0)*(1.0/(NewEn[x]**2))
+    return 1.0/np.pi*ShiftIms[x]*(np.exp(-(NewEn[x])*tImag)-1.0)*(1.0/(NewEn[x]**2))
 
 def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enmax,allkb,eqp,encut,pdos):
 #def calc_toc96(vardct,tfft_size,newen,allkb,eqp,encut,pdos):

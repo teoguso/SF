@@ -402,21 +402,21 @@ else:
   #     #plt.plot(enexp2, ftot2, label="ftot_serial")
   #     #plt.legend(loc=2)
   #     #plt.show()
-  #      #write_sftot_c(dict_c, enexp, ftot)
-  #      print("Integral test, spftot: ", np.trapz(ftot,enexp))
-  #      print("="*40)
-  #      print("MEMORY USAGE TEST")
-  #      print("="*40)
-  #      print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
-  #      # Writing out sfkb
-  #      print("TEST: sfkb.shape:", sfkb.shape)
-  #      thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
-  #      thread.start()
-  #  
-  #  
-  #      ### TODO: fix all below ###
-  #      mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
-  #      plt.plot(enexp, ftot, label = mylabel)
+        write_sftot_c(dict_c, enexp, ftot)
+        print("Integral test, spftot: ", np.trapz(ftot,enexp))
+        print("="*40)
+        print("MEMORY USAGE TEST")
+        print("="*40)
+        print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
+        # Writing out sfkb
+        print("TEST: sfkb.shape:", sfkb.shape)
+        thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
+        thread.start()
+    
+    
+        ### TODO: fix all below ###
+        mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
+        plt.plot(enexp, ftot, label = mylabel)
     
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
