@@ -1,24 +1,13 @@
-Na_sky_SIG # sigmafile
+SIG_gw0_zcut1     # sigmafile
 1           # minkpt
-8             # maxkpt
-145           # nkpt
-5           # minband
-5           # maxband
-nband 5
--30        # enmin
-15         # enmax
-1.333320    # efermi
-1.0         # sfactor
-0.0         # pfactor
-800         # penergy
-0           # plasmon2
-0.6         # a_extinf
-0           # extinf
-0             # npoles
-1  #  calc_gw
-1  #  calc_exp
-0  #  calc_num
-0    plot_fit
-0   #  calc_crc
-0   #  np_crc
-1 is_sc
+1         # maxkpt
+1           # minband
+1           # maxband
+-20        # enmin
+10        # enmax
+0.1044253    # efermi 
+1  # calc_gw
+1 # calc_toc96
+1  # calc_exp
+10000 # tfft_size
+1   # encut

@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 """
 ### Written by Matteo Guzzo ###
@@ -20,7 +21,7 @@ TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 from __future__ import print_function
 from threading import Thread
 from sf_modules import *
-from outread import outread
+from outread import *
 import numpy as np;
 import matplotlib.pylab as plt;
 #from scipy.interpolate import interp1d
@@ -67,7 +68,7 @@ else:
 # TODO: remove the debugging prints here below
 if invar_dict['gwcode'] == 'abinit':
    #print("1")
-    gwout = outread.AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc'])
+    gwout = AbinitOutReader(filename = out_file,is_sc = invar_dict['is_sc']) 
     pass
 elif invar_dict['gwcode'] == 'exciting':
    #print("2")
@@ -133,6 +134,8 @@ nkpt =  int(invar_dict['nkpt'])
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
+tfft_size=int(invar_dict['tfft_size'])
+encut=int(invar_dict['encut'])
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
@@ -251,6 +254,7 @@ if int(dict_c['restart']) == 1:
 else:
 #if int(dict_c['restart']) == 0:  
     newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
+    print("the newen range is", newen[0], newen[-1])
     print("="*40)
     print("MEMORY USAGE TEST")
     print("="*40)
@@ -325,38 +329,67 @@ else:
             enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         elif int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        elif int(dict_c['calc_toc96'])==1: 
+            import time
+            print ("Calculating TOC96 begins")
+            e0=time.time()
+            c0=time.clock()
+            elaps1=time.time() - e0
+            cpu1=time.clock() - c0
+            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
+            print (" ### Calculation of exponential A(\omega)_TOC96..  ")
+            interp_en,toc_tot=calc_toc96(dict_c,tfft_size,minkpt,maxkpt,minband,
+                               maxband,newen,en,enmin,enmax, allkb, eqp, encut,pdos)
+            #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
+            print (" ### Writing out A(\omega)_TOC96...  ")
+
+            outname = "TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+            outfile = open(outname,'w')
+            for i in xrange(len(interp_en)):
+                outfile.write("%8.4f %12.8e\n" % (interp_en[i], toc_tot[i]))
+            outfile.close()
+           # with
+           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
+           #     writer=csv.writer(f,delimiter='\t')
+           #     writer.writerows(zip(toten,toc96_tot))
+            print (" A(\omega)_TOC96 written in", outname)
+            plt.plot(interp_en,toc_tot,label="ftot_toc96");
+            elaps2 = time.time() - elaps1 - e0
+            cpu2 = time.clock() - cpu1 - c0
+            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
+            print (" ### Writing out A(\omega)_TOC96..")
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         ### CRC FORMULA ###
-        if int(dict_c['calc_crc']) == 1:
-            print()
-            print(" ### Calculation of constrained retarded cumulant ### ")
-            B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
-            sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
+  #      if int(dict_c['calc_crc']) == 1:
+  #          print()
+  #          print(" ### Calculation of constrained retarded cumulant ### ")
+  #          B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
+  #          sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
 
-       ## TEST!!!!
-       #dict_c['npoles'] = 1  
-       #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-       #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-       #plt.plot(enexp1, ftot1, label="ftot_para")
-       #plt.plot(enexp2, ftot2, label="ftot_serial")
-       #plt.legend(loc=2)
-       #plt.show()
-        write_sftot_c(dict_c, enexp, ftot)
-        print("Integral test, spftot: ", np.trapz(ftot,enexp))
-        print("="*40)
-        print("MEMORY USAGE TEST")
-        print("="*40)
-        print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
-        # Writing out sfkb
-        print("TEST: sfkb.shape:", sfkb.shape)
-        thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
-        thread.start()
-    
-    
-        ### TODO: fix all below ###
-        mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
-        plt.plot(enexp, ftot, label = mylabel)
+  #     ## TEST!!!!
+  #     #dict_c['npoles'] = 1  
+  #     #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+  #     #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+  #     #plt.plot(enexp1, ftot1, label="ftot_para")
+  #     #plt.plot(enexp2, ftot2, label="ftot_serial")
+  #     #plt.legend(loc=2)
+  #     #plt.show()
+  #      #write_sftot_c(dict_c, enexp, ftot)
+  #      print("Integral test, spftot: ", np.trapz(ftot,enexp))
+  #      print("="*40)
+  #      print("MEMORY USAGE TEST")
+  #      print("="*40)
+  #      print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
+  #      # Writing out sfkb
+  #      print("TEST: sfkb.shape:", sfkb.shape)
+  #      thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
+  #      thread.start()
+  #  
+  #  
+  #      ### TODO: fix all below ###
+  #      mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
+  #      plt.plot(enexp, ftot, label = mylabel)
     
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
