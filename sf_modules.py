@@ -2555,9 +2555,9 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
     nkpt = maxkpt-minkpt+1
     nband = maxband-minband+1
     toc_tot=0
-    newdx = 0.02 ## can be modified, but must be defined according to
+    #newdx = 0.02 ## can be modified, but must be defined according to
     #NewEn_min.
-   # newdx= 0.05  ## for debug
+    newdx= 0.05  ## for debug
     wtk=np.array(vardct['wtk'])
     pdos=np.array(pdos)
     #nkpt = res[:,0,0].size
@@ -2585,7 +2585,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
             print("the interplation of ims range is", newen[0], newen[-1])
             imeqp = interpims(eqp_kb)
             print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
-            NewEn_min=-10 #depend on the input energy in SIG file and the
+            NewEn_min=-6 #depend on the input energy in SIG file and the
             #plasmon energy of the system because this needs to cover the peak
             #in ImSigma.
             NewEn_max=4    # can be changed when calculate different system
@@ -2608,15 +2608,17 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
             #f:
             #    writer=csv.writer(f,delimiter='\t')
             #    writer.writerows(zip(NewEn,ShiftIms))
-            tfft_min=-180  #this should also be
+            tfft_min=-250  #this determins the final energy resolution after FT
             tfft_max=0
             trange = np.linspace(tfft_min, tfft_max,fftsize)
             dtfft = abs(trange[-1]-trange[0])/fftsize
             print ("the time step is", dtfft)
             denfft=2*np.pi/abs(trange[-1]-trange[0])
+            print("the energy resolution after FFT is",denfft)
             fften_min=-2*np.pi/dtfft
             fften_max=0
-            enrange=np.linspace(fften_min,newen[-1],fftsize)
+            #enrange=np.linspace(fften_min,newen[-1],fftsize)
+            enrange=np.arange(fften_min,newen[-1],denfft)
             gt_list=[]
             Regt_list=[]
             Imgt_list=[]
@@ -2658,7 +2660,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
 
             outnamekb="TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
             outfilekb = open(outnamekb,'w')
-            for i in xrange(len(enrange)):
+            for i in xrange(fftsize):
                outfilekb.write("%8.4f %12.8e  %12.8e \n" %
                                (enrange[i],cw[i].real, cw[i].imag)) 
             outfilekb.close()
@@ -2669,11 +2671,11 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
 
             outnamekb="TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
             outfilekb = open(outnamekb,'w')
-            for i in xrange(len(enrange)):
+            for i in xrange(fftsize):
                outfilekb.write("%8.4f %12.8e  %12.8e \n" %
                                (s_freq[i],s_go[i].real, s_go[i].imag)) 
             outfilekb.close()
-            eta=0.1j # the eta in the theta function that can be changed when the satellite is very close to
+            eta=0.05j # the eta in the theta function that can be changed when the satellite is very close to
                          #the QP.
             gw_list=[]
             for w in enrange:
@@ -2693,7 +2695,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
             interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
             print("the interplation range is",enrange[0],enrange[-1])
             ddinter=0.005 
-            interp_en=np.arange(NewEn[0]-10,NewEn[-1],ddinter) #-10 can be
+            interp_en=np.arange(NewEn[0]-1,NewEn[-1],ddinter) #-10 can be
             #changed accronding to the plasmon energy
             print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
             spfkb= interp_toc(interp_en)
