@@ -20,7 +20,7 @@ TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 from __future__ import print_function
 from threading import Thread
 from sf_modules import *
-from outread.outread import *
+from outread import *
 import numpy as np;
 import matplotlib.pylab as plt;
 #from scipy.interpolate import interp1d
@@ -360,35 +360,34 @@ else:
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         ### CRC FORMULA ###
-  #      if int(dict_c['calc_crc']) == 1:
-  #          print()
-  #          print(" ### Calculation of constrained retarded cumulant ### ")
-  #          B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
-  #          sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
-
-  #     ## TEST!!!!
-  #     #dict_c['npoles'] = 1  
-  #     #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-  #     #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-  #     #plt.plot(enexp1, ftot1, label="ftot_para")
-  #     #plt.plot(enexp2, ftot2, label="ftot_serial")
-  #     #plt.legend(loc=2)
-  #     #plt.show()
-  #      #write_sftot_c(dict_c, enexp, ftot)
-  #      print("Integral test, spftot: ", np.trapz(ftot,enexp))
-  #      print("="*40)
-  #      print("MEMORY USAGE TEST")
-  #      print("="*40)
-  #      print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
-  #      # Writing out sfkb
-  #      print("TEST: sfkb.shape:", sfkb.shape)
-  #      thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
-  #      thread.start()
-  #  
-  #  
-  #      ### TODO: fix all below ###
-  #      mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
-  #      plt.plot(enexp, ftot, label = mylabel)
+        if int(dict_c['calc_crc']) == 1:
+            print()
+            print(" ### Calculation of constrained retarded cumulant ### ")
+            B_crc_kb = calc_B_crc(dict_c, eqp, newen, allkb)
+            sftot_crc, sfkb_crc = calc_sf_crc(dict_c, B_crc_kb, hartree, newen, allkb)
+       ## TEST!!!!
+       #dict_c['npoles'] = 1  
+       #enexp1, ftot1, sfkb = calc_sf_c_para(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+       #enexp2, ftot2, sfkb = calc_sf_c_serial(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+       #plt.plot(enexp1, ftot1, label="ftot_para")
+       #plt.plot(enexp2, ftot2, label="ftot_serial")
+       #plt.legend(loc=2)
+       #plt.show()
+        write_sftot_c(dict_c, enexp, ftot)
+        print("Integral test, spftot: ", np.trapz(ftot,enexp))
+        print("="*40)
+        print("MEMORY USAGE TEST")
+        print("="*40)
+        print(" GB size: ", float((enexp.nbytes+ftot.nbytes+sfkb.nbytes))/1000000000)
+        # Writing out sfkb
+        print("TEST: sfkb.shape:", sfkb.shape)
+        thread = Thread(target = write_sfkb_c, args = (invar_dict, enexp, sfkb))
+        thread.start()
+    
+    
+        ### TODO: fix all below ###
+        mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
+        plt.plot(enexp, ftot, label = mylabel)
     
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
