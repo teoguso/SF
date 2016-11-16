@@ -328,7 +328,7 @@ else:
             enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         elif int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        elif int(dict_c['calc_toc96'])==1: 
+        elif int(dict_c['calc_toc96']) == 1: 
             import time
             print ("Calculating TOC96 begins")
             e0=time.time()
@@ -385,8 +385,8 @@ else:
             cpu2 = time.clock() - cpu1 - c0
             print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
             print (" ### Writing out A(\omega)_rc..")
-  #      else:
-  #          enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        else:
+            enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
   #      ### CRC FORMULA ###
   #      if int(dict_c['calc_crc']) == 1:
   #          print()
