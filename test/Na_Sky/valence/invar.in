@@ -1,0 +1,13 @@
+SIG_gw0_zcut1     # sigmafile
+1           # minkpt
+1         # maxkpt
+1           # minband
+1           # maxband
+-20        # enmin
+10        # enmax
+0.1044253    # efermi 
+1  # calc_gw
+1 # calc_toc96
+1  # calc_exp
+10000 # tfft_size
+1   # encut

@@ -1,0 +1,20 @@
+### Written by Matteo Guzzo
+### A.D. MMXIV (2014)
+#################################################
+# This folder contains the bare minimum bunch of 
+# files required to run a calculation for bulk 
+# silicon, as seen in
+# Guzzo et al., Phys. Rev. Lett. 107, 166401, 2011
+# Guzzo et al., Eur. Phys. J. B, 85 9 (2012) 324. 
+# This includes a self-energy and output file 
+# from an abinit GW calculation,
+# a cs800.dat file (cs=electron Cross Section 
+# (only s and p for the time being), 
+# xxx=photon energy [eV]) and 
+# other files with auxiliary information that 
+# should be possible to retrieve entirely from 
+# the .out file, by using awk, sed, grep 
+# and the likes. 
+# NOTE: the csxxx.dat file is ignored if 
+# penergy = 0 in invar.in
+# Now just try this: $ ../../spectral.py

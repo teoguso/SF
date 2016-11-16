@@ -123,12 +123,12 @@ class CodeOutReader(object):
     """
     def __init__(self, code=None, filename=None, is_sc=0):
         """
-	Initialises several instances and calls 
-	a bunch of test methods. 
-	If no file name is given, it takes what 
-	it finds in the running directory. 
-	"""
-#	try: 
+    Initialises several instances and calls 
+    a bunch of test methods. 
+    If no file name is given, it takes what 
+    it finds in the running directory. 
+    """
+#    try: 
         if filename is None:
             self.fname = raw_input("Please give a filename for the output of your GW calculation: ").strip()
             #self.fname = glob.glob('*.out')[0] # This is 'ls *.out' in current dir
@@ -138,9 +138,9 @@ class CodeOutReader(object):
         # Initialize variables
         # Most of them are lists, in that they 
         # iterate over the different datasets.
-	# This array should contain the starting 
-	# row number for each dataset and then 
-	# the number for the 'end dataset' row.
+    # This array should contain the starting 
+    # row number for each dataset and then 
+    # the number for the 'end dataset' row.
         self.ndtsets = 1
         self.version = None
         self.nversion = 0
@@ -155,7 +155,7 @@ class CodeOutReader(object):
         print(52*"=")
         print(" INITIALIZING QP CALCULATION OUTPUT PARSER... ")
         print(52*"=")
-	self.get_file_content()
+        self.get_file_content()
         print(52*"-")
         print(" QP CALCULATION OUTPUT PROCESSED. ")
         print(52*"-")
@@ -269,10 +269,10 @@ class CodeOutReader(object):
 
     def get_file_content(self):
         """
-	This method keeps the file open just for the
-	strictly necessary time to copy its content.  
-	Lines are duly stripped of newlines. 
-	"""
+    This method keeps the file open just for the
+    strictly necessary time to copy its content.  
+    Lines are duly stripped of newlines. 
+    """
         with open(self.fname,'r') as f:
             self.content = [line.strip('\n') for line in f]
 
@@ -291,14 +291,14 @@ class ExcitingOutReader(CodeOutReader):
     """
     def __init__(self, filename = 'EVALQP.DAT', is_sc=0):
         """
-	Initialises several instances and calls 
-	a bunch of test methods. 
-	If no file name is given, it takes what 
-	it finds in the running directory. 
-	"""
+    Initialises several instances and calls 
+    a bunch of test methods. 
+    If no file name is given, it takes what 
+    it finds in the running directory. 
+    """
         print(" ExcitingOutReader :: filename: ", filename)
         CodeOutReader.__init__(self, 'exciting', filename, is_sc)
-	# Attributes
+    # Attributes
        #self.dts_start_end = []
        #self.dts_labels = []
        #self.dtsets = []
@@ -318,35 +318,35 @@ class ExcitingOutReader(CodeOutReader):
 
     def chk_fname(self):
         """
-	This method checks whether we are looking 
+    This method checks whether we are looking 
         a proper abinit output. 
-	Also, it checks whether the file exists. 
+    Also, it checks whether the file exists. 
         If not, it raises an error. 
         """
         if self.fname != "EVALQP.DAT":
-	   #print(self.fname[-4:], len(self.fname)
-	    print(self.fname, ":")
-	    print(" The file given is not the expected exciting output file. ")
-	    print(" Please check the file or simply rename it. ")
-	    raise ValueError    
-	elif os.path.isfile(self.fname): 
-	    print(self.fname, ":")
-	    print(" File name correct ")
-	    print("and it also exists. ")
-	else: 
-	    print(self.fname, ":")
-	    print(" File name correct ")
-	    print("but it does not seem to exist. Bye. ")
-	    raise ValueError    
-	
+            #print(self.fname[-4:], len(self.fname)
+            print(self.fname, ":")
+            print(" The file given is not the expected exciting output file. ")
+            print(" Please check the file or simply rename it. ")
+            raise ValueError
+        elif os.path.isfile(self.fname):
+            print(self.fname, ":")
+            print(" File name correct ")
+            print("and it also exists. ")
+        else:
+            print(self.fname, ":")
+            print(" File name correct ")
+            print("but it does not seem to exist. Bye. ")
+            raise ValueError
+    
     ### METHODS HERE BELOW ###
     def get_version(self):
         """
         Detects the version of Exciting (how?)
         This method is not working at present
         """
-       #self.version = self.content[1].split()[1]
-       #self.nversion = int(self.version.split('.')[0])
+        #self.version = self.content[1].split()[1]
+        #self.nversion = int(self.version.split('.')[0])
         self.version = 666
         self.nversion = 666
         print(" WARNING: Unable to detect code version for Exciting.")
@@ -423,15 +423,15 @@ class AbinitOutReader(CodeOutReader):
     """
     def __init__(self, filename=None, is_sc=0):
         """
-	Initialises several instances and calls 
-	a bunch of test methods. 
-	If no file name is given, it takes what 
-	it finds in the running directory. 
-	"""
+    Initialises several instances and calls 
+    a bunch of test methods. 
+    If no file name is given, it takes what 
+    it finds in the running directory. 
+    """
         if filename is None:
             filename = glob.glob('*.out')[0] # This is 'ls *.out' in current dir
         CodeOutReader.__init__(self, 'abinit', filename, is_sc)
-	# Attributes
+    # Attributes
         self.dts_start_end = []
         self.dts_labels = []
         self.dtsets = []
@@ -439,7 +439,7 @@ class AbinitOutReader(CodeOutReader):
         self.chk_fname()
         self.get_version()
         flag = self.chk_completed()
-	self.get_dtsets(flag)
+        self.get_dtsets(flag)
         self.get_outvars()
         self.get_var_dict()
         # GW STUFF
@@ -450,27 +450,27 @@ class AbinitOutReader(CodeOutReader):
 
     def chk_fname(self):
         """
-	This method checks whether we are looking 
+    This method checks whether we are looking 
         a proper abinit output. 
-	Also, it checks whether the file exists. 
+    Also, it checks whether the file exists. 
         If not, it raises an error. 
         """
         if self.fname[-4:] != ".out":
-	    print(self.fname[-4:], len(self.fname))
-	    print(self.fname, ":",)
-	    print(" The file given is not a standard abinit '.out' output. " )
-	    print(" Please check the file or simply rename it. " )
-	    raise ValueError    
-	elif os.path.isfile(self.fname): 
-	    print(self.fname, ":",)
-	    print(" File name correct ", )
-	    print("and it also exists. ")
-	else: 
-	    print(self.fname, ":")
-	    print(" File name correct ")
-	    print("but it does not seem to exist. Bye. ")
-	    raise ValueError    
-	
+            print(self.fname[-4:], len(self.fname))
+            print(self.fname, ":",)
+            print(" The file given is not a standard abinit '.out' output. " )
+            print(" Please check the file or simply rename it. " )
+            raise ValueError
+        elif os.path.isfile(self.fname):
+            print(self.fname, ":",)
+            print(" File name correct ", )
+            print("and it also exists. ")
+        else:
+            print(self.fname, ":")
+            print(" File name correct ")
+            print("but it does not seem to exist. Bye. ")
+            raise ValueError
+    
     ### METHODS HERE BELOW ###
     def get_version(self):
         """
@@ -530,8 +530,8 @@ class AbinitOutReader(CodeOutReader):
         This copies the selected part of the abinit output file, 
         where input variables are summarized at the beginning 
         of a run, into a list. 
-	"""
-	istart,iend = 0,0
+        """
+        istart,iend = 0,0
         f = self.content
         for i,line in enumerate(f):
             #print(line
@@ -546,28 +546,30 @@ class AbinitOutReader(CodeOutReader):
 
     def get_dtsets(self,completed=True):
         """
-	Collects all information on datasets in the output file, 
-	such as beginning and end, and the number of them. 
-	"""
+        Collects all information on datasets in the output file,
+        such as beginning and end, and the number of them.
+        """
         n = 0
         f = self.content
-	s_e = []
+        s_e = []
         labels = []
         sets = []
         for i,line in enumerate(f):
             if "= DATASET" in line:
-                if s_e: s_e[n-1].append(i-1)
-		s_e.append([i])
-		labels.append(line.split()[2])
+                if s_e:
+                    s_e[n-1].append(i-1)
+                s_e.append([i])
+                labels.append(line.split()[2])
                 n += 1
             if "= END DATASET" in line:
-		s_e[n-1].append(i)
+                s_e[n-1].append(i)
         # If there is no end dataset:
-        if completed is False: s_e[n-1].append(int(len(f)-1))
-        print(s_e)
+        if completed is False:
+            s_e[n-1].append(int(len(f)-1))
+            print(s_e)
         #if n == 0: raise ValueError
         self.ndtsets = n
-	self.dts_start_end = s_e
+        self.dts_start_end = s_e
         #print(s_e)
         self.dts_labels = labels
         for i in range(len(s_e)):
@@ -579,13 +581,13 @@ class AbinitOutReader(CodeOutReader):
     
     def chk_completed(self):
         """
-	Checks whether the abinit output file 
+        Checks whether the abinit output file
         has been closed successfully,
-	i.e. if the calculation has finished. 
-	"""
-        if self.content: 
-	    if " Calculation completed." in self.content[-5:]: 
-	        self.completed = True
+        i.e. if the calculation has finished.
+        """
+        if self.content:
+            if " Calculation completed." in self.content[-5:]:
+                self.completed = True
                 print("chk_completed :: ","Abinit calculation completed. ")
                 return True
             else: 
@@ -630,7 +632,9 @@ class AbinitOutReader(CodeOutReader):
         mylabels = self.dts_labels
         thisnband = 'nband'+mylabels[iset]
         dct = self.var_dict
-        if not dct.get(thisnband): 
+        # print(mylabels, thisnband)
+        # print(dct.get('bdgw'))
+        if not dct.get(thisnband):
             thisnband = 'nband' # Fallback to nband
         nkpt = dct.get('nkpt')[0]
         nband = dct.get(thisnband)[0]
@@ -644,6 +648,8 @@ class AbinitOutReader(CodeOutReader):
             ikpt = 0
             ib = -1
             for line in myset[istart:]:
+                # print(line)
+                # print(ikpt,ib,nband,line)
                 words = line.split() 
                 if line == '':
                     ib = -1
@@ -655,7 +661,7 @@ class AbinitOutReader(CodeOutReader):
                 if ib >= 0:
                     for word in words:
                         x = float(word)
-                        if ib < (nband-1): 
+                        if ib < (nband-1):
                             tmp_kpt_ev.append(x)
                             ib += 1
                         else:
@@ -664,9 +670,11 @@ class AbinitOutReader(CodeOutReader):
                             tmp_kpt_ev = [] 
                             ikpt += 1
                             ib = -1
-                            break 
-                if ikpt == nkpt: 
-                    break 
+                            # print("breaking, ib = nband - 1", ib)
+                            break
+                if ikpt == nkpt:
+                    # print(" breakind, ikpt = nkpt", ikpt)
+                    break
                 self.gw_ks_ev = tmp_ks_ev
             print("Done.")
         else: 
@@ -736,6 +744,7 @@ class AbinitOutReader(CodeOutReader):
         hartree_k = []
         qpen_k = []
         hf_k = []
+        sigc_k = []
         if nsppol == 2:
             nkpt = 2*nkpt
         if version >= 6.19: 
@@ -773,7 +782,8 @@ class AbinitOutReader(CodeOutReader):
             if ib == nband :
                 qpen = []
                 hf = []
-                if version >= 6.2: 
+                sigc = []
+                if version >= 6.2:
                     imag = lines[1::2]
                     lines = lines[0::2]
                     qpen_im = []
@@ -783,12 +793,15 @@ class AbinitOutReader(CodeOutReader):
                         hartree.append(line[4])
                         qpen.append(line[12])
                         hf.append(line[5])
+                        sigc.append(line[6])
                     hartree_k.append(hartree)
                     qpen_k.append(qpen)
                     hf_k.append(hf)
+                    sigc_k.append(sigc)
                     hartree = []
                     qpen = []
                     hf = []
+                    sigc = []
                 else:
                     elda = []
                     vxc = []
@@ -797,10 +810,12 @@ class AbinitOutReader(CodeOutReader):
                         vxc.append(line[2])
                         qpen.append(line[9])
                         hf.append(line[3])
+                        sigc.append(line[4])
                     elda_k.append(elda)
                     vxc_k.append(vxc)
                     qpen_k.append(qpen)
                     hf_k.append(hf)
+                    sigc_k.append(sigc)
                     elda = []
                     vxc = []
                     qpen = []
@@ -820,15 +835,23 @@ class AbinitOutReader(CodeOutReader):
             hartree_k = hartree_k[::2]
             qpen_k = qpen_k[::2]
             hf_k = hf_k[::2]
+            sigc_k = sigc_k[::2]
+            vxc_k = vxc_k[::2]
+            elda_k = elda_k[::2]
        #a = np.array(hartree_k)
        #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
        #print(a[0])
         qpen_k = np.array(qpen_k)
         hartree_k = np.array(hartree_k)
         hf_k = np.array(hf_k)
+        sigc_k = np.array(sigc_k)
+        # elda_k = np.array(elda_k)
+        # vxc_k = np.array(vxc_k)
+        hf_k = qpen_k - sigc_k
         self.qpen = qpen_k
         self.hartree = hartree_k
         self.hf = hf_k
+        # self.sigc = sigc_k
        #print(hartree_k)
         print("Done.")
 #        print(np.array(qpen_k))
@@ -890,9 +913,9 @@ class Garbage:
 
     def get_wtk(self):
         """
-	Get all values for wtk.
-	TODO: finalize.
-	"""
+    Get all values for wtk.
+    TODO: finalize.
+    """
         #wtk = get_var_value("wtk",self.content)
         #wtk = get_var_value("wtk",self.outvars)
         pass
@@ -900,13 +923,13 @@ class Garbage:
     def get_kpt(self):
         """
         BROKEN!!!
-	Gets number and location of k points, 
-	possibly for each dataset. 
+    Gets number and location of k points, 
+    possibly for each dataset. 
         We need:
         ndtsets
         nkpt
         TODO: Adapt it also for kptgw?
-	""" 
+    """ 
         s_e = self.dts_start_end
         ndts = self.ndtsets
         dct = self.var_dict
@@ -936,53 +959,53 @@ class Garbage:
 
     def get_kpt_old(self):
         """
-	Gets number and location of k points, 
-	possibly for each dataset. 
-	TODO: FIX IT
-	"""
+        Gets number and location of k points,
+        possibly for each dataset.
+        TODO: FIX IT
+        """
         s_e = self.dts_start_end
-	f = self.content[:s_e[0]]
-	n = 0
-	ngw = 0
-	for i in range(self.ndtsets):
-	    for row in f:
-	        try:
-                            if ("nkpt" in row) and (row.split()[0] == 'nkpt'): 
-                                n = row.split()[1]
-                            if ("nkptgw" in row) and (row.split()[0] == 'nkptgw'): 
-                                ngw = row.split()[1]
-                except: 
+        f = self.content[:s_e[0]]
+        n = 0
+        ngw = 0
+        for i in range(self.ndtsets):
+            for row in f:
+                try:
+                    if ("nkpt" in row) and (row.split()[0] == 'nkpt'):
+                        n = row.split()[1]
+                    if ("nkptgw" in row) and (row.split()[0] == 'nkptgw'):
+                        ngw = row.split()[1]
+                except:
                     raise ValueError
-	self.nkpt = n
-	self.nkptgw = ngw
-	print("nkpt =", self.nkpt)
-	print("nkptgw =", self.nkptgw)
+        self.nkpt = n
+        self.nkptgw = ngw
+        print("nkpt =", self.nkpt)
+        print("nkptgw =", self.nkptgw)
 
     def get_kpt_manydatasets(self):
         """
-	Gets number and location of k points, 
-	possibly for each dataset. 
+    Gets number and location of k points, 
+    possibly for each dataset. 
         TODO: FIX IT
-	"""
+        """
         s_e = self.dts_start_end
-	f = self.content[:s_e[0]]
-	for i in range(self.ndtsets):
-	    n = 0
-	    ngw = 0
-	    for row in f:
-	        try:
-                           if ("nkpt" in row) and (row.split()[0] == 'nkpt'): 
-			       print(row)
-                               n = row.split()[1]
-                           if ("nkptgw" in row) and (row.split()[0] == 'nkptgw'): 
-			       print(row)
-                               ngw = row.split()[1]
-	        except: 
-	            raise ValueError
-            self.nkpt = n
-            self.nkptgw = ngw
-	print("nkpt =", self.nkpt)
-	print("nkptgw =", self.nkptgw)
+        f = self.content[:s_e[0]]
+        for i in range(self.ndtsets):
+            n = 0
+            ngw = 0
+            for row in f:
+                try:
+                    if ("nkpt" in row) and (row.split()[0] == 'nkpt'):
+                       print(row)
+                       n = row.split()[1]
+                    if ("nkptgw" in row) and (row.split()[0] == 'nkptgw'):
+                       print(row)
+                       ngw = row.split()[1]
+                except:
+                    raise ValueError
+                self.nkpt = n
+                self.nkptgw = ngw
+        print("nkpt =", self.nkpt)
+        print("nkptgw =", self.nkptgw)
 
 def get_var_value(var,alistofrows):
     """
@@ -1003,8 +1026,8 @@ def get_var_value(var,alistofrows):
     dummy = []
     print("Looking for value(s) of", var)
     for i,row in enumerate(f):
-	# Double check insures we don't get stuck 
-	# with empty lines. 
+    # Double check insures we don't get stuck 
+    # with empty lines. 
         if (var in row) and (row.split()[0] == var): 
             print(var, "found:", row)
             x = f[i+1].split()[0] # i.e. first string of next row

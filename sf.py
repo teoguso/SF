@@ -133,6 +133,8 @@ nkpt =  int(invar_dict['nkpt'])
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
+tfft_size=int(invar_dict['tfft_size'])
+encut=int(invar_dict['encut'])
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
@@ -251,6 +253,7 @@ if int(dict_c['restart']) == 1:
 else:
 #if int(dict_c['restart']) == 0:  
     newen, spftot, allkb = calc_sf_gw(dict_c,hartree,pdos,en,res,ims)
+    print("the newen range is", newen[0], newen[-1])
     print("="*40)
     print("MEMORY USAGE TEST")
     print("="*40)
@@ -294,7 +297,7 @@ else:
         ### ==== Finding zero in res --> Eqp ===== ###
         print(" Finding zeros in real parts...")
         eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
-        print(" Test imeqp:\n", imeqp)
+        # print(" Test imeqp:\n", imeqp)
         # Writing out eqp
         # Writing out imeqp
         print(" Launching write_eqp_imeqp in a separate thread...")
@@ -317,9 +320,43 @@ else:
             else:
                 print(" NO TESTING POSSIBLE IF MORE THAN 1 KPT!!!")
                 sys.exit()
+
+        calc_exact_sat1 = int(dict_c['exact_sat1'])
         ### NUMERICAL INTEGRATION ###
-        if int(dict_c['calc_numeric']) == 1:
+        if calc_exact_sat1:
+            print(" ### Calculation of spectral function with exact first satellite ### ")
+            enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        elif int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+        elif int(dict_c['calc_toc96'])==1: 
+            import time
+            print ("Calculating TOC96 begins")
+            e0=time.time()
+            c0=time.clock()
+            elaps1=time.time() - e0
+            cpu1=time.clock() - c0
+            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
+            print (" ### Calculation of exponential A(\omega)_TOC96..  ")
+            interp_en,toc_tot=calc_toc96(dict_c,tfft_size,minkpt,maxkpt,minband,
+                               maxband,newen,en,enmin,enmax, allkb, eqp, encut,pdos)
+            #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
+            print (" ### Writing out A(\omega)_TOC96...  ")
+
+            outname = "TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+            outfile = open(outname,'w')
+            for i in xrange(len(interp_en)):
+                outfile.write("%8.4f %12.8e\n" % (interp_en[i], toc_tot[i]))
+            outfile.close()
+           # with
+           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
+           #     writer=csv.writer(f,delimiter='\t')
+           #     writer.writerows(zip(toten,toc96_tot))
+            print (" A(\omega)_TOC96 written in", outname)
+            plt.plot(interp_en,toc_tot,label="ftot_toc96");
+            elaps2 = time.time() - elaps1 - e0
+            cpu2 = time.clock() - cpu1 - c0
+            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
+            print (" ### Writing out A(\omega)_TOC96..")
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         ### CRC FORMULA ###

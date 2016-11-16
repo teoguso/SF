@@ -7,12 +7,16 @@
 # of 'compile_and_link.sh'.
 echo " Removing link 'multipole.py'..."
 rm multipole.py
-echo " Removing link 'extmod_spf_mpole.so'..."
-rm extmod_spf_mpole.so
+echo " Removing link 'outread.py'..."
+rm outread.py
+echo " Removing link 'broad.py'..."
+rm broad.py
+echo " Removing links  to compiled f2py objects..."
+rm ./*.so
 echo " Changing directory to 'f2py_modules'..."
 cd f2py_modules
-echo " Removing 'extmod_spf_mpole.so'..."
-rm extmod_spf_mpole.so
+echo " Removing compiled fortran object..."
+rm ./*.so
 cd ..
 echo " Removing test spectral functions..."
 for i in `ls -1 test` 

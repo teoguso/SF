@@ -1,0 +1,53 @@
+BRIEF SUMMARY OF THE STRUCTURE OF THE CODE
+in the part concerning the numerical calculation.
+
+
+Once the 'calc_numeric' == 1 in the input, the main (sf.py) 
+calls the function sf_c_numeric to give out A(w).
+
+sf_c_numeric is in sf_modules.py.
+This is basically a macro-function that does nothing but calling
+the function calc_sf_c_num().
+This is in sf_modules.py as well. 
+
+In calc_sf_c_num() A(w) is calculated for each kpt, band.
+First, C(t) has to be calculated. 
+The time grid is defined using the self-energy AND convergence. 
+First dw (frequency spacing) is defined as imeqp/4 (i.e. ImSigma(eqp)/4).
+(We might want to converge this value in the future)
+
+Then dt value for the FFT has to be converged. 
+This is achieved by extending the energy range of ImSigma 
+(and filling with zeros) at LOWER energies (below Fermi).
+the FFT grid is then set in set_fft_grid() as follows:
+
+- w_max = the range of energies
+- dt = 2*pi/w_max
+- Number of samples N = number of frequencies (or w_max/dw)
+- Period T = N*dt
+- the array 't' is defined using T and dt for length and spacing 
+  (this is the time grid that will be used both for C(t) and the FFT). 
+
+Now G(t) is calculated by calc_gt()
+- First the ImSigma arrays is shifted and inverted to ImSigma(eqp - w)
+- Then C(t) is calculated by calc_ct()
+  - This is actually just a wrapping function that calls 
+    the fortran function calc_ct_fort() (compiled with f2py)
+    and takes care of arrays (C vs Fortran ordering).
+- then G(t) is calculated including hf.
+
+Once this is done, G(w) is calculated via FFT 
+(actually ifft (i for inverse) is used, because the convention 
+in python is the opposite of ours). 
+The results has to be shifted because of how the FFT works (cyclic)
+and the frequancies are calculated as well.
+(TODO: check all the scales here(e.g. 2*pi), there might be issues)
+
+Finally the spectral function is calculated from go.imag. 
+Then the integral of A(w) is calculated. The variation of this integral 
+is used to gauge the convergence of the calculation. 
+If the calculation is not converged, dt will be halved the next cycle.
+
+Once convergence is reached, A(w) is re-mapped on the input energy grid
+and returned, both as k,b resolved and as total A(w). 
+Back to main (sf.py).
