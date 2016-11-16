@@ -357,9 +357,37 @@ else:
             cpu2 = time.clock() - cpu1 - c0
             print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
             print (" ### Writing out A(\omega)_TOC96..")
-        else:
-            enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        ### CRC FORMULA ###
+        elif int(dict_c['calc_rc'])==1: 
+            import time
+            print ("Calculating RC begins")
+            e0=time.time()
+            c0=time.clock()
+            elaps1=time.time() - e0
+            cpu1=time.clock() - c0
+            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
+            print (" ### Calculation of exponential A(\omega)_RC..  ")
+            interp_en,rc_tot=calc_rc_sky(dict_c,tfft_size,minkpt,maxkpt,minband,
+                               maxband,newen,en, allkb, eqp, encut,pdos)
+            print (" ### Writing out A(\omega)_TOC96...  ")
+
+            outname = "RCtot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+            outfile = open(outname,'w')
+            for i in xrange(len(interp_en)):
+                outfile.write("%8.4f %12.8e\n" % (interp_en[i], rc_tot[i]))
+            outfile.close()
+           # with
+           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
+           #     writer=csv.writer(f,delimiter='\t')
+           #     writer.writerows(zip(toten,toc96_tot))
+            print (" A(\omega)_RC written in", outname)
+            plt.plot(interp_en,rc_tot,label="ftot_rc");
+            elaps2 = time.time() - elaps1 - e0
+            cpu2 = time.clock() - cpu1 - c0
+            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
+            print (" ### Writing out A(\omega)_rc..")
+  #      else:
+  #          enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
+  #      ### CRC FORMULA ###
   #      if int(dict_c['calc_crc']) == 1:
   #          print()
   #          print(" ### Calculation of constrained retarded cumulant ### ")
