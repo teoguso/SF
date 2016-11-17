@@ -138,6 +138,8 @@ encut = float(invar_dict['encut'])
 Eplasmon = float(invar_dict['Eplasmon'])
 NewEnmax = int(invar_dict['NewEnmax'])
 NewEnmin = int(invar_dict['NewEnmin'])
+invar_den=float(invar_dict['invar_den'])
+invar_eta=float(invar_dict['invar_eta'])
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
@@ -147,6 +149,8 @@ print(" Size(pdos):",np.size(pdos))
 print(" the tfft_size:", tfft_size )
 print(" the estimate plasmon energy:", Eplasmon )
 print(" the cutoff value:", encut)
+print(" the energy resolution after FFT:", invar_den)
+print(" the small imaginary value in theta funcion is:", invar_eta)
 #TODO: Check if consistent use of numpy arrays. 
 ### ===================================================== ###
 print(" # ------------------------------------------------ # ")
@@ -389,9 +393,10 @@ else:
             cpu1=time.clock() - c0
             print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
             print (" ### Calculation of exponential A(\omega)_TOC96..  ")
-            interp_en,toc_tot = calc_toc96 (dict_c, tfft_size, minkpt, maxkpt,
+            interp_en,toc_tot = calc_toc96(dict_c, tfft_size, minkpt, maxkpt,
                                             minband, maxband, en, eqp, encut,
-                                            pdos, Eplasmon, NewEnmin, NewEnmax, ims)
+                                            pdos, Eplasmon, NewEnmin, NewEnmax,
+                                            ims, invar_den, invar_eta)
             #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
             print (" ### Writing out A(\omega)_TOC96...  ")
 
@@ -419,9 +424,11 @@ else:
             cpu1=time.clock() - c0
             print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
             print (" ### Calculation of exponential A(\omega)_RC..  ")
-            interp_en,rc_tot=calc_rc_sky(dict_c,tfft_size,minkpt,maxkpt,minband,
-                               maxband,newen,en, allkb, eqp, encut,pdos)
-            print (" ### Writing out A(\omega)_TOC96...  ")
+            interp_en, rc_tot = calc_rc_sky(dict_c, tfft_size, minkpt, maxkpt,
+                                            minband, maxband, en, eqp, encut,
+                                            pdos, Eplasmon, NewEnmin, NewEnmax,
+                                            ims, invar_den, invar_eta)
+            print (" ### Writing out A(\omega)_RC96...  ")
 
             outname = "RCtot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
             outfile = open(outname,'w')
