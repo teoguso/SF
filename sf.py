@@ -328,63 +328,7 @@ else:
             enexp, ftot, sfkb = sf_c_sat1(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
         elif int(dict_c['calc_numeric']) == 1:
             enexp, ftot, sfkb = sf_c_numeric(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
-        elif int(dict_c['calc_toc96']) == 1: 
-            import time
-            print ("Calculating TOC96 begins")
-            e0=time.time()
-            c0=time.clock()
-            elaps1=time.time() - e0
-            cpu1=time.clock() - c0
-            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
-            print (" ### Calculation of exponential A(\omega)_TOC96..  ")
-            interp_en,toc_tot=calc_toc96(dict_c,tfft_size,minkpt,maxkpt,minband,
-                               maxband,newen,en,enmin,enmax, allkb, eqp, encut,pdos)
-            #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
-            print (" ### Writing out A(\omega)_TOC96...  ")
 
-            outname = "TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
-            outfile = open(outname,'w')
-            for i in xrange(len(interp_en)):
-                outfile.write("%8.4f %12.8e\n" % (interp_en[i], toc_tot[i]))
-            outfile.close()
-           # with
-           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
-           #     writer=csv.writer(f,delimiter='\t')
-           #     writer.writerows(zip(toten,toc96_tot))
-            print (" A(\omega)_TOC96 written in", outname)
-            plt.plot(interp_en,toc_tot,label="ftot_toc96");
-            elaps2 = time.time() - elaps1 - e0
-            cpu2 = time.clock() - cpu1 - c0
-            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
-            print (" ### Writing out A(\omega)_TOC96..")
-        elif int(dict_c['calc_rc'])==1: 
-            import time
-            print ("Calculating RC begins")
-            e0=time.time()
-            c0=time.clock()
-            elaps1=time.time() - e0
-            cpu1=time.clock() - c0
-            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
-            print (" ### Calculation of exponential A(\omega)_RC..  ")
-            interp_en,rc_tot=calc_rc_sky(dict_c,tfft_size,minkpt,maxkpt,minband,
-                               maxband,newen,en, allkb, eqp, encut,pdos)
-            print (" ### Writing out A(\omega)_TOC96...  ")
-
-            outname = "RCtot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
-            outfile = open(outname,'w')
-            for i in xrange(len(interp_en)):
-                outfile.write("%8.4f %12.8e\n" % (interp_en[i], rc_tot[i]))
-            outfile.close()
-           # with
-           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
-           #     writer=csv.writer(f,delimiter='\t')
-           #     writer.writerows(zip(toten,toc96_tot))
-            print (" A(\omega)_RC written in", outname)
-            plt.plot(interp_en,rc_tot,label="ftot_rc");
-            elaps2 = time.time() - elaps1 - e0
-            cpu2 = time.clock() - cpu1 - c0
-            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
-            print (" ### Writing out A(\omega)_rc..")
         else:
             enexp, ftot, sfkb = calc_sf_c(dict_c, hartree, pdos, eqp, imeqp, newen, allkb)
   #      ### CRC FORMULA ###
@@ -417,7 +361,76 @@ else:
         ### TODO: fix all below ###
         mylabel = "ftot np "+str(npoles)+" mnb "+str(minband)+" mxb "+str(maxband)
         plt.plot(enexp, ftot, label = mylabel)
-    
+    if int(dict_c['calc_sky']) == 1: 
+        print()
+        print(" ### Calculation of cumulant using Sky's mudules  ### ")
+        ### ==== Finding zero in res --> Eqp ===== ###
+        print(" Finding zeros in real parts...")
+        eqp, imeqp = calc_eqp_imeqp(en, res, ims, hartree, 0)
+        # print(" Test imeqp:\n", imeqp)
+        # Writing out eqp
+        # Writing out imeqp
+        print(" Launching write_eqp_imeqp in a separate thread...")
+        thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
+        thread.start()
+        dict_c['origdir'] = origdir
+        if int(dict_c['calc_toc96']) == 1: 
+            import time
+            print ("Calculating TOC96 begins")
+            e0=time.time()
+            c0=time.clock()
+            elaps1=time.time() - e0
+            cpu1=time.clock() - c0
+            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
+            print (" ### Calculation of exponential A(\omega)_TOC96..  ")
+            interp_en,toc_tot=calc_toc96(dict_c,tfft_size,minkpt,maxkpt,minband,
+                               maxband,newen,en,enmin,enmax, allkb, eqp, encut,pdos)
+            #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
+            print (" ### Writing out A(\omega)_TOC96...  ")
+
+            outname = "TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+            outfile = open(outname,'w')
+            for i in xrange(len(interp_en)):
+                outfile.write("%8.4f %12.8e\n" % (interp_en[i], toc_tot[i]))
+            outfile.close()
+           # with
+           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
+           #     writer=csv.writer(f,delimiter='\t')
+           #     writer.writerows(zip(toten,toc96_tot))
+            print (" A(\omega)_TOC96 written in", outname)
+            plt.plot(interp_en,toc_tot,label="ftot_toc96");
+            elaps2 = time.time() - elaps1 - e0
+            cpu2 = time.clock() - cpu1 - c0
+            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
+            print (" ### Writing out A(\omega)_TOC96..")
+        if int(dict_c['calc_rc'])==1: 
+            import time
+            print ("Calculating RC begins")
+            e0=time.time()
+            c0=time.clock()
+            elaps1=time.time() - e0
+            cpu1=time.clock() - c0
+            print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
+            print (" ### Calculation of exponential A(\omega)_RC..  ")
+            interp_en,rc_tot=calc_rc_sky(dict_c,tfft_size,minkpt,maxkpt,minband,
+                               maxband,newen,en, allkb, eqp, encut,pdos)
+            print (" ### Writing out A(\omega)_TOC96...  ")
+
+            outname = "RCtot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat"
+            outfile = open(outname,'w')
+            for i in xrange(len(interp_en)):
+                outfile.write("%8.4f %12.8e\n" % (interp_en[i], rc_tot[i]))
+            outfile.close()
+           # with
+           # open("TOC96tot"+"_s"+str(sfac)+"_p"+str(pfac)+"_"+str(penergy)+"ev"+".dat")as f:
+           #     writer=csv.writer(f,delimiter='\t')
+           #     writer.writerows(zip(toten,toc96_tot))
+            print (" A(\omega)_RC written in", outname)
+            plt.plot(interp_en,rc_tot,label="ftot_rc");
+            elaps2 = time.time() - elaps1 - e0
+            cpu2 = time.clock() - cpu1 - c0
+            print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
+            print (" ### Writing out A(\omega)_rc..")
 # Now go back to original directory
 print(" Moving back to parent directory:\n", origdir)
 chdir(newdir)

@@ -55,6 +55,7 @@ def read_invar(infile='invar.in'):
      'print_gt': 0, Print out G(t) from the numerical integration method (0, 1)
      'fit_model': 'new', Choose what multipole fit model to use (old=Josh's, new=uniform binning) (old, new)
      'test_lorentz_W': 0, Enables the use of a Lorentzian function (for code testing)
+     'calc_sky':0 or 1, use Sky's modules to calculate cumulant
      'calc_toc96': 0 or 1, calculate the toc96 but keep the spf renormalized to 1
      'calc_rc': 0 or 1, calculate the rc but keep the spf renormalized to 1
      'encut': 0, 1, 2 etc, the number of element arround w=0 that are removed
@@ -64,6 +65,7 @@ def read_invar(infile='invar.in'):
     var_defaults = { 
             'sigmafile': None,   
             'calc_toc96': 0,
+            'calc_sky':0,
             'calc_rc': 0,
             'encut': 0,
             'tfft_size': 1000,
@@ -2598,10 +2600,10 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 print("the interplation of ims range is", newen[0], newen[-1])
                 imeqp = interpims(eqp_kb)
                 print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
-                NewEn_min=-10 #depend on the input energy in SIG file and the
+                NewEn_min=-10. #depend on the input energy in SIG file and the
                 #plasmon energy of the system because this needs to cover the peak
                 #in ImSigma.
-                NewEn_max=4    # can be changed when calculate different system
+                NewEn_max=5.    # can be changed when calculate different system
                 NewEn=np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
                 #properly so that w=0 is included.
                 print("the NewEn range is (must be inside of interplation range)", NewEn[0], NewEn[-1])
@@ -2631,7 +2633,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 fften_min=-2*np.pi/dtfft
                 fften_max=0
                 #enrange=np.linspace(fften_min,newen[-1],fftsize)
-                enrange=np.arange(fften_min,newen[-1],denfft)
+                enrange=np.arange(fften_min,NewEn[-1],denfft)
                 gt_list=[]
                 Regt_list=[]
                 Imgt_list=[]
@@ -2671,7 +2673,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                                           direction='FFTW_BACKWARD',threads=4)
                 cw=ifft_object(gt_list)*(fftsize*dtfft)
 
-                outnamekb="TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+                outnamekb = "TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
                 outfilekb = open(outnamekb,'w')
                 for i in xrange(fftsize):
                    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
@@ -2680,26 +2682,26 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 
                 freq = fftfreq(fftsize,dtfft)*2*np.pi
                 s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-                s_go=fftshift(cw)
+                s_go = fftshift(cw)
 
-                outnamekb="TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+                outnamekb = "TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
                 outfilekb = open(outnamekb,'w')
                 for i in xrange(fftsize):
                    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
                                    (s_freq[i],s_go[i].real, s_go[i].imag)) 
                 outfilekb.close()
-                eta=0.05j # the eta in the theta function that can be changed when the satellite is very close to
+                eta = 0.05j # the eta in the theta function that can be changed when the satellite is very close to
                              #the QP.
-                gw_list=[]
+                gw_list = []
                 for w in enrange:
-                    c=0
+                    c = 0
                     for i in xrange(fftsize-1):
                         #Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
                         Area2=0.5*denfft*(s_go[i]/(w-s_freq[i]-eta)+s_go[i+1]/(w-s_freq[i+1]-eta))
                         c+=Area2
-                    cwIm=1./np.pi*c.imag
+                    cwIm = 1./np.pi*c.imag
                     gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
-                outnamekb="TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+                outnamekb = "TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
                 outfilekb = open(outnamekb,'w')
                 for i in xrange(len(enrange)):
                    outfilekb.write("%8.4f %12.8e \n" % (enrange[i],gw_list[i])) 
@@ -2707,8 +2709,8 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 print ("IFFT done .....")
                 interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
                 print("the interplation range is",enrange[0],enrange[-1])
-                ddinter=0.005 
-                interp_en=np.arange(NewEn[0]-6,NewEn[-1],ddinter) #-10 can be
+                ddinter = 0.005 
+                interp_en = np.arange(NewEn[0]-6,NewEn[-1]-1,ddinter) #-10 can be
                 #changed accronding to the plasmon energy
                 print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
                 spfkb= interp_toc(interp_en)
