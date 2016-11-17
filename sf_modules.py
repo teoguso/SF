@@ -2646,7 +2646,8 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
                             continue
                         area=0.5*newdx*(integ_w(i,ShiftIms,NewEn,tImag)+integ_w(i+1,ShiftIms,NewEn,tImag))
                         ct+=area 
-                        outfilekb.write("%8.4f \n" % NewEn[i])
+                        outfilekb.write("%8.4f  %12.8e  \n" % (NewEn[i],
+                                                               abs(integ_w(i+1,ShiftIms,NewEn,-40j))))
                     outfilekb.close()
 
                     gt=np.exp(ct)
