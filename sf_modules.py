@@ -58,13 +58,21 @@ def read_invar(infile='invar.in'):
      'calc_sky':0 or 1, use Sky's modules to calculate cumulant
      'calc_toc96': 0 or 1, calculate the toc96 but keep the spf renormalized to 1
      'calc_rc': 0 or 1, calculate the rc but keep the spf renormalized to 1
-     'encut': 0, 1, 2 etc, the number of element arround w=0 that are removed
+     'encut': 10, a positive value, this is the maximum value in the integrant
+     to avoid divergence
      in the frequence list when integrating to avoid divergency at w=0.
      'tfft_size': 1000, the number of elements enters in FFT.
+     'Eplasmon': 6 the approximate plasmon energy
+     'NewEnmin': negative number, the minimum energy that will be used in the
+     integration of ImSigma
+     'NewEnmax': the maximum energy  that will be used in the integration of ImSigma
     """
     var_defaults = { 
             'sigmafile': None,   
             'calc_toc96': 0,
+            'Eplasmon': 1,
+            'NewEnmin':-10,
+            'NewEnmax':4,
             'calc_sky':0,
             'calc_rc': 0,
             'encut': 0,
@@ -2559,8 +2567,8 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
 def integ_w(x , ShiftIms,NewEn,tImag): # pay attention of NewEn==0!!!!!
     return 1.0/np.pi*ShiftIms[x]*(np.exp(-(NewEn[x])*tImag)-1.0)*(1.0/(NewEn[x]**2))
 
-def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enmax,allkb,eqp,encut,pdos):
-#def calc_toc96(vardct,tfft_size,newen,allkb,eqp,encut,pdos):
+def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
+                eqp, encut, pdos, Eplasmon, NewEnmin, NewEnmax, ims):
     import numpy as np
     import pyfftw
     from numpy.fft import fftshift,fftfreq
@@ -2570,46 +2578,34 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
     nband = maxband-minband+1
     toc_tot=0
     #newdx = 0.02 ## can be modified, but must be defined according to
-    #NewEn_min.
     newdx= 0.05  ## for debug
     wtk=np.array(vardct['wtk'])
     pdos=np.array(pdos)
-    #nkpt = res[:,0,0].size
-    #nband =  res[0,:,0].size
-    #print("nkpt, nband ", nkpt, nband)
-    #bdgw = map(int, vardct['sig_bdgw'])
-    #bdrange = vardct['bdrange']
-    #kptrange = vardct['kptrange']
     fftsize = tfft_size
-    en_cut=encut
-    imskb= allkb[3]
+    tol_ecut=encut
     for ik in xrange(nkpt):
-    #for ik in kptrange:
-    #    ikeff=ik+1
         ikeff=minkpt+ik-1
         for ib in xrange(nband):
-        #for ib in bdrange:
             ibeff=minband+ib-1
-            #ibeff=ib+bdgw[0]
             print(" ik, ib:",ikeff+1, ibeff+1)
-            ims_local = imskb[ik,ib]
             eqp_kb = eqp[ik,ib]
             print("eqp:", eqp_kb)
             if eqp_kb<=0:
-                interpims = interp1d(newen, ims_local, kind = 'linear', axis = -1)
-                print("the interplation of ims range is", newen[0], newen[-1])
+                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =
+                                     -1)
+                print("the interplation of ims range is", en[0], en[-1])
                 imeqp = interpims(eqp_kb)
                 print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
-                NewEn_min=-10. #depend on the input energy in SIG file and the
+                NewEn_min = -2*Eplasmon #depend on the input energy in SIG file and the
                 #plasmon energy of the system because this needs to cover the peak
                 #in ImSigma.
-                NewEn_max=5.    # can be changed when calculate different system
+                NewEn_max = Eplasmon     # can be changed when calculate different system
                 NewEn=np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
                 #properly so that w=0 is included.
                 print("the NewEn range is (must be inside of interplation range)", NewEn[0], NewEn[-1])
                 NewEn_size=NewEn.size
                 NewIms=interpims(NewEn)
-                ShiftEn=np.arange(NewEn_min+eqp_kb,NewEn_max+eqp_kb,newdx)
+                ShiftEn=np.arange(NewEn_min+eqp_kb, NewEn_max+eqp_kb, newdx)
                 print("the ShiftEN range is (must be inside of interplation range)",
                       ShiftEn[0], ShiftEn[-1])
                 ShiftIms=interpims(ShiftEn)
@@ -2618,11 +2614,7 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 for ien in xrange(NewEn_size):
                     outfilekb.write("%8.4f %12.8e\n" % (NewEn[ien], ShiftIms[ien]))
                 outfilekb.close()
-                #with open(
-                #    "ShiftIms-k"+str("%02d"%(ik))+"-b"+str("%02d"%(ib))+".dat") as
-                #f:
-                #    writer=csv.writer(f,delimiter='\t')
-                #    writer.writerows(zip(NewEn,ShiftIms))
+
                 tfft_min=-250  #this determins the final energy resolution after FT
                 tfft_max=0
                 trange = np.linspace(tfft_min, tfft_max,fftsize)
@@ -2640,17 +2632,23 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 print("the size of fft is", fftsize)
                 area=[]
                 for t in trange:
-                    tImag=t*1.j
-                    ct=0
+                    tImag = t*1.j
+                    ct = 0
+                    ecut_tmp = 1e-6
+                    outnamekb="Cutoff_check"+".dat"
+                    outfilekb = open(outnamekb,'w')
                     for i in np.arange(0,NewEn_size-1,1):
-                        if abs(NewEn[i])<1e-6 : #finding w=0 and then put cutoff.
-                            en1=np.arange(0,i-en_cut,1) # cut elements on the left
-                            en2=np.arange(i+en_cut+1,NewEn_size-1,1) # cut element
-                            #on the right
-                            for j in np.concatenate((en1, en2), axis=0):   # try to
-                            #spead up this sum.
-                                area=0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
-                                ct+=area 
+                        if abs(NewEn[i])< abs(ecut_tmp) : #finding w=0 and then put cutoff.
+                            continue
+                  #      print("new energy is",NewEn[i])
+                        if abs(integ_w(i, ShiftIms, NewEn, -40j))>= tol_ecut:
+                            ecut_tmp = NewEn[i]
+                            continue
+                        area=0.5*newdx*(integ_w(i,ShiftIms,NewEn,tImag)+integ_w(i+1,ShiftIms,NewEn,tImag))
+                        ct+=area 
+                        outfilekb.write("%8.4f \n" % NewEn[i])
+                    outfilekb.close()
+
                     gt=np.exp(ct)
                     gt_list.append(gt)
                     Regt_list.append(gt.real)
@@ -2709,11 +2707,10 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                 print ("IFFT done .....")
                 interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
                 print("the interplation range is",enrange[0],enrange[-1])
-                ddinter = 0.005 
-                interp_en = np.arange(NewEn[0]-6,NewEn[-1]-1,ddinter) #-10 can be
-                #changed accronding to the plasmon energy
+                ddinter = denfft/5. 
+                interp_en = np.arange(NewEn[0]-Eplasmon, NewEn[-10], ddinter) 
                 print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
-                spfkb= interp_toc(interp_en)
+                spfkb = interp_toc(interp_en)
                 toc_tot+=spfkb
                 outnamekb="TOC96-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
                 outfilekb = open(outnamekb,'w')
@@ -2722,16 +2719,8 @@ def calc_toc96(vardct,tfft_size,minkpt,maxkpt,minband,maxband,newen,en,enmin,enm
                     en_toc96.append(interp_en[i]+eqp_kb)
                     outfilekb.write("%8.4f %12.8e \n" % (interp_en[i]+eqp_kb,spfkb[i])) 
                 outfilekb.close()
-                #with
-                #open("TOC96-k"+str("%02d"%(ik))+"-b"+str("%02d"%(ib))+".dat")
-                #as f:
-                #writer=csv.writer(f,delimiter='\t')
-                #writer.writerows(zip(interp_en,spfkb))
                 print ("check the renormalization : :")
                 norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
-                #for i in xrange(len(interp_en)-1):
-                 #   Area3=0.5*ddinter*(spfkb[i]+spfkb[i+1])/(wtk[ik]*pdos[ib])
-                 #   norm+=Area3
                 print ("the normalization of the spectral function is", norm)
 
     return en_toc96, toc_tot

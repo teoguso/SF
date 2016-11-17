@@ -133,14 +133,20 @@ nkpt =  int(invar_dict['nkpt'])
 minband = int(invar_dict['minband']) 
 maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
-tfft_size=int(invar_dict['tfft_size'])
-encut=int(invar_dict['encut'])
+tfft_size = int(invar_dict['tfft_size'])
+encut = float(invar_dict['encut'])
+Eplasmon = float(invar_dict['Eplasmon'])
+NewEnmax = int(invar_dict['NewEnmax'])
+NewEnmin = int(invar_dict['NewEnmin'])
 invar_dict['nband'] = nband
 print(" ### nkpt, nband:", nkpt, nband)
 print(" # ------------------------------------------------ # ")
 pdos = calc_pdos(dict_c,res)
 print(" pdos:", pdos)
 print(" Size(pdos):",np.size(pdos))
+print(" the tfft_size:", tfft_size )
+print(" the estimate plasmon energy:", Eplasmon )
+print(" the cutoff value:", encut)
 #TODO: Check if consistent use of numpy arrays. 
 ### ===================================================== ###
 print(" # ------------------------------------------------ # ")
@@ -383,8 +389,9 @@ else:
             cpu1=time.clock() - c0
             print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
             print (" ### Calculation of exponential A(\omega)_TOC96..  ")
-            interp_en,toc_tot=calc_toc96(dict_c,tfft_size,minkpt,maxkpt,minband,
-                               maxband,newen,en,enmin,enmax, allkb, eqp, encut,pdos)
+            interp_en,toc_tot = calc_toc96 (dict_c, tfft_size, minkpt, maxkpt,
+                                            minband, maxband, en, eqp, encut,
+                                            pdos, Eplasmon, NewEnmin, NewEnmax, ims)
             #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
             print (" ### Writing out A(\omega)_TOC96...  ")
 
