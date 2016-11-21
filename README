@@ -6,13 +6,20 @@
 ### f2py, gfortran
 ### Tested on Ubuntu 12.04
 #################################################
-# Before using the program, 
-# one should execute the 
-# bash script 'compile_and_link.sh'.
-# The script 'cleanup.sh' removes all secondary 
-# files created during compilation, linking and 
-# testing, reverting to a clean source 
-# (a.k.a. poor's man 'make distclean').
+Before using the program, 
+one should execute the 
+bash script 'compile_and_link.sh'.
+The script 'cleanup.sh' removes all secondary 
+files created during compilation, linking and 
+testing, reverting to a clean source 
+(a.k.a. poor's man 'make distclean').
+
+- Conda installation file - 
+Check py2_sf.yml for a comprehensive (and possibly redundant)
+list of required packages. 
+This list can be used with the conda package manager
+to obtain a functioning python 2 installation.
+
 -- QUICK HOWTO --
 Gather your input files (self-energy, invar.in, ...)
  -- look in the test directory for examples --
