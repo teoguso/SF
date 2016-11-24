@@ -20,7 +20,7 @@ TODO - a_wp.dat for the extrinsic/interference effects and additional lifetime.
 from __future__ import print_function
 from threading import Thread
 from sf_modules import *
-from outread import *
+from outread.outread import *
 import numpy as np;
 import matplotlib.pylab as plt;
 #from scipy.interpolate import interp1d
