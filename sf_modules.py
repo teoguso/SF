@@ -2571,7 +2571,7 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
 def integ_w(x , ShiftIms,NewEn,tImag): # pay attention of NewEn==0!!!!!
     return 1.0/np.pi*abs(ShiftIms[x])*(np.exp(-(NewEn[x])*tImag)-1.0)*(1.0/(NewEn[x]**2))
 
-def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
+def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,newen,
                 eqp, encut, pdos, Eplasmon, NewEnmin, NewEnmax, ims, invar_den,
                invar_eta):
     import numpy as np
@@ -2587,7 +2587,7 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
     wtk=np.array(vardct['wtk'])
     pdos=np.array(pdos)
     fftsize = tfft_size
-    tol_ecut=encut
+    tol_ecut = encut
     for ik in xrange(nkpt):
         ikeff=minkpt+ik-1
         for ib in xrange(nband):
@@ -2640,31 +2640,41 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
                     tImag = t*1.j
                     ct = 0
                     ecut_tmp = 1e-6
-                    outnamekb="Cutoff_check"+".dat"
-                    outfilekb = open(outnamekb,'w')
+                    #outnamekb="Cutoff_check"+"-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+                    #outfilekb = open(outnamekb,'w')
                     for i in np.arange(0,NewEn_size-1,1):
-                        if abs(NewEn[i])< abs(ecut_tmp) : #finding w=0 and then put cutoff.
-                            continue
-                  #      print("new energy is",NewEn[i])
-                        if abs(integ_w(i, ShiftIms, NewEn, -40j))>= tol_ecut:
-                            ecut_tmp = NewEn[i]
-                            continue
-                        area=0.5*newdx*(integ_w(i,ShiftIms,NewEn,tImag)+integ_w(i+1,ShiftIms,NewEn,tImag))
-                        ct+=area 
-                        outfilekb.write("%8.4f  %12.8e  \n" % (NewEn[i],
-                                                               abs(integ_w(i+1,ShiftIms,NewEn,-40j))))
-                    outfilekb.close()
+                        if abs(NewEn[i]) < (ecut_tmp) : #finding w=0 and then put cutoff.
+                            en1=np.arange(0,i-tol_ecut,1) # cut elements on the left
+                            en2=np.arange(i+tol_ecut+1,NewEn_size-1,1) # cut element
+                        #on the right
+                            for j in np.concatenate((en1, en2), axis=0):   # try to
+                        #spead up this sum.
+                                area=0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
+                                ct+=area 
+
+                    #for i in np.arange(0,NewEn_size-1,1):
+                    #    if abs(NewEn[i])< abs(ecut_tmp) : #finding w=0 and then put cutoff.
+                    #        continue
+                  # #     print("new energy is",NewEn[i])
+                    #    if abs(integ_w(i, ShiftIms, NewEn, -40j))>=tol_ecut:
+                    #        ecut_tmp = abs(NewEn[i])
+                    #        continue
+                      #  area=0.5*newdx*(integ_w(i,ShiftIms,NewEn,tImag)+integ_w(i+1,ShiftIms,NewEn,tImag))
+                     #   ct+=area 
+                     #   outfilekb.write("%8.4f  %12.8e  \n" % (NewEn[i],
+                      #                                         abs(integ_w(i+1,ShiftIms,NewEn,-40j))))
+                    #outfilekb.close()
 
                     gt=np.exp(ct)
                     gt_list.append(gt)
                     Regt_list.append(gt.real)
                     Imgt_list.append(gt.imag)
-                outnamekb="TOC96-gt"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-                outfilekb = open(outnamekb,'w')
-                for it in xrange(fftsize):
-                    outfilekb.write("%8.4f %12.8e %12.8e\n" %
-                                    (trange[it],Regt_list[it],Imgt_list[it]))
-                outfilekb.close()
+               # outnamekb="TOC96-gt"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+               # outfilekb = open(outnamekb,'w')
+               # for it in xrange(fftsize):
+               #     outfilekb.write("%8.4f %12.8e %12.8e\n" %
+               #                     (trange[it],Regt_list[it],Imgt_list[it]))
+               # outfilekb.close()
                 print("IFFT of ")
                 print("kpoint = %02d" % (ikeff+1))
                 print("band=%02d" % (ibeff+1))
@@ -2677,44 +2687,46 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
                                           direction='FFTW_BACKWARD',threads=4)
                 cw=ifft_object(gt_list)*(fftsize*dtfft)
 
-                outnamekb = "TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-                outfilekb = open(outnamekb,'w')
-                for i in xrange(fftsize):
-                   outfilekb.write("%8.4f %12.8e  %12.8e \n" %
-                                   (enrange[i],cw[i].real, cw[i].imag)) 
-                outfilekb.close()
+               # outnamekb = "TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+               # outfilekb = open(outnamekb,'w')
+               # for i in xrange(fftsize):
+               #    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
+               #                    (enrange[i],cw[i].real, cw[i].imag)) 
+               # outfilekb.close()
                 
                 freq = fftfreq(fftsize,dtfft)*2*np.pi
                 s_freq = fftshift(freq) # To have the correct energies (hopefully!)
                 s_go = fftshift(cw)
 
-                outnamekb = "TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-                outfilekb = open(outnamekb,'w')
-                for i in xrange(fftsize):
-                   outfilekb.write("%8.4f %12.8e  %12.8e \n" %
-                                   (s_freq[i],s_go[i].real, s_go[i].imag)) 
-                outfilekb.close()
+               # outnamekb = "TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+               # outfilekb = open(outnamekb,'w')
+               # for i in xrange(fftsize):
+               #    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
+               #                    (s_freq[i],s_go[i].real, s_go[i].imag)) 
+               # outfilekb.close()
                 eta = 1.j*invar_eta # the eta in the theta function that can be changed when the satellite is very close to
                              #the QP.
                 gw_list = []
                 for w in enrange:
                     c = 0
                     for i in xrange(fftsize-1):
-                        #Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
-                        Area2=0.5*denfft*(s_go[i]/(w-s_freq[i]-eta)+s_go[i+1]/(w-s_freq[i+1]-eta))
+                        Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
+                        #Area2 = 0.5*denfft*(s_go[i]/(w-s_freq[i]-eta)+s_go[i+1]/(w-s_freq[i+1]-eta))
                         c+=Area2
                     cwIm = 1./np.pi*c.imag
                     gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
-                outnamekb = "TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-                outfilekb = open(outnamekb,'w')
-                for i in xrange(len(enrange)):
-                   outfilekb.write("%8.4f %12.8e \n" % (enrange[i],gw_list[i])) 
-                outfilekb.close()
+               # outnamekb = "TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
+               # outfilekb = open(outnamekb,'w')
+               # for i in xrange(len(enrange)):
+               #    outfilekb.write("%8.4f %12.8e \n" % (enrange[i],gw_list[i])) 
+               # outfilekb.close()
                 print ("IFFT done .....")
                 interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
                 print("the interplation range is",enrange[0],enrange[-1])
-                ddinter = denfft/5. 
-                interp_en = np.arange(NewEn[0]-Eplasmon, NewEn[-10], ddinter) 
+                #ddinter = denfft/5. 
+                ddinter = 0.005
+                #interp_en = np.arange(newen[0], newen[-1], ddinter) 
+                interp_en = newen
                 print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
                 spfkb = interp_toc(interp_en)
                 toc_tot+=spfkb
@@ -2722,13 +2734,13 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
                 outfilekb = open(outnamekb,'w')
                 en_toc96=[]
                 for i in xrange(len(interp_en)):
-                    en_toc96.append(interp_en[i]+eqp_kb)
-                    outfilekb.write("%8.4f %12.8e \n" % (interp_en[i]+eqp_kb,spfkb[i])) 
+                    en_toc96.append(interp_en[i])
+                    outfilekb.write("%8.4f %12.8e \n" % (interp_en[i],spfkb[i])) 
                 outfilekb.close()
                 print ("check the renormalization : :")
                 norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
                 print ("the normalization of the spectral function is", norm)
-
+    
     return en_toc96, toc_tot
 
 def calc_rc_sky (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
@@ -2782,11 +2794,11 @@ def calc_rc_sky (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,
 
                 tfft_min=-2*np.pi/invar_den #-250  #this determins the final energy resolution after FT
                 tfft_max=0
-                trange = np.linspace(tfft_min, tfft_max,fftsize)
+                trange = np.linspace(tfft_min, tfft_max, fftsize)
                 dtfft = abs(trange[-1]-trange[0])/fftsize
                 print ("the time step is", dtfft)
                 denfft=2*np.pi/abs(trange[-1]-trange[0])
-                print("the energy resolution after FFT is",denfft)
+                print("the energy resolution after FFT is", idenfft)
                 fften_min=-2*np.pi/dtfft
                 fften_max=0
                 enrange=np.arange(fften_min,NewEn[-1],denfft)
