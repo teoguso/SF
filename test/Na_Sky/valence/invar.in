@@ -1,6 +1,6 @@
 SIG_gw0_zcut1     # sigmafile
 1           # minkpt
-1         # maxkpt
+4         # maxkpt
 1           # minband
 1           # maxband
 -20        # enmin
