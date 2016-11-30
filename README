@@ -6,6 +6,9 @@
 ### Requires scitools, numpy, matplotlib, 
 ### f2py, gfortran
 #################################################
+# Conda environment setup
+# Install Anaconda and then type
+# $ conda env create -f environment.yml
 # Before using the program, 
 # one should execute the 
 # bash script 'compile_and_link.sh'.
