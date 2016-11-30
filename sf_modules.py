@@ -2593,10 +2593,10 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,newen,
         for ib in xrange(nband):
             ibeff=minband+ib-1
             print(" ik, ib:",ikeff+1, ibeff+1)
-            eqp_kb = eqp[ik,ib]
+            eqp_kb = eqp[ikeff,ibeff]
             print("eqp:", eqp_kb)
             if eqp_kb<=0:
-                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =
+                interpims = interp1d(en, ims[ikeff,ibeff], kind = 'linear', axis =
                                      -1)
                 print("the interplation of ims range is", en[0], en[-1])
                 imeqp = interpims(eqp_kb)
@@ -2714,7 +2714,7 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,newen,
                         #Area2 = 0.5*denfft*(s_go[i]/(w-s_freq[i]-eta)+s_go[i+1]/(w-s_freq[i+1]-eta))
                         c+=Area2
                     cwIm = 1./np.pi*c.imag
-                    gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
+                    gw_list.append(0.5*wtk[ikeff]*pdos[ibeff]/np.pi*cwIm)
                # outnamekb = "TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
                # outfilekb = open(outnamekb,'w')
                # for i in xrange(len(enrange)):
@@ -2738,7 +2738,7 @@ def calc_toc96 (vardct, tfft_size, minkpt, maxkpt, minband, maxband, en,newen,
                     outfilekb.write("%8.4f %12.8e \n" % (interp_en[i],spfkb[i])) 
                 outfilekb.close()
                 print ("check the renormalization : :")
-                norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
+                norm=np.trapz(spfkb,interp_en)/(wtk[ikeff]*pdos[ibeff])
                 print ("the normalization of the spectral function is", norm)
     
     return en_toc96, toc_tot
