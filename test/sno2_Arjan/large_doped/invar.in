@@ -1,0 +1,16 @@
+out_gw_DS4_SIG     # sigmafile
+1           # minkpt
+1           # maxkpt
+1           # minband
+16           # maxband
+-30        # enmin
+0        # enmax
+7.987889E+00     # efermi 
+1  # calc_gw
+1 # calc_toc96
+1  # calc_sky
+4000 # tfft_size
+1   # encut
+1  # Eplasmon
+0.02 # invar_den
+0.05 # invar_eta
