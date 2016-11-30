@@ -91,3 +91,5 @@ ENV/
 # # My stuff
 Spfunctions/
 log
+*.tar
+*.gz
