@@ -393,8 +393,7 @@ else:
             cpu1=time.clock() - c0
             print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
             print (" ### Calculation of exponential A(\omega)_TOC96..  ")
-            interp_en,toc_tot = calc_toc96(dict_c, tfft_size, minkpt, maxkpt,
-                                            minband, maxband, en,newen, eqp, encut,
+            interp_en,toc_tot = calc_toc96(dict_c, tfft_size, en,newen, eqp, encut,
                                             pdos, Eplasmon, NewEnmin, NewEnmax,
                                             ims, invar_den, invar_eta)
             #interp_en, toc_tot =calc_toc96(dict_c,tfft_size,newen,allkb,eqp,encut,pdos,res)
@@ -424,8 +423,7 @@ else:
             cpu1=time.clock() - c0
             print ("Starting time (elaps, cpu): %10.6e %10.6e"% (elaps1, cpu1))
             print (" ### Calculation of exponential A(\omega)_RC..  ")
-            interp_en, rc_tot = calc_rc_sky(dict_c, tfft_size, minkpt, maxkpt,
-                                            minband, maxband, en, eqp, encut,
+            interp_en, rc_tot = calc_rc_sky(dict_c, tfft_size, en, newen, eqp, encut,
                                             pdos, Eplasmon, NewEnmin, NewEnmax,
                                             ims, invar_den, invar_eta)
             print (" ### Writing out A(\omega)_RC96...  ")
