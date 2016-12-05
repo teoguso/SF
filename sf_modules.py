@@ -2586,7 +2586,7 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
     #nband = maxband-minband+1
     toc_tot = 0
     #newdx = 0.02 ## can be modified, but must be defined according to
-    newdx = 0.05  ## for debug
+    newdx = 0.02  ## for debug
     wtk = np.array(vardct['wtk'])
     pdos = np.array(pdos)
     fftsize = tfft_size
