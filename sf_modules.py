@@ -565,8 +565,11 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
    #imskb = np.zeros(shape=(nkpt,nband,np.size(newen)))
    #rdenkb = np.zeros(shape=(nkpt,nband,np.size(newen)))
     bdgw = map(int, vardct['sig_bdgw'])
+    print(" ### bdgw  ", bdgw)
     bdrange = vardct['bdrange']
+    print(" ### bdrange  ", bdrange)  
     kptrange = vardct['kptrange']
+    print(" ### kptrange  ", kptrange)
    #for ik in range(nkpt):
    #    #ikeff = minkpt+ik-1
    #    print(" k point, nband = %02d %02d" % (ik,nband))
@@ -578,9 +581,9 @@ def calc_sf_gw(vardct,hartree,pdos,en,res,ims):
         ikeff = ik + 1
         #for ib in range(nband):
         for ib in bdrange:
-           #ibeff = ib + minband
+            #ibeff = ib + 1
             ibeff = ib + bdgw[0]
-            print(ik, ib)
+            print(ikeff, ibeff)
            #plt.plot(en,ims[ik,ib])
             interpres = interp1d(en, res[ik,ib], kind = 'linear', axis = -1)
             interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = -1)
@@ -635,6 +638,7 @@ def write_spfkb(vardct, newen, allkb):
         for ib in bdrange:
            #ibeff = ib + minband
             ibeff = ib + bdgw[0]
+            #ibeff = ib + 1
             outnamekb = "spf_gw-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
             outfilekb = open(outnamekb,'w')
             for ien in xrange(np.size(newen)) :
@@ -2580,14 +2584,15 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
     print("calc_toc96 : :")
     #nkpt = maxkpt-minkpt+1
     #nband = maxband-minband+1
-    toc_tot=0
+    toc_tot = 0
     #newdx = 0.02 ## can be modified, but must be defined according to
-    newdx= 0.01  ## for debug
-    wtk=np.array(vardct['wtk'])
-    pdos=np.array(pdos)
+    newdx = 0.05  ## for debug
+    wtk = np.array(vardct['wtk'])
+    pdos = np.array(pdos)
     fftsize = tfft_size
     tol_ecut = encut
     bdgw = map(int, vardct['sig_bdgw'])
+    print("the bdgw is  : :", bdgw)
     bdrange = vardct['bdrange']
     kptrange = vardct['kptrange']
     #for ik in xrange(nkpt):
@@ -2598,8 +2603,7 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
         for ib in bdrange:
             #ibeff=minband+ib-1
             ibeff = ib + bdgw[0]
-            #print(" ik, ib:",ikeff+1, ibeff+1)
-            print(" ik, ib:", ik, ib)
+            print(" ik, ib:",ikeff, ibeff)
             #eqp_kb = eqp[ikeff,ibeff]
             eqp_kb = eqp[ik,ib]
             print("eqp:", eqp_kb)
@@ -2613,35 +2617,35 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                 #plasmon energy of the system because this needs to cover the peak
                 #in ImSigma.
                 NewEn_max = Eplasmon     # can be changed when calculate different system
-                NewEn=np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
+                NewEn = np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
                 #properly so that w=0 is included.
                 print("the NewEn range is (must be inside of interplation range)", NewEn[0], NewEn[-1])
-                NewEn_size=NewEn.size
-                NewIms=interpims(NewEn)
-                ShiftEn=np.arange(NewEn_min+eqp_kb, NewEn_max+eqp_kb, newdx)
+                NewEn_size = NewEn.size
+                NewIms = interpims(NewEn)
+                ShiftEn = np.arange(NewEn_min+eqp_kb, NewEn_max+eqp_kb, newdx)
                 print("the ShiftEN range is (must be inside of interplation range)",
                       ShiftEn[0], ShiftEn[-1])
-                ShiftIms=interpims(ShiftEn)
+                ShiftIms = interpims(ShiftEn)
                 outnamekb = "ShiftIms-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
                 outfilekb = open(outnamekb,'w')
                 for ien in xrange(NewEn_size):
                     outfilekb.write("%8.4f %12.8e\n" % (NewEn[ien], ShiftIms[ien]))
                 outfilekb.close()
 
-                tfft_min=-2*np.pi/invar_den#-250  #this determins the final energy resolution after FT
-                tfft_max=0
+                tfft_min = -2*np.pi/invar_den#-250  #this determins the final energy resolution after FT
+                tfft_max = 0
                 trange = np.linspace(tfft_min, tfft_max,fftsize)
                 dtfft = abs(trange[-1]-trange[0])/fftsize
                 print ("the time step is", dtfft)
-                denfft=2*np.pi/abs(trange[-1]-trange[0])
+                denfft = 2*np.pi/abs(trange[-1]-trange[0])
                 print("the energy resolution after FFT is",denfft)
-                fften_min=-2*np.pi/dtfft
-                fften_max=0
+                fften_min = -2*np.pi/dtfft
+                fften_max = 0
                 #enrange=np.linspace(fften_min,newen[-1],fftsize)
-                enrange=np.arange(fften_min,NewEn[-1],denfft)
-                gt_list=[]
-                Regt_list=[]
-                Imgt_list=[]
+                enrange = np.arange(fften_min,NewEn[-1],denfft)
+                gt_list = []
+                Regt_list = []
+                Imgt_list = []
                 print("the size of fft is", fftsize)
                 area = []
                 for t in trange:
@@ -2652,12 +2656,12 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                     #outfilekb = open(outnamekb,'w')
                     for i in np.arange(0,NewEn_size-1,1):
                         if abs(NewEn[i]) < (ecut_tmp) : #finding w=0 and then put cutoff.
-                            en1=np.arange(0,i-tol_ecut,1) # cut elements on the left
-                            en2=np.arange(i+tol_ecut+1,NewEn_size-1,1) # cut element
+                            en1 = np.arange(0,i-tol_ecut,1) # cut elements on the left
+                            en2 = np.arange(i+tol_ecut+1,NewEn_size-1,1) # cut element
                         #on the right
                             for j in np.concatenate((en1, en2), axis=0):   # try to
                         #spead up this sum.
-                                area=0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
+                                area = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
                                 ct+=area 
 
                     #for i in np.arange(0,NewEn_size-1,1):
@@ -2673,7 +2677,7 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                       #                                         abs(integ_w(i+1,ShiftIms,NewEn,-40j))))
                     #outfilekb.close()
 
-                    gt=np.exp(ct)
+                    gt = np.exp(ct)
                     gt_list.append(gt)
                     Regt_list.append(gt.real)
                     Imgt_list.append(gt.imag)
@@ -2774,7 +2778,7 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
         ikeff = ik + 1
         for ib in bdrange:
             ibeff=ib + bdgw[0]
-            print(" ik, ib:",ik, ib)
+            print(" ik, ib:",ikeff, ibeff)
             eqp_kb = eqp[ik,ib]
             print("eqp:", eqp_kb)
             if eqp_kb<=0:

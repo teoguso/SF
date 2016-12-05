@@ -214,7 +214,7 @@ if maxband > sig_bdgw[1]:
         minband = maxband
         print("WARNING: minband was above maxband and was changed accordingly.")
 # Maybe a good global variable?
-dict_c['bdrange'] = range(minband - 1,maxband)
+dict_c['bdrange'] = range(minband - sig_bdgw[0], maxband - sig_bdgw[0] + 1)
 dict_c['kptrange'] = range(minkpt - 1, maxkpt)
 
 ### RESTART??? ###
