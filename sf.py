@@ -197,6 +197,8 @@ print("extinf = ", extinf)
 # allkb contains A_GW, Re(Sigma), w-e_H-Re(Sigma), Im(Sigma)
 # for each ik,ib on the 'newen' array of energies. 
 # only A_GW is multiplied by wtk*pdos
+# ==================================== 
+# Check on the band range
 if minband < sig_bdgw[0]: 
     print("WARNING: requested first band", minband, " is below the lowest available GW band.")
     dict_c['minband'] = sig_bdgw[0]
