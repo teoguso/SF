@@ -2660,6 +2660,7 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                             en2 = np.arange(i+tol_ecut+1,NewEn_size-1,1) # cut element
                         #on the right
                             for j in np.concatenate((en1, en2), axis=0):   # try to
+                                #print ("SKY debug noninteger", j)
                         #spead up this sum.
                                 area = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
                                 ct+=area 

@@ -134,7 +134,7 @@ minband = int(invar_dict['minband'])
 maxband = int(invar_dict['maxband']) 
 nband = maxband - minband +1
 tfft_size = int(invar_dict['tfft_size'])
-encut = float(invar_dict['encut'])
+encut = int(invar_dict['encut'])
 Eplasmon = float(invar_dict['Eplasmon'])
 NewEnmax = int(invar_dict['NewEnmax'])
 NewEnmin = int(invar_dict['NewEnmin'])
@@ -416,7 +416,7 @@ else:
             cpu2 = time.clock() - cpu1 - c0
             print (" Used time (elaps, cpu): %10.6e %10.6e"% (elaps2, cpu2))
             print (" ### Writing out A(\omega)_TOC96..")
-        if int(dict_c['calc_rc'])==1: 
+        if int(dict_c['calc_rc']) == 1: 
             import time
             print ("Calculating RC begins")
             e0=time.time()
