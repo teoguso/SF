@@ -2575,18 +2575,72 @@ def sf_c_sat1(vardct, hartree, pdos, eqp, imeqp, newen, allkb):
 def integ_w(x , ShiftIms,NewEn,tImag): # pay attention of NewEn==0!!!!!
     return 1.0/np.pi*abs(ShiftIms[x])*(np.exp(-(NewEn[x])*tImag)-1.0)*(1.0/(NewEn[x]**2))
 
+#def find_newdx(vardct, en, eqp, encut, pdos, Eplasmon, 
+#                    ims):
+#    import numpy as np
+#    print("looking for newdx for cumulant modules of Sky")
+#    newdx = 0.1
+#    ecut_tmp = 1e-6
+#    tol_ecut = encut
+#    area0=0.
+#    bdgw = map(int, vardct['sig_bdgw'])
+#    bdrange = vardct['bdrange']
+#    kptrange = vardct['kptrange']
+#    for ik in kptrange:
+#        ikeff = ik + 1
+#        for ib in bdrange:
+#            ibeff = ib + bdgw[0]
+#            eqp_kb = eqp[ik,ib]
+#            print("eqp:", eqp_kb)
+#            if eqp_kb<=0:
+#                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis = 
+#                                     -1)
+#                NewEn_min = -2*Eplasmon #depend on the input energy in SIG file and the
+#                #plasmon energy of the system because this needs to cover the peak
+#                #in ImSigma.
+#                NewEn_max = Eplasmon     # can be changed when calculate different system
+#                NewEn = np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
+#                #properly so that w=0 is included.
+#                NewEn_size = NewEn.size
+#                NewIms = interpims(NewEn)
+#                ShiftEn = np.arange(NewEn_min + eqp_kb, NewEn_max + eqp_kb, newdx)
+#                ShiftIms = interpims(ShiftEn)
+#                converged = False
+#                tol_tmp = 0.01
+#                while not converged:
+#                    t = -10.
+#                    tImag = t*1.j
+#                    ct = 0
+#                    for i in np.arange(0,NewEn_size-1,1):
+#                        if abs(NewEn[i]) < (ecut_tmp) : #finding w=0 and then put cutoff.
+#                            en1 = np.arange(0,i - tol_ecut, 1) # cut elements on the left
+#                            en2 = np.arange(i + tol_ecut+1, NewEn_size - 1, 1) # cut element
+#                        #on the right
+#                            for j in np.concatenate((en1, en2), axis = 0):   # try to
+#                                #print ("SKY debug noninteger", j)
+#                        #spead up this sum.
+#                                area = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
+#                                ct+=area 
+#                    d_area = abs(area0 - area)
+#                    area0 = area
+#                    newdx = newdx*0.5
+#                    if d_area <= tol_tmp:
+#                        converged = True
+#                      
+#                        print("the converged newdx is", newdx) 
+#    return newdx
+
 def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon, 
                 NewEnmin, NewEnmax, ims, invar_den, invar_eta):
     import numpy as np
     import pyfftw
     from numpy.fft import fftshift,fftfreq
     from scipy.interpolate import interp1d
+
     print("calc_toc96 : :")
-    #nkpt = maxkpt-minkpt+1
-    #nband = maxband-minband+1
     toc_tot = 0
     #newdx = 0.02 ## can be modified, but must be defined according to
-    newdx = 0.02  ## for debug
+    #newdx = 0.05  ## for debug
     wtk = np.array(vardct['wtk'])
     pdos = np.array(pdos)
     fftsize = tfft_size
@@ -2595,164 +2649,157 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
     print("the bdgw is  : :", bdgw)
     bdrange = vardct['bdrange']
     kptrange = vardct['kptrange']
-    #for ik in xrange(nkpt):
     for ik in kptrange:
-       # ikeff=minkpt+ik-1
         ikeff = ik + 1
-        #for ib in xrange(nband):
         for ib in bdrange:
-            #ibeff=minband+ib-1
             ibeff = ib + bdgw[0]
             print(" ik, ib:",ikeff, ibeff)
-            #eqp_kb = eqp[ikeff,ibeff]
             eqp_kb = eqp[ik,ib]
             print("eqp:", eqp_kb)
             if eqp_kb<=0:
-                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =
-                                     -1)
-                print("the interplation of ims range is", en[0], en[-1])
-                imeqp = interpims(eqp_kb)
-                print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
-                NewEn_min = -2*Eplasmon #depend on the input energy in SIG file and the
-                #plasmon energy of the system because this needs to cover the peak
-                #in ImSigma.
-                NewEn_max = Eplasmon     # can be changed when calculate different system
-                NewEn = np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
-                #properly so that w=0 is included.
-                print("the NewEn range is (must be inside of interplation range)", NewEn[0], NewEn[-1])
-                NewEn_size = NewEn.size
-                NewIms = interpims(NewEn)
-                ShiftEn = np.arange(NewEn_min+eqp_kb, NewEn_max+eqp_kb, newdx)
-                print("the ShiftEN range is (must be inside of interplation range)",
-                      ShiftEn[0], ShiftEn[-1])
-                ShiftIms = interpims(ShiftEn)
-                outnamekb = "ShiftIms-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
-                outfilekb = open(outnamekb,'w')
-                for ien in xrange(NewEn_size):
-                    outfilekb.write("%8.4f %12.8e\n" % (NewEn[ien], ShiftIms[ien]))
-                outfilekb.close()
-
-                tfft_min = -2*np.pi/invar_den#-250  #this determins the final energy resolution after FT
-                tfft_max = 0
-                trange = np.linspace(tfft_min, tfft_max,fftsize)
-                dtfft = abs(trange[-1]-trange[0])/fftsize
-                print ("the time step is", dtfft)
-                denfft = 2*np.pi/abs(trange[-1]-trange[0])
-                print("the energy resolution after FFT is",denfft)
-                fften_min = -2*np.pi/dtfft
-                fften_max = 0
-                #enrange=np.linspace(fften_min,newen[-1],fftsize)
-                enrange = np.arange(fften_min,NewEn[-1],denfft)
-                gt_list = []
-                Regt_list = []
-                Imgt_list = []
-                print("the size of fft is", fftsize)
-                area = []
-                for t in trange:
-                    tImag = t*1.j
-                    ct = 0
-                    ecut_tmp = 1e-6
-                    #outnamekb="Cutoff_check"+"-k"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-                    #outfilekb = open(outnamekb,'w')
+                converged = False
+                tol_area = 0.05 #invar_den
+                area_0 = 0.
+                newdx = 0.1
+                print("converging newdx ...")
+                print(" TOlerance: ", tol_area)
+                while not converged:
+                    interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis
+                                         = -1)
+                    NewEn_min = -2*Eplasmon
+                    NewEn_max = Eplasmon
+                    NewEn = np.arange(NewEn_min,NewEn_max,newdx)
+                    NewEn_size = NewEn.size
+                    NewIms = interpims(NewEn)
+                    ShiftEn = np.arange(NewEn_min + eqp_kb, NewEn_max + eqp_kb,
+                                        newdx)
+                    ShiftIms = interpims(ShiftEn)
+                    ct_tmp = 0
+                    print("the newdx is", newdx)
                     for i in np.arange(0,NewEn_size-1,1):
-                        if abs(NewEn[i]) < (ecut_tmp) : #finding w=0 and then put cutoff.
-                            en1 = np.arange(0,i-tol_ecut,1) # cut elements on the left
-                            en2 = np.arange(i+tol_ecut+1,NewEn_size-1,1) # cut element
+                        if abs(NewEn[i]) < 1e-6 : #finding w=0 and then put cutoff.
+                            print("zero is in NewEn")
+                            en1 = np.arange(0,i - tol_ecut, 1) # cut elements on the left
+                            en2 = np.arange(i + tol_ecut+1, NewEn_size - 1, 1) # cut element
                         #on the right
-                            for j in np.concatenate((en1, en2), axis=0):   # try to
+                            for j in np.concatenate((en1, en2), axis = 0):   # try to
                                 #print ("SKY debug noninteger", j)
                         #spead up this sum.
-                                area = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
-                                ct+=area 
+                                area_tmp = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,-10.j)
+                                                      +integ_w(j+1,ShiftIms,NewEn,-10.j))
+                                ct_tmp+=area_tmp 
+                    gt_tmp = np.exp(ct_tmp)
+                    print("the integration equals", gt_tmp)
+                    d_area = abs(area_0 - gt_tmp)
+                    print("the difference is", d_area)
+                    area_0 = gt_tmp
+                    newdx = newdx*0.5
+                    if d_area <= tol_area:
+                        converged = True
+                        print("the converged newdx is", newdx) 
+               # interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =
+               #                      -1)
+               # print("the interplation of ims range is", en[0], en[-1])
+               # imeqp = interpims(eqp_kb)
+               # print("ImSigma(Eqp): {}".format(interpims(eqp_kb)))
+               # NewEn_min = -2*Eplasmon #depend on the input energy in SIG file and the
+               # #plasmon energy of the system because this needs to cover the peak
+               # #in ImSigma.
+               # NewEn_max = Eplasmon     # can be changed when calculate different system
+               # NewEn = np.arange(NewEn_min,NewEn_max,newdx) #newdx should be defined
+               # #properly so that w=0 is included.
+               # print("the NewEn range is (must be inside of interplation range)", NewEn[0], NewEn[-1])
+               # NewEn_size = NewEn.size
+               # NewIms = interpims(NewEn)
+               # ShiftEn = np.arange(NewEn_min + eqp_kb, NewEn_max + eqp_kb, newdx)
+               # print("the ShiftEN range is (must be inside of interplation range)",
+               #       ShiftEn[0], ShiftEn[-1])
+               # ShiftIms = interpims(ShiftEn)
+                        outnamekb = "ShiftIms-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
+                        outfilekb = open(outnamekb,'w')
+                        for ien in xrange(NewEn_size):
+                            outfilekb.write("%8.4f %12.8e\n" % (NewEn[ien], ShiftIms[ien]))
+                        outfilekb.close()
 
-                    #for i in np.arange(0,NewEn_size-1,1):
-                    #    if abs(NewEn[i])< abs(ecut_tmp) : #finding w=0 and then put cutoff.
-                    #        continue
-                  # #     print("new energy is",NewEn[i])
-                    #    if abs(integ_w(i, ShiftIms, NewEn, -40j))>=tol_ecut:
-                    #        ecut_tmp = abs(NewEn[i])
-                    #        continue
-                      #  area=0.5*newdx*(integ_w(i,ShiftIms,NewEn,tImag)+integ_w(i+1,ShiftIms,NewEn,tImag))
-                     #   ct+=area 
-                     #   outfilekb.write("%8.4f  %12.8e  \n" % (NewEn[i],
-                      #                                         abs(integ_w(i+1,ShiftIms,NewEn,-40j))))
-                    #outfilekb.close()
+                        tfft_min = -2*np.pi/invar_den#-250  #this determins the final energy resolution after FT
+                        tfft_max = 0
+                        trange = np.linspace(tfft_min, tfft_max,fftsize)
+                        dtfft = abs(trange[-1]-trange[0])/fftsize
+                        print ("the time step is", dtfft)
+                        denfft = 2*np.pi/abs(trange[-1]-trange[0])
+                        print("the energy resolution after FFT is",denfft)
+                        fften_min = -2*np.pi/dtfft
+                        fften_max = 0
+                        #enrange=np.linspace(fften_min,newen[-1],fftsize)
+                        enrange = np.arange(fften_min,NewEn[-1],denfft)
+                        gt_list = []
+                        Regt_list = []
+                        Imgt_list = []
+                        print("the size of fft is", fftsize)
+                        for t in trange:
+                            tImag = t*1.j
+                            ct = 0
+                            ecut_tmp = 1e-6
+                            for i in np.arange(0,NewEn_size-1,1):
+                                if abs(NewEn[i]) < (ecut_tmp) : #finding w=0 and then put cutoff.
+                                    en1 = np.arange(0,i - tol_ecut, 1) # cut elements on the left
+                                    en2 = np.arange(i + tol_ecut+1, NewEn_size - 1, 1) # cut element
+                        #on the right
+                                    for j in np.concatenate((en1, en2), axis = 0):   # try to
+                                        area = 0.5*newdx*(integ_w(j,ShiftIms,NewEn,tImag)+integ_w(j+1,ShiftIms,NewEn,tImag))
+                                        ct+=area 
 
-                    gt = np.exp(ct)
-                    gt_list.append(gt)
-                    Regt_list.append(gt.real)
-                    Imgt_list.append(gt.imag)
-               # outnamekb="TOC96-gt"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-               # outfilekb = open(outnamekb,'w')
-               # for it in xrange(fftsize):
-               #     outfilekb.write("%8.4f %12.8e %12.8e\n" %
-               #                     (trange[it],Regt_list[it],Imgt_list[it]))
-               # outfilekb.close()
-                print("IFFT of ")
-                print("kpoint = %02d" % (ikeff))
-                print("band=%02d" % (ibeff))
-                import pyfftw
-                print("the size of fft is", fftsize)
+                            gt = np.exp(ct)
+                            gt_list.append(gt)
+                            Regt_list.append(gt.real)
+                            Imgt_list.append(gt.imag)
+                        print("IFFT of ")
+                        print("kpoint = %02d" % (ikeff))
+                        print("band=%02d" % (ibeff))
+                        import pyfftw
+                        print("the size of fft is", fftsize)
 
-                fft_in=pyfftw.empty_aligned(fftsize, dtype='complex128')
-                fft_out=pyfftw.empty_aligned(fftsize, dtype='complex128')
-                ifft_object = pyfftw.FFTW(fft_in, fft_out,
+                        fft_in=pyfftw.empty_aligned(fftsize, dtype='complex128')
+                        fft_out=pyfftw.empty_aligned(fftsize, dtype='complex128')
+                        ifft_object = pyfftw.FFTW(fft_in, fft_out,
                                           direction='FFTW_BACKWARD',threads=4)
-                cw=ifft_object(gt_list)*(fftsize*dtfft)
+                        cw=ifft_object(gt_list)*(fftsize*dtfft)
 
-               # outnamekb = "TOC96-cw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-               # outfilekb = open(outnamekb,'w')
-               # for i in xrange(fftsize):
-               #    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
-               #                    (enrange[i],cw[i].real, cw[i].imag)) 
-               # outfilekb.close()
-                
-                freq = fftfreq(fftsize,dtfft)*2*np.pi
-                s_freq = fftshift(freq) # To have the correct energies (hopefully!)
-                s_go = fftshift(cw)
+                        freq = fftfreq(fftsize,dtfft)*2*np.pi
+                        s_freq = fftshift(freq) # To have the correct energies (hopefully!)
+                        s_go = fftshift(cw)
 
-               # outnamekb = "TOC96-s_g0"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-               # outfilekb = open(outnamekb,'w')
-               # for i in xrange(fftsize):
-               #    outfilekb.write("%8.4f %12.8e  %12.8e \n" %
-               #                    (s_freq[i],s_go[i].real, s_go[i].imag)) 
-               # outfilekb.close()
-                eta = 1.j*invar_eta # the eta in the theta function that can be changed when the satellite is very close to
-                             #the QP.
-                gw_list = []
-                for w in enrange:
-                    c = 0
-                    for i in xrange(fftsize-1):
-                        Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
-                        #Area2 = 0.5*denfft*(s_go[i]/(w-s_freq[i]-eta)+s_go[i+1]/(w-s_freq[i+1]-eta))
-                        c+=Area2
-                    cwIm = 1./np.pi*c.imag
-                    gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
-               # outnamekb = "TOC96-gw"+str("%02d"%(ikeff+1))+"-b"+str("%02d"%(ibeff+1))+".dat"
-               # outfilekb = open(outnamekb,'w')
-               # for i in xrange(len(enrange)):
-               #    outfilekb.write("%8.4f %12.8e \n" % (enrange[i],gw_list[i])) 
-               # outfilekb.close()
-                print ("IFFT done .....")
-                interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
-                print("the interplation range is",enrange[0],enrange[-1])
-                #ddinter = denfft/5. 
-                ddinter = 0.005
-                #interp_en = np.arange(newen[0], newen[-1], ddinter) 
-                interp_en = newen
-                print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
-                spfkb = interp_toc(interp_en)
-                toc_tot+=spfkb
-                outnamekb="TOC96-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
-                outfilekb = open(outnamekb,'w')
-                en_toc96=[]
-                for i in xrange(len(interp_en)):
-                    en_toc96.append(interp_en[i])
-                    outfilekb.write("%8.4f %12.8e \n" % (interp_en[i],spfkb[i])) 
-                outfilekb.close()
-                print ("check the renormalization : :")
-                norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
-                print ("the normalization of the spectral function is", norm)
+                        eta = 1.j*invar_eta # the eta in the theta function that can be changed when the satellite is very close to
+                                     #the QP.
+                        gw_list = []
+                        for w in enrange:
+                            c = 0
+                            for i in xrange(fftsize-1):
+                                Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
+                                c+=Area2
+                            cwIm = 1./np.pi*c.imag
+                            gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
+                        print("IFFT done .....")
+                        interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
+                        print("the interplation range is",enrange[0],enrange[-1])
+                        ddinter = 0.005
+                        interp_en = newen
+                        print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
+                        spfkb = interp_toc(interp_en)
+                        toc_tot+=spfkb
+                        outnamekb="TOC96-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
+                        outfilekb = open(outnamekb,'w')
+                        en_toc96=[]
+                        for i in xrange(len(interp_en)):
+                            en_toc96.append(interp_en[i])
+                            outfilekb.write("%8.4f %12.8e \n" % (interp_en[i],spfkb[i])) 
+                        outfilekb.close()
+                        print("check the renormalization : :")
+                        norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
+                        print("the normalization of the spectral function is", norm)
+                        if norm<=0.9:
+                            print(""" WARNING: the renormalization is too bad, you need to
+                                  converge your spf using other input variables """)
     
     return en_toc96, toc_tot
 
@@ -2930,4 +2977,7 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
                 norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
                 print ("the normalization of the spectral function is", norm)
 
+                if norm<=0.9:
+                    print(""" WARNING: the renormalization is too bad, you need to
+                          converge your spf using other input variables """)
     return en_rc, rc_tot

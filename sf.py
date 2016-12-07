@@ -386,6 +386,8 @@ else:
         thread = Thread(target = write_eqp_imeqp, args = (eqp, imeqp))
         thread.start()
         dict_c['origdir'] = origdir
+    #    converged_newen = find_newdx(dict_c, en, eqp, encut, pdos, Eplasmon, 
+     #               ims)
         if int(dict_c['calc_toc96']) == 1: 
             import time
             print ("Calculating TOC96 begins")
