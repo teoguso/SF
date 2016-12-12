@@ -2649,6 +2649,9 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
     print("the bdgw is  : :", bdgw)
     bdrange = vardct['bdrange']
     kptrange = vardct['kptrange']
+    outname = "Norm_check.dat"
+    outfile = open(outname,'w')
+
     for ik in kptrange:
         ikeff = ik + 1
         for ib in bdrange:
@@ -2697,9 +2700,9 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                         continue
 
                     print("(SKY DEBUG) the gt is", gt_tmp)
-                    d_area = area_0 - gt_tmp.real
+                    d_area = area_0 - gt_tmp.imag
                     print("(SKY DEBUG) the difference in gt is", d_area)
-                    area_0 = gt_tmp.real
+                    area_0 = gt_tmp.imag
                     newdx = newdx*0.5
                     if abs(d_area) <= tol_area:
                         converged = True
@@ -2792,6 +2795,9 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                             print(""" WARNING: the renormalization is too bad, you need to
                                   converge your spf using other input variables """)
     
+                        outfile.write("%8.4f %12.8e \n" %
+                                        (newdx, norm))
+    outfile.close()
     return en_toc96, toc_tot
 
 def calc_rc_sky (vardct, tfft_size, en, newen,
