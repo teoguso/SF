@@ -63,9 +63,6 @@ def read_invar(infile='invar.in'):
      in the frequence list when integrating to avoid divergency at w=0.
      'tfft_size': 1000, the number of elements enters in FFT.
      'Eplasmon': 6 the approximate plasmon energy
-     'NewEnmin': negative number, the minimum energy that will be used in the
-     integration of ImSigma
-     'NewEnmax': the maximum energy  that will be used in the integration of ImSigma
      'invar_den': the energy resolution after the FT.
      'invar_eta': the eta in theta function.
     """
@@ -73,8 +70,6 @@ def read_invar(infile='invar.in'):
             'sigmafile': None,   
             'calc_toc96': 0,
             'Eplasmon': 1,
-            'NewEnmin':-10,
-            'NewEnmax':4,
             'invar_den': 0.02,
             'invar_eta': 0.05,
             'calc_sky':0,
@@ -2630,17 +2625,20 @@ def integ_w(x , ShiftIms,NewEn,tImag): # pay attention of NewEn==0!!!!!
 #                        print("the converged newdx is", newdx) 
 #    return newdx
 
-def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon, 
-                NewEnmin, NewEnmax, ims, invar_den, invar_eta):
+def calc_toc96 (vardct, tfft_size, en, eqp, encut, pdos, Eplasmon, 
+                 ims, invar_den, invar_eta):
     import numpy as np
     import pyfftw
     from numpy.fft import fftshift,fftfreq
     from scipy.interpolate import interp1d
-
     print("calc_toc96 : :")
-    toc_tot = 0
-    #newdx = 0.02 ## can be modified, but must be defined according to
-    #newdx = 0.05  ## for debug
+
+    ddinter = 0.005 
+    enmin = float(vardct['enmin'])
+    enmax = float(vardct['enmax'])
+    newen_toc = np.arange(enmin, enmax, ddinter)
+    toc_tot =  np.zeros((np.size(newen_toc))) 
+
     wtk = np.array(vardct['wtk'])
     pdos = np.array(pdos)
     fftsize = tfft_size
@@ -2661,7 +2659,7 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
             print("eqp:", eqp_kb)
             if eqp_kb <= 0:
                 converged = False
-                tol_area = 0.01 #invar_den
+                tol_area = 0.02 #invar_den
                 area_0 = -1e6
                 newdx = 0.1
                 print("converging newdx ...")
@@ -2669,11 +2667,13 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                 while not converged:
                     interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis
                                          = -1)
-                    NewEn_min = -2*Eplasmon
+                    #NewEn_min = -2*Eplasmon
+                    NewEn_min = int(en[0]-eqp_kb)
                     #if metal_topV == 1:
                     #    NewEn_max = -eqp_kb
                     #else:
                     NewEn_max = Eplasmon
+                    #NewEn_max = int(en[-1])
                     NewEn = np.arange(NewEn_min,NewEn_max,newdx)
                     NewEn_size = NewEn.size
                     NewIms = interpims(NewEn)
@@ -2765,32 +2765,37 @@ def calc_toc96 (vardct, tfft_size, en,newen, eqp, encut, pdos, Eplasmon,
                         eta = 1.j*invar_eta # the eta in the theta function that can be changed when the satellite is very close to
                                      #the QP.
                         gw_list = []
-                        for w in enrange:
+                        w_list = np.arange(enmin,newen_toc[-1]+denfft,denfft)
+                        for w in w_list:
                             c = 0
                             for i in xrange(fftsize-1):
                                 Area2=0.5*denfft*(s_go[i]/(w-eqp_kb-s_freq[i]-eta)+s_go[i+1]/(w-eqp_kb-s_freq[i+1]-eta))
                                 c+=Area2
                             cwIm = 1./np.pi*c.imag
                             gw_list.append(0.5*wtk[ik]*pdos[ib]/np.pi*cwIm)
+
                         print("IFFT done .....")
-                        interp_toc = interp1d(enrange, gw_list, kind='linear', axis=-1)
-                        print("the interplation range is",enrange[0],enrange[-1])
-                        ddinter = 0.005 #do not touch this plz, this must equal
-                        # the dw in newen when newen is defined!!
-                        interp_en = newen
-                        print("the new energy range is (must be inside of abve range)",interp_en[0], interp_en[-1])
+                        print("check the renormalization : :")
+                        print()
+                        interp_toc = interp1d(w_list, gw_list, kind='linear', axis=-1)
+                       # print("the interplation range is",w_list[0],w_list[-1])
+                        interp_en = newen_toc
+                        #print("""the new energy range is (must be inside of above
+                         #     range)""",interp_en[0], interp_en[-1])
+
                         spfkb = interp_toc(interp_en)
-                        toc_tot+=spfkb
-                        outnamekb="TOC96-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
+                        toc_tot += spfkb
+                        #spfkb = gw_list
+                        #toc_tot = [sum(i) for i in zip(toc_tot,gw_list)]
+                        outnamekb = "TOC96-k"+str("%02d"%(ikeff))+"-b"+str("%02d"%(ibeff))+".dat"
                         outfilekb = open(outnamekb,'w')
                         en_toc96 = []
                         for i in xrange(len(interp_en)):
                             en_toc96.append(interp_en[i])
                             outfilekb.write("%8.4f %12.8e \n" % (interp_en[i],spfkb[i])) 
                         outfilekb.close()
-                        print("check the renormalization : :")
-                        norm=np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
-                        print("the normalization of the spectral function is", norm)
+                        norm = np.trapz(spfkb,interp_en)/(wtk[ik]*pdos[ib])
+                        print("the normalization of the spectral function is",norm)
                         if norm<=0.9:
                             print(""" WARNING: the renormalization is too bad, you need to
                                   converge your spf using other input variables """)
@@ -2818,6 +2823,8 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
     bdgw = map(int, vardct['sig_bdgw'])
     bdrange = vardct['bdrange']
     kptrange = vardct['kptrange']
+    outname = "Norm_check.dat"
+    outfile = open(outname,'w')
     for ik in kptrange:
         ikeff = ik + 1
         for ib in bdrange:
@@ -2825,33 +2832,32 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
             print(" ik, ib:",ikeff, ibeff)
             eqp_kb = eqp[ik,ib]
             print("eqp:", eqp_kb)
-    #        if eqp_kb<=0:
             converged = False
-            tol_area = 0.05 #invar_den
-            area_0 = 0.
+            tol_area = 0.01 #invar_den
+            area_0 = -1e6
             newdx = 0.1
             print("converging newdx ...")
             print(" TOlerance: ", tol_area)
             while not converged:
-                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis =
-                                     -1)
-                NewEn_min = -2*Eplasmon #depend on the input energy in SIG file and the
-                #plasmon energy of the system because this needs to cover the peak
-                #in ImSigma.
-                NewEn_max = en[-1] - eqp_kb - Eplasmon     # can be changed when calculate different system
-                NewEn = np.arange(NewEn_min, NewEn_max, newdx) #newdx should be defined
-                #properly so that w=0 is included.
+                interpims = interp1d(en, ims[ik,ib], kind = 'linear', axis
+                                     = -1)
+                #NewEn_min = -2*Eplasmon
+                NewEn_min = int(en[0]-eqp_kb)
+                #if metal_topV == 1:
+                #    NewEn_max = -eqp_kb
+                #else:
+                NewEn_max =  int(en[-1] - eqp_kb - Eplasmon)
+                NewEn = np.arange(NewEn_min,NewEn_max,newdx)
                 NewEn_size = NewEn.size
                 NewIms = interpims(NewEn)
-                ShiftEn = np.arange(NewEn_min+eqp_kb, NewEn_max+eqp_kb, newdx)
-                #print("the ShiftEN range is (must be inside of interplation range)",
-                 #     ShiftEn[0], ShiftEn[-1])
+                ShiftEn = np.arange(NewEn_min + eqp_kb, NewEn_max + eqp_kb,
+                                    newdx)
                 ShiftIms = interpims(ShiftEn)
-
                 ct_tmp = 0
+                print("(SKY DEBUG) the newdx is", newdx)
                 for i in np.arange(0,NewEn_size-1,1):
                     if abs(NewEn[i]) < 1e-6 : #finding w=0 and then put cutoff.
-                        print("zero is in NewEn")
+                        print("(SKY DEBUG) zero is in NewEn")
                         en1 = np.arange(0,i - tol_ecut, 1) # cut elements on the left
                         en2 = np.arange(i + tol_ecut+1, NewEn_size - 1, 1) # cut element
                     #on the right
@@ -2861,11 +2867,19 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
                                                   +integ_w(j+1,ShiftIms,NewEn,-10.j))
                             ct_tmp+=area_tmp 
                 gt_tmp = np.exp(ct_tmp)
-                d_area = abs(area_0 - gt_tmp)
-                area_0 = gt_tmp
+                if gt_tmp == 1.0:
+                    print("Zero is not in NewEn !!!")
+                    newdx = newdx*0.5
+                    continue
+
+                print("(SKY DEBUG) the gt is", gt_tmp)
+                d_area = area_0 - gt_tmp.imag
+                print("(SKY DEBUG) the difference in gt is", d_area)
+                area_0 = gt_tmp.imag
                 newdx = newdx*0.5
-                if d_area <= tol_area:
+                if abs(d_area) <= tol_area:
                     converged = True
+                    newdx = newdx/0.5
                     print("the converged newdx is", newdx) 
 
                     imeqp = interpims(eqp_kb)
@@ -2954,4 +2968,7 @@ def calc_rc_sky (vardct, tfft_size, en, newen,
                     if norm <= 0.9:
                         print(""" WARNING: the renormalization is too bad, you need to
                               converge your spf using other input variables """)
+                    outfile.write("%8.4f %12.8e \n" %
+                                    (newdx, norm))
+    outfile.close()
     return interp_en, rc_tot
