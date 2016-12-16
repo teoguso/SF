@@ -446,7 +446,7 @@ class AbinitOutReader(CodeOutReader):
         self.get_gw_dts()
         for i in self.gw_dts: 
             self.get_gw_ks_ev(i)
-            self.get_gw_qpen(i,self.nversion)
+            self.get_gw_qpen(iset=i, version=self.version_float)
 
     def chk_fname(self):
         """
@@ -477,7 +477,9 @@ class AbinitOutReader(CodeOutReader):
         Detects the version of abinit. 
         """
         self.version = self.content[1].split()[1]
-        self.nversion = int(self.version.split('.')[0])
+        a, b, _ = self.version.split('.')
+        self.version_float = float(a+"."+"{:2}".format(b))
+        self.nversion = int(a)
 
     def get_var_dict(self):
         """
@@ -705,11 +707,8 @@ class AbinitOutReader(CodeOutReader):
         """
         print("get_gw_qpen ::")
         myset = self.dtsets[iset]
-       #print("iset:", iset)
-       #print("dtset:", myset[:5], myset[-5:])
         mylabels = self.dts_labels
         bdgwlabel = 'bdgw'+mylabels[iset]
-        #print("bdgwlabel:", bdgwlabel)
         is_sc = int(self.is_sc)
         dct = self.var_dict
         if not dct.get(bdgwlabel): 
@@ -723,18 +722,11 @@ class AbinitOutReader(CodeOutReader):
         bdgw = dct.get(bdgwlabel)
         nkpt = len(bdgw)
         nband = int(1 + bdgw[0][-1] - bdgw[0][0]) # Hopefully nband is the same for all kptgw
-        #type(bdgw)
-#        print("bdgwlabel:", bdgwlabel)
-#        print("bdgw:",bdgw)
-#        print("nkpt:",nkpt)
-#        print("nband:",nband)
-        #nband = 1 + dct.get(mybdgw)[-1] - dct.get(mybdgw)[0]
-        #print("nband:",nband)
+
         istart = 0
         for i,line in enumerate(myset):
             if " k = " in line:
                 istart = i
-                #print("i, k point:", i, line
                 break
         ik = 0
         ib = 0
@@ -753,13 +745,10 @@ class AbinitOutReader(CodeOutReader):
             qpen_im = []
             qpen_im_k = []
         for line in myset[istart:]:
-           #if " k = " in line: 
-           #    print(line)
-           #    pass
             if ik == nkpt:
                 break
             elif " k = " in line: 
-               #print("k point/header:", line)
+                # print("k point/header:", line)
                 ib = 0
                 lines = []
             elif "Band" in line:
@@ -774,8 +763,6 @@ class AbinitOutReader(CodeOutReader):
                 #print("energy line", line
                 continue
             elif ib < nband:
-#                print("ik,ib,line:", ik,ib,line
-               #print(" ik, ib, nband, bdgw", ik, ib, nband, bdgw)
                 words = map(float,line.split())
                 lines.append(words)
                 ib += 1
@@ -783,17 +770,17 @@ class AbinitOutReader(CodeOutReader):
                 qpen = []
                 hf = []
                 sigc = []
-                if version >= 6.2:
+                if version >= 6.02:
                     imag = lines[1::2]
                     lines = lines[0::2]
                     qpen_im = []
                 if is_sc == 1: 
                     hartree = []
-                    for line in lines:
-                        hartree.append(line[4])
-                        qpen.append(line[12])
-                        hf.append(line[5])
-                        sigc.append(line[6])
+                    for xline in lines:
+                        hartree.append(xline[4])
+                        qpen.append(xline[12])
+                        hf.append(xline[5])
+                        sigc.append(xline[6])
                     hartree_k.append(hartree)
                     qpen_k.append(qpen)
                     hf_k.append(hf)
@@ -805,12 +792,12 @@ class AbinitOutReader(CodeOutReader):
                 else:
                     elda = []
                     vxc = []
-                    for line in lines:
-                        elda.append(line[1])
-                        vxc.append(line[2])
-                        qpen.append(line[9])
-                        hf.append(line[3])
-                        sigc.append(line[4])
+                    for xline in lines:
+                        elda.append(xline[1])
+                        vxc.append(xline[2])
+                        qpen.append(xline[9])
+                        hf.append(xline[3])
+                        sigc.append(xline[4])
                     elda_k.append(elda)
                     vxc_k.append(vxc)
                     qpen_k.append(qpen)
@@ -821,16 +808,13 @@ class AbinitOutReader(CodeOutReader):
                     qpen = []
                 ib = 0
                 ik += 1
-               #print("ik += 1, ik:", ik)
-               #if ik == 1:
-               #    break
+                lines = []
         if is_sc == 0:
             for a,b in zip(elda_k,vxc_k):
                 tmp = []
                 for c,d in zip(a,b): 
                     tmp.append(c-d) 
                 hartree_k.append(tmp)
-       #print(hartree_k[-1])
         if nsppol == 2:
             hartree_k = hartree_k[::2]
             qpen_k = qpen_k[::2]
@@ -839,8 +823,6 @@ class AbinitOutReader(CodeOutReader):
             vxc_k = vxc_k[::2]
             elda_k = elda_k[::2]
        #a = np.array(hartree_k)
-       #print("a.shape, nband, is_sc",  a.shape, nband, is_sc)
-       #print(a[0])
         qpen_k = np.array(qpen_k)
         hartree_k = np.array(hartree_k)
         hf_k = np.array(hf_k)
@@ -852,14 +834,7 @@ class AbinitOutReader(CodeOutReader):
         self.hartree = hartree_k
         self.hf = hf_k
         # self.sigc = sigc_k
-       #print(hartree_k)
         print("Done.")
-#        print(np.array(qpen_k))
-#        if version >= 6: 
-#            print(np.array(qpen_im_k) )
-#        print(np.array(elda_k))
-#        print(np.array(vxc_k))
-#        print(np.array(hartree_k))
 
 
 
